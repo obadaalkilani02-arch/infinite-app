@@ -1,0 +1,15 @@
+{
+"أقصى":"max","الشروط الداخلية":"Indoor conditions","صيفًا":"Summer","درجة الحرارة الجافة":"dry-bulb temperature",
+"لا يتضمن الجدول رطوبة، فيبقى حقل نسبة الرطوبة الخارجية كما هو":"The table gives no humidity, so the outdoor humidity-ratio field is left as it is",
+"أدخله من مرجع الموقع":"enter it from a site reference",
+"أبها":"Abha","الأحساء":"Al-Ahsa","الباحة":"Al-Baha","الجوف":"Al-Jouf","المدينة المنورة":"Madinah","القيصومة":"Al-Qaisumah","الطائف":"Taif","الوجه":"Al-Wejh","عرعر":"Arar","بيشة":"Bisha","الظهران":"Dhahran","القصيم":"Gassim","جازان":"Jazan","القريات":"Guriat","حائل":"Hail","الجبيل":"Jubail","مطار الملك فهد":"King Fahd Airport","خميس مشيط":"Khamis Mushait","مطار الملك خالد":"King Khalid Airport","مكة المكرمة":"Makkah","نجران":"Najran","رفحاء":"Rafha","الأرصاد":"Meteorological Observatory","شرورة":"Sharorah","تبوك":"Tabuk","طريف":"Turaif","وادي الدواسر":"Wadi Al-Dawasser","ينبع":"Yanbu",
+"عزل فوق الهيكل":"insulation above deck","مبنى معدني":"metal building","علّية بأعمدة فولاذية":"attic with steel joists","جدار كتلي فوق الأرض":"above-grade mass wall","جدار مبنى معدني":"metal-building wall","جدار بإطار فولاذي":"steel-framed wall","أرضية كتلية":"mass floor","أرضية بجوائز فولاذية":"floor with steel joists","باب مصمت مفصلي":"opaque swinging door","باب مصمت غير مفصلي":"opaque nonswinging door","زجاج رأسي":"vertical glazing","من الجدار":"of the wall",
+"الحد الأقصى لمعامل الانتقال":"the maximum thermal transmittance U","حسب المنطقة المناخية":"by climate zone","مناطق":"zones","ونوع المبنى":"and building type",
+"اختر المدينة أو المنطقة والعنصر فيُملأ الحد أدناه":"Choose the city or zone and the element and the limit below is filled in",
+"المنطقة المناخية":"Climate zone","حارة جدًا":"very hot","شديدة الحرارة":"extremely hot","حارة":"hot","الباقي":"the rest","غير سكني":"Nonresidential","شبه مكيّف":"Semiconditioned","العنصر":"Element","مناطق مناخية":"climate zones",
+"الحدود أعلاه للمباني غير السكنية والسكنية العالية؛ للمباني السكنية منخفضة الارتفاع راجع":"The limits above are for nonresidential and high-rise residential buildings; for low-rise residential buildings see",
+"حدود الأرضيات على التربة":"Slab-on-grade (F) limits","والجدران تحت الأرض":"and below-grade walls (C)","تُقاس بوحدات مختلفة ولا تُفحص هنا":"are measured in different units and are not checked here",
+"حدود الكود تختلف حسب المنطقة المناخية ونوع المبنى ونسبة الزجاج وإصدار الكود":"Code limits vary with climate zone, building type, glazing ratio and code edition",
+"أدخل الحد المعتمد في كود بلدك أو اختر":"enter the limit adopted in your country's code or choose",
+"من محدد الكود المرجعي لتعبئته من":"from the reference-code selector to fill it from"
+}

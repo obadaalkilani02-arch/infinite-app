@@ -1,0 +1,58 @@
+{
+  "name": "infinite",
+  "version": "0.9.0-beta.1",
+  "description": "+Infinite engineering calculators",
+  "main": "platform/electron/main.js",
+  "scripts": {
+    "test": "node tools/check-syntax.js && node tests/regress.js && node tests/golden.js && node tests/fire.js && node tests/hvac.js && node tests/plumbing.js && node tests/localcodes.js && node --max-old-space-size=4096 tests/i18n.js",
+    "build:icons": "node tools/make-icons.js",
+    "build:web": "node tools/build-web.js",
+    "build:win": "node tools/build-web.js && electron-builder --win nsis --x64"
+  },
+  "keywords": [],
+  "author": "Obada Alkilani",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "electron": "^44.6.0",
+    "electron-builder": "^26.15.3",
+    "sharp": "^0.35.5",
+    "jsdom": "^30.1.2"
+  },
+  "build": {
+    "appId": "com.obada.infinite",
+    "productName": "+Infinite",
+    "copyright": "Obada Alkilani",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "platform/electron/**",
+      "platform/icons/icon-512.png",
+      "dist/web/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "platform/icons/icon-1024.png",
+      "artifactName": "Infinite-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "shortcutName": "+Infinite"
+    }
+  }
+}

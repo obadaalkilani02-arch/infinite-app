@@ -1,0 +1,1 @@
+{ "appId": "com.obada.infinite", "appName": "+Infinite", "webDir": "dist/web", "backgroundColor": "#060a12", "android": { "allowMixedContent": false } }

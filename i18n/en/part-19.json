@@ -1,0 +1,23 @@
+{
+"أقل ميل للمواسير الأفقية":"Minimum slope of horizontal pipes",
+"فأكبر":"and larger",
+"أقل أقطار مواسير التغذية للتجهيزات":"Minimum fixture supply pipe sizes",
+"مغسلة ومرحاض بخزان":"lavatory and tank-type water closet",
+"؛ دش وحوض مطبخ وبانيو":"; shower, kitchen sink and bathtub",
+"؛ مرحاض بصمام فلاش":"; flushometer-valve water closet",
+"؛ مبولة بصمام فلاش":"; flushometer-valve urinal",
+"التحجيم والاختبار وفق":"Sizing and testing per",
+"سعة احتجاز الدهون من جدول":"grease retention capacity from Table",
+"لمعدل التدفق الكلي":"for the total flow-through rate",
+"ضعف معدل التدفق":"twice the flow-through rate",
+"جهاز ضبط معدل التدفق مهوّى وينتهي على ارتفاع":"the flow-control device is vented and terminates at a height of",
+"على الأقل فوق حافة الفيضان":"at least above the flood rim",
+"ماسورة تفريغ خزانات المياه حسب السعة":"Drain pipe of water tanks by capacity",
+"؛ وجدول":"; and Table",
+"لماسورة الفائض حسب تصرف خط التغذية":"for the overflow pipe by supply-line flow",
+"أكثر":"more",
+"الحد الأدنى لسعة احتجاز الدهون":"Minimum grease retention capacity",
+"يُقرَّب للأعلى إلى أقرب تصنيف":"rounded up to the nearest rating",
+"هي التي يحيل إليها":"is the one referred to by",
+"للتحجيم، لكن نصها غير موجود في مكتبة الأكواد المحلية فلم يمكن التحقق منها؛ قارن النتيجة بجدول":"for sizing, but its text is not in the local code library so it could not be verified; compare the result with the table"
+}
