@@ -8,6 +8,7 @@ const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'dist', 'web');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8').replace(/^﻿/, ''));
 const VERSION = pkg.version;
+const HASH = require('crypto').createHash('sha1').update(fs.readFileSync(path.join(ROOT, 'src', 'SmartEngineering_App.html'))).digest('hex').slice(0, 8);
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, 'icons'), { recursive: true });
@@ -25,7 +26,12 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && locat
 }
 </script>`;
 if (!html.includes('</head>') || !html.includes('</body>')) throw new Error('unexpected html shape');
-html = html.replace('</head>', head + '\n</head>').replace('</body>', reg + '\n</body>');
+// the page also contains the strings "</head>" / "</body>" inside JavaScript (letter printing), so inject at the real document end
+const hEnd = html.indexOf('</head>');
+const bEnd = html.lastIndexOf('</body>');
+if (hEnd < 0 || bEnd < 0 || bEnd < hEnd) throw new Error('unexpected html shape');
+html = html.slice(0, bEnd) + reg + '\n' + html.slice(bEnd);
+html = html.slice(0, hEnd) + head + '\n' + html.slice(hEnd);
 fs.writeFileSync(path.join(OUT, 'index.html'), html);
 
 fs.writeFileSync(path.join(OUT, 'manifest.webmanifest'), JSON.stringify({
@@ -49,7 +55,7 @@ fs.writeFileSync(path.join(OUT, 'manifest.webmanifest'), JSON.stringify({
 }, null, 2));
 
 fs.writeFileSync(path.join(OUT, 'sw.js'), `/* +Infinite service worker — cache-first, versioned */
-const CACHE = 'infinite-${VERSION}';
+const CACHE = 'infinite-${VERSION}-${HASH}';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon-64.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
@@ -57,6 +63,10 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (e.request.mode === 'navigate') {                       // the page itself: network first, cache as the offline fallback
+    e.respondWith(fetch(e.request).then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); return r; }).catch(() => caches.match('./index.html')));
+    return;
+  }
   e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(r => {
     const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r;
   }).catch(() => caches.match('./index.html'))));
