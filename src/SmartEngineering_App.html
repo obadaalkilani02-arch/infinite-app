@@ -447,6 +447,10 @@ footer strong { color: var(--orange); }
   .hdr-title { max-width: 130px; font-size: .72rem; }
   .back-btn { padding: 5px 8px; }
 }
+@media (max-width: 420px) {
+  .fields-grid { grid-template-columns: 1fr; }
+  .field input, .field select { min-width: 0; width: 100%; }
+}
 @media print {
   header, .calc-btn, .print-btn, .back-btn, .theme-btn, .hdr-title { display: none !important; }
   .calc-screen { display: block !important; }
