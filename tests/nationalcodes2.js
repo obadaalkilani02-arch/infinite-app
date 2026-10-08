@@ -158,6 +158,49 @@ check('Jordan, booster: minimum 0.20 bar and maximum 1.0 bar at the fixtures', [
 w = boot('sa'); w.renderCalc('fixtureunits'); w.calcResult('fixtureunits');
 check('Saudi notes are unchanged (SBC) and carry no Jordanian text', [w.document.getElementById('calc-body').textContent.includes('SBC 701-18'), w.document.getElementById('calc-body').textContent.includes('الكودة الأردنية')], [true, false]);
 
+// ---------- lighting, lifts, fire: Dubai H.7 and the Jordanian codes ----------
+w = boot('jo'); doc = w.document;
+w.renderCalc('lightingcalc');
+const ltLuxOf = key => { const sel = doc.querySelector('#lt-tbody .lt-space'); sel.value = key; w.ltSpaceChange(sel); return +doc.querySelector('#lt-tbody .lt-lux').value; };
+check('Jordan lighting, Table 4: meeting 750, deep-plan office 750, office 500, retail 500, classroom 500, kitchen 500', ['meeting', 'office_open', 'office', 'retail', 'classroom', 'kitchen'].map(ltLuxOf), [750, 750, 500, 500, 500, 500]);
+check('... bathroom 100, bedroom 50, living room 50, hotel room 50, hotel entrance hall 75, stairs 100, mosque 150', ['bathroom', 'bedroom', 'living', 'hotelroom', 'hotellobby', 'stairway', 'mosque'].map(ltLuxOf), [100, 50, 50, 50, 75, 100, 150]);
+check('... spaces the code does not cover keep the reference value (warehouse 100, operating room 1000)', ['warehouse', 'operating'].map(ltLuxOf), [100, 1000]);
+check('the Jordanian lighting note is shown', doc.getElementById('calc-body').textContent.includes('جدول 4') && doc.getElementById('calc-body').textContent.includes('750'), true);
+w = boot('intl'); doc = w.document; w.renderCalc('lightingcalc');
+const ltI = key => { const sel = doc.querySelector('#lt-tbody .lt-space'); sel.value = key; w.ltSpaceChange(sel); return +doc.querySelector('#lt-tbody .lt-lux').value; };
+check('international: meeting 300, bedroom 150 (unchanged reference values)', ['meeting', 'bedroom'].map(ltI), [300, 150]);
+w = boot('ae'); doc = w.document; w.renderCalc('lightingcalc');
+check('UAE lighting: building-area list from Table H.15 (7.5 / 7.8 / 8.9 / 9.8 / 4.9 / 6.9 W/m2)', w.eval('lpdBuildingList().map(b => b[1])'), [7.5, 7.8, 8.9, 9.8, 4.9, 6.9]);
+check('... offered in the selector with the Dubai label and the H.7 note (108 lux stairs, 10.8 lux floors, 25 %)', ['كود دبي جدول H.15', '108', '10.8', '25%'].every(s => doc.getElementById('calc-body').textContent.includes(s)), true);
+doc.getElementById('lt_bldg').value = '3'; w.calcResult('lightingcalc');
+check('selecting retail / malls / workshops (9.8 W/m2) works without errors', doc.getElementById('lt_results').textContent.length > 0, true);
+w = boot('sa'); w.renderCalc('lightingcalc');
+check('Saudi keeps the SBC 601 list (33 building types)', w.eval('lpdBuildingList().length'), 33);
+
+w = boot('jo'); doc = w.document; w.renderCalc('elevatorfeeder');
+const ef = n => { doc.getElementById('ef_n').value = String(n); return w.calcElevatorFeeder(); };
+check('Jordan lifts, Table 6: 1 and 2 lifts 1.0, 3 lifts 0.9, 4 lifts 0.8, more than 4: no reduction', [1, 2, 3, 4, 5, 8].map(n => ef(n).df), [1, 1, 0.9, 0.8, 1, 1]);
+check('... 3 lifts x 60 A x 0.9 = 162 A; 4 lifts 192 A', [ef(3).I, ef(4).I], [162, 192]);
+w.calcResult('elevatorfeeder');
+check('results name the Jordanian table', doc.getElementById('ef_results').textContent.includes('جدول 6'), true);
+w = boot('intl'); w.renderCalc('elevatorfeeder'); w.document.getElementById('ef_n').value = '4';
+check('international keeps NEC 620.14 (4 lifts 0.85)', w.calcElevatorFeeder().df, 0.85);
+
+w = boot('jo'); doc = w.document; w.renderCalc('alarmbattery');
+check('Jordan alarm battery: the Jordanian type is selected, 24 h standby and 30 min alarm', [doc.getElementById('ab_type').value, +doc.getElementById('ab_hours').value, +doc.getElementById('ab_min').value], ['jo', 24, 30]);
+let ab = w.calcAlarmBattery();
+check('... 30 minutes of alarm in the calculation', [ab.hours, ab.minutes, ab.ref], [24, 30, '2/10/3']);
+w = boot('intl'); doc = w.document; w.renderCalc('alarmbattery');
+check('international: NFPA 72 type, 5 minutes, and the Jordanian type is not offered', [doc.getElementById('ab_type').value, +doc.getElementById('ab_min').value, [...doc.getElementById('ab_type').options].some(o => o.value === 'jo')], ['fa', 5, false]);
+
+w = boot('jo'); doc = w.document; w.renderCalc('sprinkler'); w.calcResult('sprinkler');
+bodyText = doc.getElementById('calc-body').textContent;
+check('Jordan sprinklers: Table 10 (1890 - 2830, 2650 - 3780 L/min), Table 17 K and Tables 13 / 14', ['1890', '2650', '110 – 120', '275', '170', 'NFPA 13'].every(s => bodyText.includes(s)), true);
+w = boot('sa'); w.renderCalc('sprinkler'); w.calcResult('sprinkler');
+check('Saudi sprinkler results now show the SBC 801 note too (914.3.2)', w.document.getElementById('calc-body').textContent.includes('914.3.2'), true);
+w = boot('intl'); w.renderCalc('sprinkler'); w.calcResult('sprinkler');
+check('international: no code note under the sprinkler results', w.document.getElementById('calc-body').textContent.includes('الكودة الأردنية'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
