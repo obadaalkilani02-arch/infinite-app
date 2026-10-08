@@ -4982,5 +4982,15 @@
  "تُراعى أيضًا حدود سحب الكابلات وعدد الانحناءات وعوامل التصحيح": "The cable pulling limits, the number of bends and the correction factors are also considered",
  "بحسب عدد الموصلات الحاملة للتيار": "according to the number of current-carrying conductors",
  "فأكثر أو ارتفاع الحرارة": "or more, or a temperature rise of",
- "فأقل": "or less"
+ "فأقل": "or less",
+ "احسب حملًا أكبر من الصفر قبل الإرسال": "Calculate a load greater than zero before sending",
+ "استُوردت من": "Imported from",
+ "آخر حمل في": "Last load in",
+ "، التيار": ", the current",
+ "، المستمر": ", the continuous share",
+ "يُضبط المرجع على": "The reference is set to",
+ "ونظام التغذية والجهد والمعدن ونسبة الحمل المستمر": "and the supply system, the voltage, the metal and the continuous load share",
+ "الأحمال السكنية": "dwelling loads",
+ "؛ أدخل طول الكابل وظروف التمديد": "; enter the cable length and the installation conditions",
+ "إرسال الحمل إلى حاسبة مقطع الكابل": "Send the load to the cable sizing calculator"
 }

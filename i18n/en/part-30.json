@@ -1,0 +1,12 @@
+{
+"احسب حملًا أكبر من الصفر قبل الإرسال": "Calculate a load greater than zero before sending",
+"استُوردت من": "Imported from",
+"آخر حمل في": "Last load in",
+"، التيار": ", the current",
+"، المستمر": ", the continuous share",
+"يُضبط المرجع على": "The reference is set to",
+"ونظام التغذية والجهد والمعدن ونسبة الحمل المستمر": "and the supply system, the voltage, the metal and the continuous load share",
+"الأحمال السكنية": "dwelling loads",
+"؛ أدخل طول الكابل وظروف التمديد": "; enter the cable length and the installation conditions",
+"إرسال الحمل إلى حاسبة مقطع الكابل": "Send the load to the cable sizing calculator"
+}

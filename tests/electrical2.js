@@ -369,6 +369,52 @@ setv('cf_nip', 'no');
 w.calcResult('conduitfill');
 check('conduit results rendered', text('cf_results').includes('جدول 1'), true);
 
+// ---------- link: load calculation -> cable sizing ----------
+try { w.localStorage.removeItem('si_load_feed'); } catch (e) {}
+w.eval('LDFEED_MEM = null');
+w.renderCalc('cablesizing');
+check('cable sizing with no stored load: a hint to send it first', text('cs_feed_note').includes('احسب في'), true);
+check('... and its own default load of 55 kW', +doc.getElementById('cs_load').value, 55);
+w.renderCalc('loadcalc');
+setv('ld_mode', 'gen'); setv('ld_sys', '3p400'); w.ldMode(); setv('ld_occ', 'office');
+const ldr = w.calcLoad();
+w.ldSend();
+check('send: the cable-sizing screen is open', !!doc.getElementById('cs_load'), true);
+check('send: reference set to NEC', doc.getElementById('cs_std').value, 'nec');
+check('send: three-phase', doc.getElementById('cs_phase').value, '3');
+check('send: 400 V', +doc.getElementById('cs_volt').value, 400);
+check('send: load entered as kVA', doc.getElementById('cs_mode').value, 'kva');
+check('send: calculated load (kVA)', +doc.getElementById('cs_load').value, +(ldr.total / 1000).toFixed(3), 1e-9);
+check('send: continuous share = lighting demand / total (%)', +doc.getElementById('cs_cont').value, +(ldr.cont / ldr.total * 100).toFixed(1), 1e-9);
+let csr = w.calcCableSizing();
+check('cable sizing design current equals the service current of the load calculation', csr.Ib, ldr.I, 0.01);
+check('... and the required ampacity with the 125 % continuous share', csr.Ireq, ldr.Ireq, 0.05);
+check('the cable result is computed on arrival', text('cs_results').length > 20, true);
+check('the arrival banner says it was imported', text('cs_feed_note').includes('استُوردت'), true);
+w.renderCalc('cablesizing');
+check('reopening without a new send keeps the calculator defaults', +doc.getElementById('cs_load').value, 55);
+check('... and offers the stored load', /csApplyFeed/.test(doc.body.innerHTML), true);
+doc.querySelector('button[onclick="csApplyFeed(true)"]').click();
+check('the import button brings the load back', +doc.getElementById('cs_load').value, +(ldr.total / 1000).toFixed(3), 1e-9);
+// dwelling, single phase 120/240 V, aluminium: dwelling loads are not continuous
+w.renderCalc('loadcalc');
+setv('ld_mode', 'dw-std'); setv('ld_sys', '1p240'); setv('ld_metal', 'al'); w.ldMode();
+const ldd = w.calcLoad();
+w.ldSend();
+check('dwelling: single-phase 240 V', [doc.getElementById('cs_phase').value, +doc.getElementById('cs_volt').value], ['1', 240]);
+check('dwelling: load 28.63 kVA', +doc.getElementById('cs_load').value, 28.633, 0.001);
+check('dwelling: continuous share 0 %', +doc.getElementById('cs_cont').value, 0);
+check('dwelling: aluminium conductor', doc.getElementById('cs_metal').value, 'al');
+csr = w.calcCableSizing();
+check('dwelling: design current 119.3 A and no 125 % increase', [Math.round(csr.Ib * 10) / 10, Math.round(csr.Ireq * 10) / 10], [Math.round(ldd.I * 10) / 10, Math.round(ldd.I * 10) / 10]);
+// a load of zero is not sent
+w.renderCalc('loadcalc');
+setv('ld_mode', 'gen'); w.ldMode();
+['ld_garea', 'ld_rec', 'ld_cool', 'ld_gm1', 'ld_gm2', 'ld_oth'].forEach(id => setv(id, 0));
+const before = JSON.stringify(w.eval('ldLoadFeed()'));
+w.ldSend();
+check('an empty load is not sent: the stored load is kept', JSON.stringify(w.eval('ldLoadFeed()')), before);
+
 // ---------- screens ----------
 w.showCategory('electrical');
 const cards = doc.getElementById('electrical-category').textContent;
