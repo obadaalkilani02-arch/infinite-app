@@ -523,10 +523,49 @@ check('the results show the requirements table, the general alarm rules and the 
 setv(w, 'fr_occ', 'hotel'); w.frOcc();
 check('fields that do not apply are hidden (hotel shows rooms, hides sales area)', [doc.getElementById('fr_f_units').style.display, doc.getElementById('fr_f_sales').style.display], ['', 'none']);
 w = boot('intl'); w.renderCalc('fireprot');
-check('the three new calculators are available with every code; the fire category now has nine', [!!w.document.getElementById('fr_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 9]);
+check('the three new calculators are available with every code; the fire category now has nine', [!!w.document.getElementById('fr_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 10]);
+
+// ---------- Jordanian fire alarm code: detector layout, zones, sounders ----------
+w = boot('jo'); doc = w.document; w.renderCalc('fadetect');
+const fd = vals => { Object.keys(vals).forEach(id => setv(w, id, vals[id])); return w.calcFaDetect(); };
+const fdRow = (r, part) => r.rows.find(x => x.n.includes(part));
+let fx = fd({fd_type: 'smoke', fd_L: 12, fd_W: 8, fd_H: 3, fd_small: 100, fd_civ: 'no', fd_roof: 'flat', fd_cor: 'no', fd_obs: 0});
+check('point smoke detector, 12 x 8 m: one detector covers it (half diagonal 7.21 m within 7.5 m, 96 m2 within 100 m2)', [fx.nArea, fx.n, +fx.grid.d.toFixed(2), fx.R, fx.Alim], [1, 1, 7.21, 7.5, 100]);
+fx = fd({fd_type: 'h1'});
+check('heat detector grade 1, 12 x 8 m: 96 / 50 = 2 detectors, 2 x 1 grid at 6 x 8 m, half diagonal 5.0 m within 5.3 m', [fx.nArea, fx.n, fx.grid.nx + 'x' + fx.grid.ny, +fx.grid.d.toFixed(2), fx.R, fx.Alim], [2, 2, '2x1', 5, 5.3, 50]);
+fx = fd({fd_type: 'smoke', fd_L: 20, fd_W: 15});
+check('point smoke 20 x 15 m = 300 m2: three by area, four by distance (2 x 2 grid, 6.25 m)', [fx.nArea, fx.nRadius, fx.n, +fx.grid.d.toFixed(2)], [3, 4, 4, 6.25]);
+check('ceiling height, smoke: 10 m passes (general 10.5 m); 11 m fails for the whole ceiling; passes with the civil defence link (upper 15 m); a small part (10 %) passes up to 12.5 m and up to 18 m', [fd({fd_L: 12, fd_W: 8, fd_H: 10}).heightOk, fd({fd_H: 11}).heightOk, fd({fd_civ: 'yes'}).heightOk, (setv(w, 'fd_civ', 'no'), fd({fd_H: 12, fd_small: 10}).heightOk), fd({fd_H: 17, fd_small: 10}).heightOk, fd({fd_H: 19, fd_small: 10}).heightOk], [true, false, true, true, true, false]);
+check('ceiling height, heat: grade 3 passes at 6 m and fails at 7 m; grade 2 passes at 7.5 m; grade 1 at 9 m, fails at 9.5 m; a small part of a grade 3 ceiling passes at 10 m', [fd({fd_type: 'h3', fd_H: 6, fd_small: 100}).heightOk, fd({fd_H: 7}).heightOk, fd({fd_type: 'h2', fd_H: 7.5}).heightOk, fd({fd_type: 'h1', fd_H: 9}).heightOk, fd({fd_H: 9.5}).heightOk, fd({fd_type: 'h3', fd_H: 10, fd_small: 10}).heightOk], [true, false, true, true, false, true]);
+fx = fd({fd_type: 'h1', fd_H: 3, fd_small: 100, fd_L: 24, fd_W: 2, fd_cor: 'no'});
+const nFlat = fx.n; fx = fd({fd_cor: 'yes'});
+check('corridor 24 x 2 m: the heat distance grows by (5 - 2) / 2 = 1.5 m to 6.8 m and two detectors replace three', [nFlat, fx.n, +fx.R.toFixed(2)], [3, 2, 6.8]);
+fx = fd({fd_type: 'smoke', fd_L: 20, fd_W: 15, fd_cor: 'no', fd_roof: 'pitched', fd_ang: 20});
+check('pitched roof 20 degrees: + 20 % distance (9 m) and + 44 % area (144 m2): three detectors instead of four', [+fx.R.toFixed(2), +fx.Alim.toFixed(2), fx.n], [9, 144, 3]);
+check('the roof slope allowance is capped at 25 % (40 degrees gives 9.375 m)', +fd({fd_ang: 40}).R.toFixed(3), 9.375);
+fx = fd({fd_roof: 'flat', fd_L: 12, fd_W: 8, fd_H: 3, fd_obs: 200});
+check('a 200 mm barrier (between 150 mm and 10 % of 3 m) cuts the distance by twice its depth: 7.5 - 0.4 = 7.1 m; a 400 mm barrier is a wall (note)', [+fx.R.toFixed(2), fd({fd_obs: 400}).R, fd({fd_obs: 400}).notes.length > 0], [7.1, 7.5, true]);
+setv(w, 'fd_obs', 0);
+fx = fd({fd_type: 'beam', fd_L: 60, fd_W: 30, fd_H: 3});
+check('beam detectors over 60 x 30 m: 3 lines 10 m apart (5 m from the walls), 60 m long; height 2.7 - 25 m (40 m if stored goods are up to 5 m)', [fx.beams.lines, fx.beams.spacing, fx.beams.wallDist, fx.beams.length, fx.heightOk === undefined ? fdRow(fx, 'ارتفاع الحزمة').ok : fx.heightOk, fd({fd_H: 2.5}).rows[0].ok, fd({fd_H: 30}).rows[0].ok, fd({fd_H: 30, fd_stock: 'yes'}).rows[0].ok], [3, 10, 5, 60, true, false, false, true]);
+setv(w, 'fd_stock', 'no'); fd({fd_type: 'smoke', fd_L: 12, fd_W: 8, fd_H: 3, fd_drop: 100, fd_wall: 600});
+check('mounting: smoke element 25 - 600 mm below the ceiling (700 fails); heat 25 - 150 mm (160 fails); 500 mm from walls (400 fails)', [fd({fd_drop: 700}).ok, fd({fd_drop: 100}).ok, fd({fd_type: 'h1', fd_drop: 160}).ok, fd({fd_drop: 100}).ok, fd({fd_wall: 400}).ok, fd({fd_wall: 600}).ok], [false, true, false, true, false, true]);
+fd({fd_type: 'smoke', fd_L: 12, fd_W: 8, fd_H: 3, fd_nf: 4, fd_af: 1500, fd_nc: 1, fd_sd: 25});
+check('zones: 4 floors of 1500 m2 give 4 zones; 2500 m2 floors split in two (8 zones); three fire compartments per floor give 12; a building of 300 m2 or less is one zone', [fd({}).zones, fd({fd_af: 2500}).zones, fd({fd_af: 1500, fd_nc: 3}).zones, fd({fd_nf: 1, fd_af: 250, fd_nc: 1}).zones, fd({fd_nf: 1, fd_af: 250}).single], [4, 8, 12, 1, true]);
+check('search distance: 35 m fails, 25 m passes', [fd({fd_nf: 4, fd_af: 1500, fd_sd: 35}).ok, fd({fd_sd: 25}).ok], [false, true]);
+fx = fd({fd_amb: 62, fd_slp: 'no', fd_lvl: 66});
+check('sounders: 62 dB(A) background needs 67 dB(A) (65 minimum); 66 fails; 70 passes; 55 dB(A) background needs 65', [fx.reqDb, fx.ok, fd({fd_lvl: 70}).ok, fd({fd_amb: 55, fd_lvl: 65}).reqDb], [67, false, true, 65]);
+check('sleeping accommodation: 75 dB(A) at the bed head: 70 fails, 76 passes', [fd({fd_amb: 55, fd_slp: 'yes', fd_lvl: 70}).ok, fd({fd_lvl: 76}).ok], [false, true]);
+setv(w, 'fd_slp', 'no'); setv(w, 'fd_lvl', 70);
+check('manual call points within 30 m of walking (31 m fails); conductors 1.0 mm2 solid or 0.5 mm2 stranded', [fd({fd_trav: 31}).ok, fd({fd_trav: 25}).ok, fd({fd_cs: 0.75, fd_str: 'no'}).ok, fd({fd_cs: 1.0}).ok, fd({fd_cs: 0.5, fd_str: 'yes'}).ok, fd({fd_cs: 0.4}).ok], [false, true, false, true, true, false]);
+setv(w, 'fd_cs', 1.5); setv(w, 'fd_str', 'no');
+w.calcResult('fadetect');
+check('the results show the number of detectors, the table of limits and the extra rules', ['عدد الكواشف المطلوب', 'الحد في الكودة', '800 mm', '500 و1000 Hz'].every(s => doc.getElementById('fd_results').textContent.includes(s)), true);
+w = boot('intl'); w.renderCalc('fadetect');
+check('the detector layout is available with every code', !!w.document.getElementById('fd_results'), true);
 
 w = boot('intl'); w.renderCalc('egress');
-check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 9]);
+check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 10]);
 
 // the other codes are unchanged
 w = boot('sa');
