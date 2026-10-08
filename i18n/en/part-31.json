@@ -1,0 +1,21 @@
+{
+"محدد": "specified",
+"تلقائي": "Automatic",
+"فوقها": "above that",
+"دوائر المحركات فوق": "Motor circuits above",
+"خارج نطاق حاسبة مقطع الكابل": "are outside the scope of the cable sizing calculator",
+"لهذا المحرك": "for this motor",
+"لا يوجد تيار لإرساله": "there is no current to send",
+"للمحرك": "for the motor",
+"إرسال إلى حاسبة مقطع الكابل": "Send to the cable sizing calculator",
+"إرسال سعة المغذّي إلى حاسبة مقطع الكابل": "Send the feeder ampacity to the cable sizing calculator",
+"حاسبة مقطع الكابل لا تغطي الجهود فوق": "The cable sizing calculator does not cover voltages above",
+"لم يُرسل التيار": "the current was not sent",
+"ودرجة عزل الموصل والحرارة المحيطة وعدد الموصلات الحاملة للتيار": "and the conductor insulation rating, the ambient temperature and the number of current-carrying conductors",
+"إرسال تيار الثانوي إلى حاسبة مقطع الكابل": "Send the secondary current to the cable sizing calculator",
+"إرسال تيار الابتدائي إلى حاسبة مقطع الكابل": "Send the primary current to the cable sizing calculator",
+"يُرسل التيار المقنَّن بنسبة حمل مستمر": "The rated current is sent with a continuous load share of",
+"للموصل": "for the conductor",
+"عدّلها في حاسبة الكابل؛ الجهود فوق": "adjust it in the cable calculator; voltages above",
+"غير مغطاة هناك": "are not covered there"
+}

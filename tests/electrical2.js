@@ -415,6 +415,62 @@ const before = JSON.stringify(w.eval('ldLoadFeed()'));
 w.ldSend();
 check('an empty load is not sent: the stored load is kept', JSON.stringify(w.eval('ldLoadFeed()')), before);
 
+// ---------- link: motor circuits and transformers -> cable sizing ----------
+w.renderCalc('cablesizing');
+check('cable sizing: termination temperature defaults to automatic', doc.getElementById('cs_term').value, 'auto');
+w.renderCalc('motorcircuit');
+doc.querySelectorAll('#mc-rows .mc-row')[1].remove();
+doc.querySelector('#mc-rows .mc-hp').value = '25';
+const mcr = w.calcMotorCircuit();
+w.mcSend(0);
+check('motor send: load entered as a current', doc.getElementById('cs_mode').value, 'amp');
+check('motor send: FLC 34 A', +doc.getElementById('cs_load').value, 34);
+check('motor send: 100 % continuous gives the 125 % of 430.22(A)', +doc.getElementById('cs_cont').value, 100);
+check('motor send: three-phase 460 V', [doc.getElementById('cs_phase').value, +doc.getElementById('cs_volt').value], ['3', 460]);
+check('motor send: 75 C insulation, 75 C terminals, 30 C ambient, 3 conductors', [doc.getElementById('cs_temp').value, doc.getElementById('cs_term').value, +doc.getElementById('cs_amb').value, +doc.getElementById('cs_ngroup').value], ['75', '75', 30, 3]);
+check('motor send: the banner names the source and the motor', text('cs_feed_note').includes('دوائر المحركات') && text('cs_feed_note').includes('مضخة 1'), true);
+setv('cs_len', 1); csr = w.calcCableSizing();
+check('motor send: required ampacity 42.5 A', csr.Ireq, 42.5, 1e-9);
+check('motor send: same conductor as the motor-circuit calculator (8 AWG)', [csr.chosen.s, mcr.motors[0].cond.s], ['8', '8']);
+setv('cs_term', 'auto'); csr = w.calcCableSizing();
+check('automatic terminals (60 C up to 100 A) would need 6 AWG: the override matters', csr.chosen.s, '6');
+// feeder of two motors
+w.renderCalc('motorcircuit');
+const rows2 = doc.querySelectorAll('#mc-rows .mc-row');                    // the two default motors
+rows2[0].querySelector('.mc-hp').value = '25'; rows2[1].querySelector('.mc-hp').value = '5';
+const mcf = w.calcMotorCircuit();
+w.mcSend('feeder');
+check('feeder send: 125 % x 34 A (25 hp) + 7.6 A (5 hp) = 50.1 A', +doc.getElementById('cs_load').value, 50.1, 1e-9);
+check('feeder send: no extra 125 % (already included)', +doc.getElementById('cs_cont').value, 0);
+setv('cs_len', 1); csr = w.calcCableSizing();
+check('feeder send: same conductor as the motor-circuit feeder (6 AWG)', [csr.chosen.s, mcf.feeder.cond.s], ['6', '6']);
+// above 600 V is not sent
+w.renderCalc('motorcircuit');
+setv('mc_volt', 2300); doc.querySelector('#mc-rows .mc-hp').value = '200';
+const beforeM = JSON.stringify(w.eval('ldLoadFeed()'));
+w.mcSend(0);
+check('2300 V motors are not sent to cable sizing', JSON.stringify(w.eval('ldLoadFeed()')), beforeM);
+// transformer
+w.renderCalc('transformer');
+setv('tr_kva', 630); setv('tr_v1', 11000); setv('tr_v2', 400);
+const trr = w.calcTransformer();
+w.trSend('sec');
+check('transformer send: secondary current (A)', +doc.getElementById('cs_load').value, +trr.I2.toFixed(2), 1e-9);
+check('transformer send: current mode, 400 V, three-phase, 100 % continuous', [doc.getElementById('cs_mode').value, +doc.getElementById('cs_volt').value, doc.getElementById('cs_phase').value, +doc.getElementById('cs_cont').value], ['amp', 400, '3', 100]);
+check('transformer send: the banner names the transformer', text('cs_feed_note').includes('المحولات'), true);
+csr = w.calcCableSizing();
+check('transformer send: design current = rated secondary current', csr.Ib, trr.I2, 0.01);
+w.renderCalc('transformer');
+const beforeT = JSON.stringify(w.eval('ldLoadFeed()'));
+w.trSend('pri');
+check('11 kV primary is not sent (above 1000 V)', JSON.stringify(w.eval('ldLoadFeed()')), beforeT);
+setv('tr_kva', 75); setv('tr_v1', 480); setv('tr_v2', 208);
+const tr2 = w.calcTransformer();
+w.trSend('pri');
+check('480 V primary of a 75 kVA transformer: 90.2 A at 480 V', [+doc.getElementById('cs_load').value, +doc.getElementById('cs_volt').value], [+tr2.I1.toFixed(2), 480]);
+w.renderCalc('cablesizing');
+check('reopening cable sizing without a send keeps its defaults (term automatic)', [+doc.getElementById('cs_load').value, doc.getElementById('cs_term').value], [55, 'auto']);
+
 // ---------- screens ----------
 w.showCategory('electrical');
 const cards = doc.getElementById('electrical-category').textContent;
