@@ -475,7 +475,7 @@ check('reopening cable sizing without a send keeps its defaults (term automatic)
 w.showCategory('electrical');
 const cards = doc.getElementById('electrical-category').textContent;
 check('electrical screen lists the new calculators', ['دوائر المحركات', 'حساب الأحمال', 'موصلات التأريض', 'ممانعة حلقة العطل', 'المحولات', 'تحسين معامل القدرة', 'ملء المجاري'].every(s => cards.includes(s)), true);
-check('electrical screen has 9 calculator cards', doc.querySelectorAll('#electrical-category .calc-card').length, 9);
+check('electrical screen has 14 calculator cards (9 + the 5 of part 3)', doc.querySelectorAll('#electrical-category .calc-card').length, 14);
 
 check('no page errors', errors.length, 0);
 if (errors.length) console.log(errors.slice(0, 3));

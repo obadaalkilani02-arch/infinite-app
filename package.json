@@ -4,7 +4,7 @@
   "description": "+Infinite engineering calculators",
   "main": "platform/electron/main.js",
   "scripts": {
-    "test": "node tools/check-syntax.js && node tests/regress.js && node tests/golden.js && node tests/fire.js && node tests/hvac.js && node tests/plumbing.js && node tests/localcodes.js && node tests/electrical.js && node tests/electrical2.js && node tests/heating.js && node tests/heatingnet.js && node tests/heatingmore.js && node tests/quotations.js && node tests/lighting.js && node tests/pwa.js && node --max-old-space-size=4096 tests/i18n.js",
+    "test": "node tools/check-syntax.js && node tests/regress.js && node tests/golden.js && node tests/fire.js && node tests/hvac.js && node tests/plumbing.js && node tests/localcodes.js && node tests/electrical.js && node tests/electrical2.js && node tests/electrical3.js && node tests/heating.js && node tests/heatingnet.js && node tests/heatingmore.js && node tests/quotations.js && node tests/lighting.js && node tests/pwa.js && node --max-old-space-size=4096 tests/i18n.js",
     "build:icons": "node tools/make-icons.js",
     "build:web": "node tools/build-web.js",
     "build:win": "node tools/build-web.js && electron-builder --win nsis --x64"
