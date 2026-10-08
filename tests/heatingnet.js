@@ -142,6 +142,60 @@ sel.value = '1'; sel.dispatchEvent(new w.Event('change'));
 check('choosing a room fills the area', +doc.getElementById('fh_area').value, 14);
 check('choosing a room fills the load', +doc.getElementById('fh_q').value, Math.round(hl.rooms[1].q * (1 + hl.safety)));
 
+// ---------- link: heating load -> heating pipes and pump ----------
+function twoRooms(n1, a1, n2, a2) {
+  w.renderCalc('heatingload');
+  setv('hl_to', 0); setv('hl_safety', 15);
+  const first = doc.querySelectorAll('#hl-rooms .hl-room')[0];
+  first.querySelector('.hl-name').value = n1; first.querySelector('.hl-area').value = String(a1); first.querySelector('.hl-ti').value = '24';
+  w.addHlRoom();
+  const second = doc.querySelectorAll('#hl-rooms .hl-room')[1];
+  second.querySelector('.hl-name').value = n2; second.querySelector('.hl-area').value = String(a2); second.querySelector('.hl-ti').value = '20';
+}
+twoRooms('Salon', 30, 'Bedroom', 14);
+const hl2 = w.calcHeatingLoad();
+w.hlSendRooms('heatingpipes');
+let prow = doc.querySelectorAll('#hp-tbody tr');
+check('pipes: main + critical radiator connection = 2 rows', prow.length, 2);
+check('pipes: main carries the whole-building heating load (kW)', +prow[0].querySelector('.hp-kw').value, +(hl2.QH / 1000).toFixed(2), 0.0001);
+check('pipes: the pump serves the same load', +doc.getElementById('hp_pumpkw').value, +(hl2.QH / 1000).toFixed(2), 0.0001);
+check('pipes: connection row is the biggest room', prow[1].querySelector('.hp-name').value.endsWith('Salon') && prow[1].hasAttribute('data-conn'), true);
+check('pipes: connection row load = room load with safety (kW)', +prow[1].querySelector('.hp-kw').value, +(Math.round(hl2.rooms[0].q * (1 + hl2.safety)) / 1000).toFixed(2), 0.0001);
+check('pipes: room picker lists both rooms', doc.getElementById('hp_room').options.length, 2);
+check('pipes: sized on arrival (diameter column filled)', prow[0].querySelector('.hp-dn').textContent !== '—', true);
+const pump1 = w.calcHeatingPipes();
+check('pipes: pump flow follows the imported load', pump1.QPls, hl2.QH / 1000 / (4.19 * 20) / w.waterRho(70) * 1000, 0.001);
+const pk = doc.getElementById('hp_room'); pk.value = '1'; pk.dispatchEvent(new w.Event('change'));
+prow = doc.querySelectorAll('#hp-tbody tr');
+check('pipes: picking another room changes the connection row, not the main', prow.length === 2 && prow[1].querySelector('.hp-name').value.endsWith('Bedroom') && +prow[0].querySelector('.hp-kw').value === +(hl2.QH / 1000).toFixed(2), true);
+check('pipes: connection load follows the picked room', +prow[1].querySelector('.hp-kw').value, +(Math.round(hl2.rooms[1].q * (1 + hl2.safety)) / 1000).toFixed(2), 0.0001);
+w.renderCalc('heatingpipes');
+check('pipes: reopening without a new send shows the default 3 rows', doc.querySelectorAll('#hp-tbody tr').length, 3);
+check('pipes: ... but offers the stored load', /hpImportRooms/.test(doc.body.innerHTML), true);
+doc.querySelector('button[onclick="hpImportRooms()"]').click();
+check('pipes: the import button restores main + connection', doc.querySelectorAll('#hp-tbody tr').length, 2);
+// what was sent to one calculator is not auto-imported by another
+twoRooms('Salon', 30, 'Bedroom', 14);
+w.hlSendRooms('floorheating');
+w.renderCalc('radiators');
+check('floorheating send does not auto-fill radiators', doc.querySelectorAll('#rd-tbody tr').length, 3);
+w.renderCalc('heatingpipes');
+check('floorheating send does not auto-fill pipes', doc.querySelectorAll('#hp-tbody tr').length, 3);
+// a quote in a room name must not break the row
+twoRooms('5" Hall', 30, 'Bedroom', 14);
+w.hlSendRooms('radiators');
+check('room name with a quote survives into the radiator row', doc.querySelector('#rd-tbody .rd-name').value, '5" Hall');
+twoRooms('5" Hall', 30, 'Bedroom', 14);
+w.hlSendRooms('heatingpipes');
+check('room name with a quote survives into the pipes row', doc.querySelector('#hp-tbody tr[data-conn] .hp-name').value, 'وصلة المشع — 5" Hall');
+// no area entered: nothing is sent and the stored rooms are kept
+w.renderCalc('heatingload');
+doc.querySelectorAll('#hl-rooms .hl-room')[0].querySelector('.hl-area').value = '0';
+doc.querySelectorAll('#hl-rooms .hl-ea').forEach(e => { e.value = '0'; });
+const before = JSON.stringify(w.eval('hlLoadSnapshot()'));
+w.hlSendRooms('heatingpipes');
+check('sending rooms with no area keeps the stored rooms', JSON.stringify(w.eval('hlLoadSnapshot()')), before);
+
 check('no page errors', errors.length, 0);
 if (errors.length) console.log(errors.slice(0, 3));
 console.log(fail ? `${fail} heating-network check(s) FAILED` : 'all heating-network checks passed');

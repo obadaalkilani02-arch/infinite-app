@@ -1,0 +1,17 @@
+{
+"إرسال إلى مواسير التدفئة والمضخة":"Send to heating pipes and pump",
+"استُوردت من حاسبة":"Imported from the calculator",
+"الحمل الكلي مع عامل الأمان":"total load with the safety factor",
+"للمضخة والرئيسي، ووصلة أكبر غرفة":"for the pump and the main, and the connection of the biggest room",
+"كمشع حرج":"as the critical radiator",
+"غرفة، حمل كلي":"rooms, total load",
+"تحديث الحمل":"refresh the load",
+"الحمل بدون الماء الساخن المنزلي":"The load excludes domestic hot water",
+"أضف قطع الفروع بين الرئيسي والمشع الحرج من المخططات":"Add the branch sections between the main and the critical radiator from the drawings",
+"حمل الفرع":"branch load",
+"مجموع غرفه":"sum of its rooms",
+"لتُملأ حمولات الرئيسي والمضخة ومشع الدارة الحرجة":"to fill the loads of the main, the pump and the critical-circuit radiator",
+"غرفة المشع الحرج":"Room of the critical radiator",
+"الأبعد":"the farthest",
+"يحدّد حمل وصلة المشع في الجدول أدناه":"Sets the load of the radiator connection in the table below"
+}
