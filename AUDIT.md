@@ -111,3 +111,7 @@ Tables 709.1, 709.2, 710.1(1), 710.1(2), 712.4.2, 906.1, 906.5.1, 604.3, 604.4, 
 - Syrian Arab Code (HVAC) §3/10/1: Q1 = ΣU·A·Δt, Q2 = 0.342·V·Δt with air changes of Table 15/3, +15 % (10–20 %), hot water Q3 = 1.1641·V·Δt, boiler Q_b = Q_T·(1 + a + b) with a = 0.1, b = 0.2, burner Q_b/(Cv·η) with Cv = 11.6 kW/kg, annual fuel 0.75·Q_H·N·F·C·24/(Cv·η) (N = 150 d, F = 0.33–1, C = 0.6). Indoor winter temperatures of Table 2/3 and city design temperatures of Table 1/3 (Syria mode).
 - The extracted formula text of the expansion-tank volume (V = 0.025·Q ÷ Δt?) is ambiguous, so it is not used (the thermal expansion calculator already covers it).
 - Default U values are the office assemblies of the U-value calculator and the SBC glazing limit; the temperature-difference factor for unheated neighbours is the designer's decision (not in the code).
+### Quotations — BOQ and printable offer (`quotations` section)
+Sections → items (description, unit, quantity, unit price), totals with discount and VAT, saved in the browser, JSON and CSV export/import, printable bilingual offer. Optional build-up pricing follows the office sheets (Valves / Equip.: after-discount cost × accessories 15 %, transportation 4 %, installation 10 %, engineering, overhead — percentages are editable defaults, not code values). No code basis applies; no company branding of third-party offers is reproduced.
+### Mobile
+- The project-information bar was clipped at 200 px (hidden fields on phones): now 640 px and two columns below 420 px. Forms are single-column below 420 px.
