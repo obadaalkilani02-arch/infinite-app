@@ -301,6 +301,33 @@ check('the recirculation results quote Table 9 and the return line', ['جدول 
 w = boot('intl'); w.renderCalc('heater');
 check('other codes: no Jordanian storage inputs', [w.document.getElementById('h_persons'), w.calcHeater().jo], [null, undefined]);
 
+// ---------- Jordan: water storage (Table 1), rain (7/2, Tables 10-13), grease (4/5, Table 9), loading units (Tables 4-6) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('waterconsumption');
+check('Jordan storage: Table 1 has 11 lines (1000 L per dwelling, 135 per hotel bed, 90 hostel, 7 per meal, 600 hospital, 90 / 30 boarding / day school, 10 cinema, 3 per m2 or 30 per person offices, 10 mosque)', w.eval('JO_STORAGE.map(r => r[2])'), [1000, 135, 90, 7, 600, 90, 30, 10, 3, 30, 10]);
+check('... one input per line', [...Array(11).keys()].every(i => !!doc.getElementById('wj_q' + i)), true);
+let wc = w.calcWaterConsumption();
+check('default MEWA rows: 59.2 m3 per day; nothing entered in Table 1 -> the daily consumption governs and the tanks (3 + 9 days) hold it', [+wc.totalM3.toFixed(1), wc.jo.tableM3, +wc.jo.req.toFixed(1), wc.jo.ok], [59.2, 0, 59.2, true]);
+setv(w, 'wj_q0', 100); wc = w.calcWaterConsumption();
+check('100 dwelling units = 100 m3 per day (1 m3 each): the Table 1 value governs', [wc.jo.tableM3, wc.jo.req, wc.jo.ok], [100, 100, true]);
+setv(w, 'wj_q0', 1000); setv(w, 'wj_q8', 5000); setv(w, 'wj_q3', 200); wc = w.calcWaterConsumption();
+check('1000 units + 5000 m2 of offices (3 L) + 200 meals (7 L) = 1000 + 15 + 1.4 m3 exceeds the 710.4 m3 stored', [+wc.jo.tableM3.toFixed(1), wc.jo.ok], [1016.4, false]);
+w.calcResult('waterconsumption');
+bodyText = doc.getElementById('calc-body').textContent;
+check('the results quote 3/2/2, the tank clauses (100 mm float, 3 m / 15 m / 2 m distances)', ['3/2/2', 'جدول 1', '100 mm', '15 m', '2 m', '❌'].every(s => bodyText.includes(s)), true);
+w = boot('intl'); w.renderCalc('waterconsumption');
+check('other codes: no Jordanian storage inputs', [w.document.getElementById('wj_q0'), w.calcWaterConsumption().jo], [null, undefined]);
+w = boot('jo'); doc = w.document; w.renderCalc('raindrain'); w.calcResult('raindrain');
+bodyText = doc.getElementById('calc-body').textContent;
+check('Jordan rain: default 1.97 in/hr (50 mm/hr) and the note gives 50 / 75 mm/hr, 1 % / 0.5 %, Table 10 (100 / 150 / 200 m2), Tables 11 and 12 gutters, Table 13 outlets and the 6 m2 exemption', [+doc.getElementById('rd_i').value, ['50 mm/ساعة', '75 mm/ساعة', '0.5%', '150 m²', '200 m²', '170', '110', '75–75', '6 m²'].every(s => bodyText.includes(s) || bodyText.includes(s.replace('–', ' و')))], [1.97, true]);
+w = boot('intl'); w.renderCalc('raindrain');
+check('other codes keep 4 in/hr', +w.document.getElementById('rd_i').value, 4);
+w = boot('jo'); doc = w.document; w.renderCalc('grease'); w.calcResult('grease');
+bodyText = doc.getElementById('calc-body').textContent;
+check('Jordan grease: 1.3 - 3.5 L/s per unit, Table 9 (1.26 / 1.58 / 2.21 / 3.15 L/s for 1 - 4 fixtures), at most 4 fixtures, 50 % when the inlet is 1.2 m lower, 50 mm seal', ['1.3 لتر', '3.5 لتر', '1.26', '1.58', '2.21', '3.15', '1.2 m', '50%', '50 mm'].every(s => bodyText.includes(s)), true);
+w.renderCalc('fixtureunits'); w.calcResult('fixtureunits');
+bodyText = doc.getElementById('calc-body').textContent;
+check('Jordan fixture units note adds the loading units (Tables 4 and 5), the equivalent lengths (Table 6) and the pressure-loss relation', ['جدول 4 الوحدات لكل قطعة', 'مرحاض بصمام دفاق 6 / 10', 'جدول 5', 'كوع 90° قياسي 0.6', 'محبس كروي 4.6', '9.8 × 10³'].every(s => bodyText.includes(s)), true);
+
 // ---------- lift selection (Jordanian lifts code, Tables 2, 3, 4, 16, 17) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('liftplan');
 let lp = w.calcLiftPlan();
