@@ -114,6 +114,50 @@ setv(w, 'cs_len', 250);
 cs = w.eval('calcCableSizing()');
 check('... 250 m: limit stays 2.5 %', cs.vdLimEff, 2.5, 1e-9);
 
+// ---------- UAE: maximum demand, DBC G.4.16 and Tables G.15 / G.16 ----------
+w = boot('ae');
+doc = w.document;
+w.renderCalc('maxdemand');
+check('with the UAE code the Dubai method is selected and its block shown', [doc.getElementById('md_mode').value, doc.getElementById('md-dbc').style.display, doc.getElementById('md-iet').style.display], ['dbc', '', 'none']);
+let md = w.calcMaxDemand();
+check('default loads: 40 lighting points x 100 W, 30 x 13 A sockets x 200 W, 10 twin sockets = 20 points x 200 W, 2 x 3 kW, 2 x 25 kW AC, 10 kW future = 80 kW TCL', [md.mode, md.tcl], ['dbc', 80], 1e-9);
+check('... demand factor 1: 80 kW needs the 160 A feeder (80 kW, Table G.15)', [md.md, md.f15.kind, md.f15.rating, md.f15.limit], [80, 'feeder', 160, 80], 1e-9);
+check('... current at 400 V and cos phi 0.95: 121.6 A', md.I, 80000 / (Math.sqrt(3) * 400 * 0.95), 1e-9);
+check('... lighting 4000 W -> 2 circuits of 2000 W; 50 socket points -> 10 radial (5 each) or 5 ring (10 each)', [md.lightCircuits, md.sockPts, md.radial, md.ring], [2, 50, 10, 5]);
+check('... 50 kW of air conditioning: the 1000 kVA transformer (650 kW, Table G.16)', md.t16, [1000, 650]);
+setv(w, 'md_ddf', 0.7); md = w.calcMaxDemand();
+check('demand factor 0.7: 56 kW -> 125 A feeder (60 kW)', [md.md, md.f15.rating], [56, 125], 1e-9);
+setv(w, 'md_ddf', 1);
+function dbRows(rows) { doc.getElementById('db-rows').innerHTML = rows.map(r => w.dbRowHTML(r[0], r[1], r[2], r[3])).join(''); }
+dbRows([['fluo', 'fluo', 10, 36], ['s15', 'sock15', 4, ''], ['light', 'light', 5, 60], ['twin', 'twin13', 1, 100]]);
+md = w.calcMaxDemand();
+check('fluorescent 10 x 36 W x 1.8 = 648 W, 15 A sockets 4 x 1000 W (commercial), lighting 5 x 60 W, one twin socket 2 x 200 W (a lower entry is raised to 200 W)', md.tcl, (648 + 4000 + 300 + 400) / 1000, 1e-9);
+setv(w, 'md_dprem', 'res'); md = w.calcMaxDemand();
+check('residential: 15 A sockets at 500 W', md.tcl, (648 + 2000 + 300 + 400) / 1000, 1e-9);
+dbRows([['big', 'equip', 1, 120]]); md = w.calcMaxDemand();
+check('a 120 kW unit is above 100 kW (DEWA approval note); 120 kW needs the 300 A feeder (150 kW)', [md.maxUnit, md.f15.rating], [120, 300]);
+dbRows([['huge', 'equip', 1, 1500]]); md = w.calcMaxDemand();
+check('1500 kW exceeds Table G.15: no entry', md.f15, null);
+dbRows([['ac', 'ac', 10, 80]]); md = w.calcMaxDemand();
+check('800 kW of air conditioning: 1500 kVA transformer (950 kW); 1000 kW has no entry', [md.t16, (dbRows([['ac', 'ac', 10, 100]]), w.calcMaxDemand().t16)], [[1500, 950], null]);
+dbRows([['ac', 'ac', 2, 25], ['e', 'equip', 1, 20]]); w.calcResult('maxdemand');
+check('results show G.15, G.16 and G.4.16', ['G.15', 'G.16', 'G.4.16'].every(s => doc.getElementById('md_results').textContent.includes(s)), true);
+w.mdSend();
+check('the maximum demand current goes to the cable-sizing calculator (IEC, 400 V)', [doc.getElementById('cs_std').value, +doc.getElementById('cs_load').value, +doc.getElementById('cs_volt').value], ['iec', +(70000 / (Math.sqrt(3) * 400 * 0.95)).toFixed(2), 400]);
+w = boot('intl'); w.renderCalc('maxdemand');
+check('other codes keep the IET method as the default (the Dubai method stays available)', [w.document.getElementById('md_mode').value, [...w.document.getElementById('md_mode').options].length], ['iet', 3]);
+
+// ---------- Jordan: water supply and sanitary drainage notes ----------
+w = boot('jo');
+doc = w.document;
+w.renderCalc('fixtureunits'); w.calcResult('fixtureunits');
+let bodyText = doc.getElementById('calc-body').textContent;
+check('Jordan, fixture units: the water-supply and drainage tables are quoted (Tables 2, 3, 1, 4, 5, 6, N = sqrt(n-1) + 1)', ['الكودة الأردنية لتزويد المباني بالمياه', 'الكودة الأردنية للتصريف الصحي', 'جدول 4', '8400', '1 : 60', '√(n − 1) + 1'].every(s => bodyText.includes(s)), true);
+w.renderCalc('booster'); w.calcResult('booster');
+check('Jordan, booster: minimum 0.20 bar and maximum 1.0 bar at the fixtures', ['0.20 bar', '1.0 bar'].every(s => doc.getElementById('calc-body').textContent.includes(s)), true);
+w = boot('sa'); w.renderCalc('fixtureunits'); w.calcResult('fixtureunits');
+check('Saudi notes are unchanged (SBC) and carry no Jordanian text', [w.document.getElementById('calc-body').textContent.includes('SBC 701-18'), w.document.getElementById('calc-body').textContent.includes('الكودة الأردنية')], [true, false]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
