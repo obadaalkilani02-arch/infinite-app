@@ -369,6 +369,46 @@ check('the results name Tables 2, 3, 16 and 17', ['الجدول 2', 'جدول 3'
 w = boot('intl'); w.renderCalc('liftplan');
 check('the calculator is available whatever the national code (seventy-one calculators)', [!!w.document.getElementById('lp_results'), w.document.querySelectorAll('.calc-card').length >= 71], [true, true]);
 
+// ---------- Jordanian fire protection code: means of egress (chapter 5, Tables 1 and 5, chapters 8 - 15) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('egress');
+check('exit units (5/2/2): a fraction below 0.5 is dropped, from 0.5 up counts half: 0.55 -> 1, 0.6 -> 1, 0.7 -> 1, 0.9 -> 1.5, 1.0 -> 1.5, 1.1 -> 2, 1.65 -> 3, 2.0 -> 3.5', [0.55, 0.6, 0.7, 0.9, 1.0, 1.1, 1.65, 2.0].map(x => w.fpUnits(x)), [1, 1, 1, 1.5, 1.5, 2, 3, 3.5]);
+check('assembly categories: 49 none, 50 and 300 D, 301 and 600 C, 601 and 1000 B, 1001 A', [49, 50, 300, 301, 600, 601, 1000, 1001].map(x => w.fpAssemblyCat(x)), [null, 'D', 'D', 'C', 'C', 'B', 'B', 'A']);
+let eg = w.calcEgress();
+check('defaults: dense assembly 600 m2 at 0.6 = 1000 persons, category B, 3 exits of at least 2 units', [eg.load, eg.cat, eg.minExits, eg.minUnitsEach], [1000, 'B', 3, 2]);
+check('... two 1.1 m doors (2 units each) and two 1.1 m stairs: 4 x 100 + 4 x 75 = 700 persons: not enough for 1000; 4 exits and 2 units each pass', [eg.capacity, eg.capOk, eg.exitsOk, eg.unitsEachOk], [700, false, true, true]);
+check('... required width: 1000 / 100 x 0.55 = 5.5 m by doors, 1000 / 75 x 0.55 = 7.33 m by stairs', [+eg.reqWidthDoor.toFixed(2), +eg.reqWidthStair.toFixed(2)], [5.5, 7.33]);
+check('Table 5 for assembly: 45 m and a 6 m dead end without sprinklers, 60 m with', [eg.t5.path, eg.t5.dead, (setv(w, 'eg_spk', 'yes'), w.calcEgress().t5.path)], [45, 6, 60]);
+setv(w, 'eg_spk', 'no'); setv(w, 'eg_tr', 50);
+check('a 50 m path fails the 45 m limit; the 1.2 m path width passes 0.7 m', [w.calcEgress().travelOk, w.calcEgress().pwOk], [false, true]);
+setv(w, 'eg_tr', 30);
+const egSet = (occ, area, extra) => { setv(w, 'eg_occ', occ); w.egOcc(); setv(w, 'eg_area', area); Object.keys(extra || {}).forEach(id => setv(w, id, extra[id])); return w.calcEgress(); };
+eg = egSet('as_dense', 3000, {});
+check('assembly category A (3000 / 0.6 = 5000): four exits', [eg.load, eg.cat, eg.minExits], [5000, 'A', 4]);
+eg = egSet('hc_sleep', 800, {});
+check('health care sleeping 8 m2 gross: 100 persons, 30 / 22 per unit: 4 x 30 + 4 x 22 = 208', [eg.load, eg.capDoor, eg.capStair, eg.capacity], [100, 30, 22, 208]);
+eg = egSet('res_apt', 1800, {});
+check('apartments 18 m2: 100 persons, 100 / 75 per unit; Table 5 apartments 35 / 50 m, dead end not transcribed', [eg.load, eg.capDoor, eg.capStair, eg.t5.path, eg.t5.dead], [100, 100, 75, 35, null]);
+eg = egSet('res_hotel', 1800, {eg_spk: 'yes'});
+check('hotels with sprinklers: 45 m and a 12 m dead end', [eg.t5.path, eg.t5.dead], [45, 12]);
+eg = egSet('bus', 900, {eg_spk: 'no', eg_nd: 1, eg_ns: 0, eg_tr: 30});
+check('offices 9 m2: 900 m2 = 100 persons, 60 / 100 m path; one exit is enough for a room of up to 100 persons with a path of 30 m, not with 31 m', [eg.load, eg.t5.path, eg.exitsOk, (setv(w, 'eg_tr', 31), w.calcEgress().exitsOk)], [100, 60, true, false]);
+eg = egSet('ind', 225, {eg_nd: 1, eg_ns: 0, eg_tr: 15});
+check('industrial 225 m2 = 25 persons: a single exit with a 15 m path is allowed, a 16 m path is not', [eg.load, eg.exitsOk, (setv(w, 'eg_tr', 16), w.calcEgress().exitsOk)], [25, true, false]);
+eg = egSet('sto_ord', 225, {eg_nd: 1, eg_ns: 0, eg_tr: 30});
+check('storage 225 m2 at 25 m2 per person = 9 persons, below 900 m2: a single exit is allowed; ordinary hazard 60 m (120 m sprinklered)', [eg.load, eg.exitsOk, eg.t5.path, (setv(w, 'eg_spk', 'yes'), w.calcEgress().t5.path)], [9, true, 60, 120]);
+eg = egSet('sto_low', 1000, {eg_spk: 'no', eg_nd: 2, eg_ns: 0});
+check('low-hazard storage has no Table 5 limit', [eg.t5, eg.t5none], [null, true]);
+eg = egSet('park_open', 0, {eg_spaces: 100, eg_park: '2', eg_spk: 'no'});
+check('an open car park of 100 public spaces: 2 persons per space = 200, 60 m / 90 m, dead end 15 m', [eg.load, eg.t5.path, eg.t5.dead, (setv(w, 'eg_spk', 'yes'), w.calcEgress().t5.path)], [200, 60, 15, 90]);
+eg = egSet('ed_class', 150, {eg_spk: 'no'});
+check('classrooms 1.5 m2 net: 150 m2 = 100 persons; Table 5 education 45 m, 6 m dead end', [eg.load, eg.t5.path, eg.t5.dead], [100, 45, 6]);
+setv(w, 'eg_load', 250); check('a known load overrides the area', w.calcEgress().load, 250);
+setv(w, 'eg_load', 0); w.calcResult('egress');
+bodyText = doc.getElementById('eg_results').textContent;
+check('the results show the load, the 0.55 m unit, Table 5 and the width of the escape path', ['حمل الإشغال', '0.55', 'الجدول 5', '0.7 m'].every(s => bodyText.includes(s)), true);
+w = boot('intl'); w.renderCalc('egress');
+check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 6]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
