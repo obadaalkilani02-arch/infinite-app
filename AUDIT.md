@@ -72,7 +72,7 @@ Header selector: International (default) / Saudi / Egypt / Syria, persisted (`si
 | Syria | Syrian Arab HVAC Code Table 1/3 (36 cities), Table 2/3 (indoor), Table 3/3 (ventilation) | cooling load (detailed): city → outdoor DBT + humidity ratio; indoor preset; ventilation rates | city RH + altitude → W via psychrometrics |
 | Egypt | Egyptian HVAC Code Tables 2-2 (indoor), 2-8 (ventilation) | cooling load indoor preset; ventilation rates | Egyptian code has only monthly climate averages (no design city values); Table 2-8 = Syrian 3/3 |
 | Saudi | SBC 501-2024 Table 403.3.1.1 | ventilation rates (≈55 occupancies, L/s) | no city table in the available text; SBC 701/801/601 not readable (Arabic PDFs are scans, English ones password-protected) |
-Not available: UAE, Jordan (no code in library). Egyptian fire / plumbing PDFs are scanned images (no text layer).
+UAE (Dubai Building Code 2021) and Jordan were added on 2026-10-08, see "National codes, part 2" below. Egyptian fire / plumbing PDFs are scanned images (no text layer).
 ### Saudi (SBC) — now readable
 | Topic | SBC clause | Result |
 |---|---|---|
@@ -170,3 +170,22 @@ Sections → items (description, unit, quantity, unit price), totals with discou
 - **Calculation:** phase totals (fixed rows, balanced three-phase rows added to all three phases, "automatic" rows placed largest-first on the lightest phase and then improved by moves/swaps that lower the variance), average, unbalance = largest deviation from the average / average, neutral current = sqrt(Ia²+Ib²+Ic²-IaIb-IbIc-IcIa) (linear loads, one power factor, 120° phasors).
 - **Verified against:** Atkinson Table 12.2 (155.2 / 153.2 / 138.8 A -> unbalance 6.89 %, neutral 15.50 A); automatic distribution of the same circuits is not worse than the book; equal loads, single-phase and three-phase edge cases (tests/electrical6.js).
 - 🔴 **No code value:** neither NEC nor SBC 401 gives a percentage limit for phase unbalance. The "target" field (default 10 %) is a design input, labelled as such in the UI. Harmonic neutral current is not included (see `neutral`).
+
+
+## National codes, part 2: UAE (Dubai Building Code 2021) and Jordan
+
+Selector now has six entries (international, Saudi, Egypt, Syria, UAE, Jordan). Texts extracted to `standars_text\UAE-*.txt` and `JO-*.txt`; Jordanian tables whose numbers are images were read from rendered pages.
+
+| Code | Source | Used in | Notes |
+|---|---|---|---|
+| UAE | DBC 2021 H.4.6 Tables H.1 / H.2 | cooling load (detailed): outdoor 46 °C DB / 29 °C WB -> 18.35 g/kg (psychrometric equation, sea level); indoor 24 °C / 50 % | safety factors <= 10 % sensible, <= 5 % latent (H.4.6.3) and the 34/32 °C treated-outdoor-air condition (H.4.6.4) are shown in the note only |
+| UAE | DBC E.5.2.3 Tables E.4 - E.7 | U-value compliance list: roof 0.3, wall / exposed floor 0.57, glazing 2.1 / 1.9 / 1.7, shopfront 1.9, skylight 1.9 W/m²K | shading coefficient and light transmittance are not checked |
+| UAE | DBC G.4.7.3, G.4.7.2, Table G.3 | cable sizing: IEC reference by default, voltage drop 4 % (no length allowance), ambient 48 °C; note quotes ground 40 °C, soil 2.0 K·m/W at 0.9 m, minimum 2.5 mm² lighting / 4 mm² sockets | current ratings still come from the SBC 401 / IEC tables (DBC refers to BS standards, tables not digitised) |
+| UAE | DBC H.4.10.2 | ventilation: ASHRAE 62.1 / 62.2 / 170 (no local list) | |
+| Jordan | Thermal Insulation Code, Appendix A (Tables A1 - A6) | cooling load: 4 climate zones, summer design 31 / 38 / 32 / 36 °C, design RH range 49-60 / 36-42 / 36-42 / 30-34 % (the maximum is used for the humidity ratio, sea-level pressure); heating load: winter design 6 / 10 / 5 / 3 °C | 🔴 selecting the maximum summer RH is a choice (the code gives a range); zone altitude is not corrected |
+| Jordan | Thermal Insulation Code Tables 1 - 3 | U-value compliance list: roof / exposed floor 1.0 (cat. 1) / 2.7 (cat. 2); wall 1.8 / 2.7; doors 3.5 / 7.0 / 5.8; windows by frame, glazing and exposure (2.3 - 6.7) | category 1 = 100 m² or more or any centrally heated / air-conditioned building |
+| Jordan | Mechanical Ventilation Code Table 1 | cooling load indoor presets (summer columns) | 🔴 the table is a merged-cell layout read from the page image: the RH given on the first row of a block (45-50 % for houses ... offices) is applied to the whole block |
+| Jordan | Mechanical Ventilation Code Table 2 | ventilation list: ten rows that give one value (factories 0.8, offices 1.3, hotel bedrooms 1.7, corridors 1.3, home kitchens 10, restaurant kitchens 20, toilets 10 L/s per m²; laboratories 8 and luxury homes 12 L/s per person) | the code takes the larger of the per-person and per-m² values, the app adds them, so only single-value rows are offered; the store row (8/5 per person and 3.0 per m²) is left out |
+| Jordan | Electrical Installations Code 4/5/6 (page 97) | cable sizing: IEC reference by default, voltage drop 2.5 % at full current | the Jordanian current-rating tables (16 - 61) are not digitised; IEC tables are used and the note says so |
+
+Not used yet (extracted, available): Dubai G.4.10 load balancing, G.4.16 maximum demand (Tables G.11 - G.16), G.4.19 earthing, G.4.20 power factor, H.5 water, H.6 drainage, H.7 lighting, H.9 fire; Jordanian central heating, drainage, water supply, interior lighting, lifts, fire protection, fire alarm, lightning, earthing codes.

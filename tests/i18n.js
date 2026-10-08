@@ -125,7 +125,7 @@ const arabicLeft = w => {
   }
   check('English mode: national-code options fully translated', codeLeft.size, 0);
   if (codeLeft.size) console.log('   untranslated:', [...codeLeft].slice(0, 20));
-  check('header code selector translated', [...w.document.querySelectorAll('#codeSel option')].map(o => o.textContent).join(','), 'Intl,Saudi,Egypt,Syria');
+  check('header code selector translated', [...w.document.querySelectorAll('#codeSel option')].map(o => o.textContent).join(','), 'Intl,Saudi,Egypt,Syria,UAE,Jordan');
 
   // dynamic content: recalculation after an input change is translated too
   w.renderCalc('stairpress'); await tick();
