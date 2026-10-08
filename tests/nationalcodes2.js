@@ -201,6 +201,44 @@ check('Saudi sprinkler results now show the SBC 801 note too (914.3.2)', w.docum
 w = boot('intl'); w.renderCalc('sprinkler'); w.calcResult('sprinkler');
 check('international: no code note under the sprinkler results', w.document.getElementById('calc-body').textContent.includes('الكودة الأردنية'), false);
 
+// ---------- Jordan: lightning risk index, central heating, fire-code occupant loads ----------
+w = boot('jo'); doc = w.document; w.renderCalc('lightning'); w.calcResult('lightning');
+let jr = w.calcJoRisk();
+check('Jordan lightning, defaults: office 7 + reinforced concrete 2 + ordinary contents 2 + sparse area 5 + flat 2 + 20 m (8) + 10 days (11) = 37 < 40: not necessary', [jr.A, jr.B, jr.C, jr.D, jr.E, jr.F, jr.G, jr.sum, jr.required], [7, 2, 2, 5, 2, 8, 11, 37, false]);
+doc.getElementById('jr_a').value = '5'; jr = w.calcJoRisk();
+check('a school or hospital (A = 10): 40, protection required', [jr.A, jr.sum, jr.required], [10, 40, true]);
+doc.getElementById('jr_a').value = '0'; doc.getElementById('jr_chim').value = 'yes'; jr = w.calcJoRisk();
+check('a brick or concrete chimney 4.5 m or more above the roof is protected whatever the sum', [jr.sum < 40, jr.required, jr.chimney], [true, true, true]);
+doc.getElementById('jr_chim').value = 'no';
+const jf = h => { doc.getElementById('jr_h').value = String(h); const r = w.calcJoRisk(); return [r.F, r.fOver]; };
+check('Table 6 heights: 9 m -> 2, 10 -> 4, 15 -> 4, 18 -> 5, 24 -> 8, 30 -> 11, 38 -> 16, 46 -> 22, 53 -> 30, 54 m -> 30 with a warning', [9, 10, 15, 18, 24, 30, 38, 46, 53, 54].map(jf), [[2, false], [4, false], [4, false], [5, false], [8, false], [11, false], [16, false], [22, false], [30, false], [30, true]]);
+const jg = d => { doc.getElementById('jr_days').value = String(d); const r = w.calcJoRisk(); return [r.G, r.gGap]; };
+check('Table 7 days: 3 -> 2, 5 -> 5, 8 -> 11 (band not printed, warning), 10 -> 11, 13 -> 14, 17 -> 17, 20 -> 20, 25 -> 21', [3, 5, 8, 10, 13, 17, 20, 25].map(jg), [[2, false], [5, false], [11, true], [11, false], [14, false], [17, false], [20, false], [21, false]]);
+doc.getElementById('jr_h').value = '20'; doc.getElementById('jr_days').value = '10';
+const dn = (l, wd, h) => { doc.getElementById('lp_bl').value = String(l); doc.getElementById('lp_bw').value = String(wd); doc.getElementById('lp_bh').value = String(h); return w.calcJoRisk().down; };
+check('down conductors, 3/2/3: 30 x 20 m (600 m2, 100 m perimeter) -> min(1 + 2, 4) = 3; 10 x 8 m (80 m2) -> 1; 100 x 60 m -> min(1 + 20, 11) = 11', [dn(30, 20, 20).n, dn(10, 8, 20).n, dn(100, 60, 20).n], [3, 1, 11]);
+check('a building higher than 30 m is flagged for clause 3/3/1', [dn(30, 20, 20).tall, dn(30, 20, 35).tall], [false, true]);
+w.calcResult('lightning');
+check('the results show the sum, the decision and the sizes (3 x 20 mm tape, 10 mm rod, 10 ohm)', ['المجموع', '3 × 20', '10 Ω', '18 م'].every(s => doc.getElementById('jr_results').textContent.includes(s)), true);
+w = boot('intl'); w.renderCalc('lightning'); w.calcResult('lightning');
+check('other codes have no risk-index block', w.document.getElementById('jr_results'), null);
+
+w = boot('jo'); doc = w.document; w.renderCalc('heatingload');
+check('Jordan heating load: ten indoor presets (Table 1) and the height-addition note', [doc.querySelector('#hl-rooms .hl-room select').options.length - 1, doc.getElementById('calc-body').textContent.includes('4.2 م: 2%')], [10, true]);
+const hs = doc.querySelector('#hl-rooms .hl-room select'); hs.value = '19'; hs.dispatchEvent(new w.Event('change', { bubbles: true }));
+check('choosing classrooms (18 - 20 C) sets 19 C', +doc.querySelector('#hl-rooms .hl-ti').value, 19);
+check('Table 2 has 12 heights from 4.2 to 11.0 m: 2 / 3 % at 4.2 m and 24 / 36 % at 11 m', [w.eval('JO_HEIGHT_ADD.length'), w.eval('JO_HEIGHT_ADD[0]'), w.eval('JO_HEIGHT_ADD[11]')], [12, [4.2, 2, 3], [11.0, 24, 36]]);
+w.renderCalc('heatingpipes');
+check('Jordan heating pipes: 82 / 72 C by default (Table 5) and the Table 7 velocities', [+doc.getElementById('hp_ts').value, +doc.getElementById('hp_tr').value, w.eval('Object.keys(JO_PIPE_V).length')], [82, 72, 11]);
+const hp = w.calcHeatingPipes();
+check('every selected pipe stays within its Table 7 velocity (1.7068 m/s above 150 mm)', hp.rows.filter(r => r.kw > 0 && r.sel).every(r => r.sel.V <= (w.eval('JO_PIPE_V')[r.sel.dn] || 1.7068) + 1e-9), true);
+w.renderCalc('radiators');
+check('Jordan radiators: 82 / 74 C (8 K at the radiator)', [+doc.getElementById('rd_ts').value, +doc.getElementById('rd_tr').value], [82, 74]);
+w = boot('sy'); w.renderCalc('heatingpipes');
+check('Syria keeps 80 / 60 C and the 1.2 m/s rule', [+w.document.getElementById('hp_ts').value, +w.document.getElementById('hp_tr').value], [80, 60]);
+w = boot('jo'); w.renderCalc('ventilation');
+check('Jordan ventilation note quotes the occupant load factors (0.6, 1.5, 18, 100 and 60 persons per unit)', ['0.6', '1.5', '18', '60 للأدراج'].every(s => w.document.getElementById('calc-body').textContent.includes(s)), true);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
