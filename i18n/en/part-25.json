@@ -1,0 +1,19 @@
+{
+"أدخل مساحة غرفة واحدة على الأقل في حاسبة":"Enter the area of at least one room in the calculator",
+"قبل الإرسال":"before sending",
+"إرسال حمل الغرف إلى حاسبة المشعات":"Send the room loads to the radiators calculator",
+"إرسال إلى التدفئة الأرضية":"Send to underfloor heating",
+"لا توجد غرف محسوبة":"No rooms have been calculated",
+"احسب أولًا في":"First calculate in",
+"ثم اضغط":"then press",
+"إرسال الغرف":"Send the rooms",
+"استُوردت":"Imported",
+"الحمل مع عامل الأمان":"Load with the safety factor",
+"آخر حساب في":"Last calculation in",
+"تحديث الغرف":"refresh the rooms",
+"احسب الغرف في":"Calculate the rooms in",
+"لتُملأ هذه القائمة تلقائيًا":"to fill this list automatically",
+"الغرفة من حاسبة":"Room from the calculator",
+"اختر غرفة لتعبئة المساحة والحمل":"Choose a room to fill the area and the load",
+"يملأ المساحة والحمل من الغرفة المختارة":"Fills the area and the load from the chosen room"
+}

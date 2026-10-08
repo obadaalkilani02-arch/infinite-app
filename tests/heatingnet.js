@@ -96,6 +96,52 @@ check('55 C supply exceeds the 50 C limit of section 7/40', fr.tooHot, true);
 setv('fh_area', 12); setv('fh_feed', 3); fr = w.calcFloorHeating();
 check('small room: one circuit', fr.N, 1);
 
+// ---------- link: heating load -> radiators / underfloor ----------
+try { w.localStorage.removeItem('si_heat_rooms'); } catch (e) {}
+w.eval('HEAT_MEM = null');
+w.renderCalc('radiators');
+check('radiators with no calculated rooms: the default 3 rows', doc.querySelectorAll('#rd-tbody tr').length, 3);
+check('radiators with no calculated rooms: a hint to send the rooms first', doc.body.textContent.includes('إرسال حمل الغرف إلى حاسبة المشعات'), true);
+w.renderCalc('heatingload');
+setv('hl_to', 0); setv('hl_safety', 15);
+const roomsEl = doc.querySelectorAll('#hl-rooms .hl-room');
+roomsEl[0].querySelector('.hl-name').value = 'Salon';
+roomsEl[0].querySelector('.hl-ti').value = '24';
+roomsEl[0].querySelector('.hl-area').value = '30';
+w.addHlRoom();
+const room2 = doc.querySelectorAll('#hl-rooms .hl-room')[1];
+room2.querySelector('.hl-name').value = 'Bedroom';
+room2.querySelector('.hl-ti').value = '20';
+room2.querySelector('.hl-area').value = '14';
+const hl = w.calcHeatingLoad();
+w.hlSendRooms('radiators');
+const rows = doc.querySelectorAll('#rd-tbody tr');
+check('sending the rooms fills the radiator table: 2 rows', rows.length, 2);
+check('row 1 keeps the room name', rows[0].querySelector('.rd-name').value, 'Salon');
+check('row 1 load = room load x (1 + safety)', +rows[0].querySelector('.rd-q').value, Math.round(hl.rooms[0].q * (1 + hl.safety)));
+check('row 1 takes the room indoor temperature (24 C)', +rows[0].querySelector('.rd-ti').value, 24);
+check('row 2 takes its own indoor temperature (20 C)', +rows[1].querySelector('.rd-ti').value, 20);
+check('the radiator results use those loads', w.calcRadiators().rows[0].q, Math.round(hl.rooms[0].q * (1 + hl.safety)));
+// imported once: opening the calculator again shows the defaults only if the user has not asked again
+w.renderCalc('radiators');
+check('reopening without a new send does not overwrite with the old rooms', doc.querySelectorAll('#rd-tbody tr').length, 3);
+doc.querySelector('button[onclick="rdImportRooms()"]').click();
+check('the import button brings the rooms back', doc.querySelectorAll('#rd-tbody tr').length, 2);
+// underfloor: choose a room (back on the heating-load screen, where the send button lives)
+w.renderCalc('heatingload');
+setv('hl_to', 0); setv('hl_safety', 15);
+const again = doc.querySelectorAll('#hl-rooms .hl-room');
+again[0].querySelector('.hl-area').value = '30'; again[0].querySelector('.hl-ti').value = '24';
+w.addHlRoom();
+const again2 = doc.querySelectorAll('#hl-rooms .hl-room')[1];
+again2.querySelector('.hl-area').value = '14'; again2.querySelector('.hl-ti').value = '20';
+w.hlSendRooms('floorheating');
+const sel = doc.getElementById('fh_room');
+check('underfloor calculator lists the calculated rooms', sel && sel.options.length, 3);
+sel.value = '1'; sel.dispatchEvent(new w.Event('change'));
+check('choosing a room fills the area', +doc.getElementById('fh_area').value, 14);
+check('choosing a room fills the load', +doc.getElementById('fh_q').value, Math.round(hl.rooms[1].q * (1 + hl.safety)));
+
 check('no page errors', errors.length, 0);
 if (errors.length) console.log(errors.slice(0, 3));
 console.log(fail ? `${fail} heating-network check(s) FAILED` : 'all heating-network checks passed');
