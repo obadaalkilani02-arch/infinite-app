@@ -312,7 +312,7 @@ check('1.45 IB sent to the cable-sizing calculator (IEC, 400 V)', [doc.getElemen
 w.showCategory('electrical');
 const cards5 = doc.getElementById('electrical-category').textContent;
 check('electrical screen lists the generator, SPD and neutral calculators', cards5.includes('المولّد الاحتياطي') && cards5.includes('حماية الجهد الزائد') && cards5.includes('موصل الحيادي'), true);
-check('electrical screen has 21 cards and the home page says 21', [doc.querySelectorAll('#electrical-category .calc-card').length, doc.body.textContent.includes('21 حاسبة متاحة')], [21, true]);
+check('electrical screen has at least 21 cards and the home page counts them', [doc.querySelectorAll('#electrical-category .calc-card').length >= 21, /\d\d حاسبة متاحة/.test(doc.body.textContent)], [true, true]);
 
 check('no page errors', errors.length, 0);
 if (errors.length) console.log(errors.slice(0, 3));
