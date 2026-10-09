@@ -491,3 +491,27 @@ Continuation of the natural ventilation code (the user asked to continue in the 
 - Corridors, kitchens and toilets: the values sit in the per-m2 column; the natural code text says the quantity is calculated "in proportion to the number of persons", the mechanical code says it is NOT recommended to calculate it per person; they were applied per m2 only.
 - The rule "design = the larger of the recommended and the minimum" is the tool's reading (the printed minimum is a floor), not a printed sentence.
 - Not done: Figure 3 (air for the occupants of a room 2.7 m high: curves a - e of the air changes against the floor area per person; a graph, not transcribed), Tables 5 - 11 (flow through openings, wind and stack effect) and the appendices A - D (contaminant concentration, condensation, the examples of air quantities in Appendix C and the natural ventilation example).
+
+
+## National codes, part 22: Jordanian natural ventilation code, chapter 3 and Appendix D (new calculator `natvent`)
+
+NEW calculator (79th, HVAC 16, card in "air networks"): the natural ventilation airflow through openings by wind and by temperature difference, and the leakage through window cracks, from chapter 3 of the natural ventilation and sanitary principles code (the user asked to continue in the Jordanian codes without further questions). The page is plain text with small bitmap digits and formulas in the rendered images; the worked example of Appendix D is reproduced by the defaults.
+
+| Source | Used in | Notes |
+|---|---|---|
+| Equations 1 and 2, Table 5 | `joNvCrack`, case "cracks" | Q = k L dp^0.67 (L/s), k = 0.08 / 0.21 / 0.08 (ranges 0.02 - 0.30, 0.06 - 0.80, 0.005 - 0.20) for sliding, pivoting and pivoting-with-weather-strip windows; large openings Q = Cd A (2 dp / rho)^0.5 with Cd = 0.61 (0.65 in special cases), quoted in the note |
+| Equation 5, Table 7 | `joNvWind` | u_r = u_m K z^a at the building height; K / a = 0.68 / 0.17, 0.52 / 0.20, 0.35 / 0.25, 0.21 / 0.33 for open rural, rural with obstacles, outskirts, inside cities |
+| Table 8 | `JO_NV_WIND` | mean wind speed and mean of the highest wind speed (m/s) by month and annual for the Jordan Valley and Aqaba, the eastern highlands and the desert (numbers taken from the PDF text layer, checked against the image; the Appendix D value 2.8 m/s is the eastern highlands annual mean) |
+| Table 6 | result line "wind pressure" | 0.5 x 1.18 x u_r^2; the printed values (0.59 at 1 m/s and Cp 1, 9.44, 8.67, 59.0 ...) are reproduced by the test; the temperature-difference half of the table (pressures by height) is not used |
+| Table 9 (3/5) | `joNvTwo`, case "two openings" | Q_w = Cd A_w u_r dCp^0.5 with 1/A_w^2 = 1/(A1+A2)^2 + 1/(A3+A4)^2; Q_b = Cd A_b (2 dT g H1 / T)^0.5 with 1/A_b^2 = 1/(A1+A3)^2 + 1/(A2+A4)^2; the combined case takes the larger flow (3/5/4); dCp from Table 11 or 1.0 (exposed) / 0.1 (sheltered) (3/5/2) / 0.2 (approximate, 3/6/3) |
+| Table 10 (3/6/2) | `joNvSingle`, case "one wall" | wind 0.025 A u_r; two openings Q = Cd A [E sqrt 2 / ((1+E) (1+E^2)^0.5)] (dT g H1 / T)^0.5 with E = A1/A2; one opening Q = Cd (A/3) J(phi) (dT g H2 / T)^0.5; the larger of wind and temperature is taken |
+| Table 11 | `JO_NV_CP`, `joNvCp` | Cp of the walls A, B, C, D of a rectangular building at 0 and 90 degrees for 3 height bands (h/w up to 1/2, 1/2 to 3/2, 3/2 to 6) x 2 plan bands (l/w 1 to 3/2, 3/2 to 4) |
+| Appendix D | tests | 25 x 10 x 8 m in Amman: u_r = 2.8 x 0.52 x 8^0.2 = 2.2 m/s, A_w = 5.3 m2, Q_w = 7.11 m3/s (7.14 unrounded), 12.8 changes per hour (12.9); 6 K, openings 2.5 + 2.5 and 5.0 + 5.0 m2, H1 = 6 m: A_b = 4.47 m2, Q_b = 4.18 m3/s (4.2), 7.6 changes per hour (7.5) |
+
+🔴 Uncertain:
+- Table 11 is a small bitmap table; the digits were read at 3x and the signs of the windward values (+0.7 / +0.8, printed with border artefacts) taken as positive, confirmed by the Appendix D row (0.7 and -0.3 for h/w 0.8, l/w 2.5). The printed bands share their limits (h/w = 1/2 and 3/2, l/w = 3/2): the lower band is taken at the limit. The column at the left of the table (-0.8, -1.0, -1.1, -1.1, -1.2, -1.2, apparently the roof) has no readable header and was not used.
+- Table 9, combined effect: the printed switching criterion u_r / sqrt(dT) against 0.26 (A_b / A_w)^? (H1 / dCp)^0.5 has exponents that cannot be read and is printed with "Q = Q_w" under the "less than" branch (the reverse of the physics, 0.26 = sqrt(2 g / 300) is exactly the equality of the two flows); clause 3/5/4 says to take the larger of the two flows, which is what the tool does.
+- Table 8: the printed annual mean of the highest speeds of the eastern highlands is 10.3 while the twelve months average 10.46 (all the other annual values agree within 0.06); the printed values are used. Which column is the "design" speed is not stated beyond the example (annual mean of the mean speeds, 2.8 m/s).
+- J(phi) of Table 10 for a window with a hinged light opening is read from Figure 8 (curves against the opening angle and the height : width ratio): a graph, not transcribed, so the value is entered by the user (1 = no hinge).
+- The code's own worked example rounds A_b to 4.4 in the formula (4.47 in the line above) and Q_b to 4.2.
+- Not done in this code: Table 6 (b) pressures by height and temperature difference, Appendix A / B (contaminant concentration, condensation) and Appendix C (examples of air quantities).

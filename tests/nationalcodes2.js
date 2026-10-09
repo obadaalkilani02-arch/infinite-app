@@ -947,6 +947,50 @@ check('corridors: the note that the value is per m2 only', doc.getElementById('v
 w = boot('intl'); doc = w.document; w.renderCalc('ventilation'); w.calcResult('ventilation');
 check('other codes: no Jordanian Tables 1 / 4 form and no block', [!!doc.getElementById('vt_nv4'), doc.getElementById('vt_results').textContent.includes('الجدولان 4 و1')], [false, false]);
 
+// ---------- Jordan: natural ventilation code, chapter 3 (equations 1 - 5, Tables 5 - 11) and Appendix D, `natvent` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('natvent');
+const NVd = w.eval('JSON.parse(JSON.stringify({crack: JO_NV_CRACK, terr: JO_NV_TERRAIN, wind: JO_NV_WIND, cp: JO_NV_CP, months: JO_NV_MONTHS, regions: JO_NV_REGIONS}))');
+check('Table 5: three window types, mean k 0.08 / 0.21 / 0.08 L/s per m at 1 Pa, ranges 0.02 - 0.30, 0.06 - 0.80, 0.005 - 0.20', NVd.crack.map(r => r.slice(1)), [[0.08, 0.02, 0.30], [0.21, 0.06, 0.80], [0.08, 0.005, 0.20]]);
+check('Table 7: K and a of the four terrains: 0.68 / 0.17, 0.52 / 0.20, 0.35 / 0.25, 0.21 / 0.33; K falls and a rises with the roughness', [NVd.terr.map(r => r.slice(1)), NVd.terr.every((r, i) => i === 0 || (r[1] < NVd.terr[i - 1][1] && r[2] > NVd.terr[i - 1][2]))], [[[0.68, 0.17], [0.52, 0.20], [0.35, 0.25], [0.21, 0.33]], true]);
+const avg = a => a.slice(0, 12).reduce((s, x) => s + x, 0) / 12;
+check('Table 8: 3 regions x (mean, highest) x (12 months + the annual mean); the printed annual means agree with the monthly values within 0.06 (the one exception, the highest speeds of the eastern highlands, prints 10.3 for 10.46)', [NVd.wind.length, NVd.wind.every(r => r.length === 2 && r.every(a => a.length === 13)), NVd.months.length, NVd.wind.flat().map(a => Math.abs(avg(a) - a[12]) <= 0.06)], [3, true, 13, [true, true, true, false, true, true]]);
+check('Table 8 spot values: eastern highlands annual mean 2.8, desert January highest 16.1, valley August highest 6.6', [NVd.wind[1][0][12], NVd.wind[2][1][0], NVd.wind[0][1][7]], [2.8, 16.1, 6.6]);
+check('Table 11: six rows x two angles x four walls; the windward wall is +0.7 / +0.8 and every other value is negative; Appendix D row (h/w 0.8, l/w 2.5): 0.7, -0.3, -0.7, -0.7', [NVd.cp.length, NVd.cp.every(r => r.length === 2 && r.every(a => a.length === 4)), NVd.cp.every(r => r[0][0] >= 0.7 && r[1][2] >= 0.7 && [1, 2, 3].every(k => r[0][k] < 0) && [0, 1, 3].every(k => r[1][k] < 0)), NVd.cp[3][0]], [6, true, true, [0.7, -0.3, -0.7, -0.7]]);
+const nvcp = (h, ww, l, a, p) => w.eval('joNvCp(' + [h, ww, l, a, JSON.stringify(p || 'AB')].join(',') + ')');
+check('Table 11 lookup: 25 x 10 x 8 m, wind at 0 degrees on the long walls: dCp = 0.7 - (-0.3) = 1.0 (Appendix D); parallel wind (90 degrees) gives 0 across the long walls and 0.7 - (-0.1) = 0.8 across the short ones', [nvcp(8, 10, 25, 0).dcp, nvcp(8, 10, 25, 90).dcp, nvcp(8, 10, 25, 90, 'CD').dcp, nvcp(8, 10, 25, 0, 'CD').dcp].map(x => Math.round(x * 1e6) / 1e6), [1.0, 0, 0.8, 0]);
+check('Table 11 bands: h/w 0.5 stays in the first band and 1.5 in the second; l/w 1.5 is the square-plan band; the row index = band h x 2 + band l; far outside the table is flagged', [nvcp(5, 10, 10, 0).row, nvcp(15, 10, 15, 0).row, nvcp(16, 10, 15, 0).row, nvcp(8, 10, 16, 0).row, nvcp(70, 10, 10, 0).outside, nvcp(8, 10, 50, 0).outside], [0, 2, 4, 3, true, true]);
+check('Table 6 (wind): 0.5 x 1.18 x u2 x Cp = 0.59 (1 m/s, Cp 1), 9.44 (4 m/s, Cp 1), 8.67 (7 m/s, Cp 0.3), 59.0 (10 m/s, Cp 1), 0.06 (1 m/s, Cp 0.1)', [[1, 1], [4, 1], [7, 0.3], [10, 1], [1, 0.1]].map(([u, c]) => Math.round(0.5 * w.eval('JO_NV_RHO') * u * u * c * 100) / 100), [0.59, 9.44, 8.67, 59.0, 0.06]);
+let nvr = w.eval('JSON.parse(JSON.stringify(calcNatVent()))');
+const nearArr = (g, wnt, tol) => g.length === wnt.length && g.every((x, i) => Math.abs(x - wnt[i]) <= tol);
+check('Appendix D (a): Amman, mean wind 2.8 m/s, rural with obstacles (K 0.52, a 0.20), h = 8 m: u_r = 2.8 x 0.52 x 8^0.2 = 2.2 m/s', nearArr([nvr.win.um, nvr.win.K, nvr.win.a, nvr.win.ur], [2.8, 0.52, 0.20, 2.207], 0.001), true);
+check('... A_w = 7.5 / sqrt 2 = 5.3 m2 (the code), Q_w = 0.61 x 5.3 x 2.2 x 1.0 = 7.11 m3/s (7.14 unrounded) and 12.8 changes per hour in 2000 m3 (12.9); the wind governs', [nearArr([nvr.dcp, nvr.Aw, nvr.Qw, nvr.ach], [1.0, 5.30, 7.11, 12.8], 0.06), nvr.gov], [true, 'wind']);
+check('Appendix D (b): 6 K, openings 2.5 + 2.5 and 5.0 + 5.0 m2, H1 = 6 m: A_b = 4.47 m2, Q_b = 4.18 m3/s (4.2) and 7.6 changes per hour (7.5 unrounded)', nearArr([nvr.Ab, nvr.Qb, 3600 * nvr.Qb / 2000], [4.47, 4.18, 7.6], 0.1), true);
+setv(w, 'nv_dm', 'custom'); setv(w, 'nv_dcp', 0); nvr = w.eval('JSON.parse(JSON.stringify(calcNatVent()))');
+check('wind neglected (dCp 0): the combined rate is Q_b alone, governed by the temperature difference', [nvr.Qw, nvr.gov, +nvr.Q.toFixed(2)], [0, 'stack', 4.18]);
+const qwOf = dm => { setv(w, 'nv_dm', dm); return w.eval('calcNatVent().Qw'); };
+const qw1 = qwOf('exposed'), qw02 = qwOf('approx'), qw01 = qwOf('sheltered');
+check('dCp options: 1.0 exposed, 0.2 approximate (3/6/3) and 0.1 sheltered (3/5/2) change Q_w with the square root of dCp', nearArr([qw02 / qw1, qw01 / qw1], [Math.sqrt(0.2), Math.sqrt(0.1)], 1e-9), true);
+setv(w, 'nv_dm', 'table');
+const sgE = (a1, a2) => w.eval('joNvSingle("two", ' + a1 + ', ' + a2 + ', 2, 1, 2, 6, 300).Qstack');
+check('Table 10, two openings: equal openings (E = 1) give 0.61 x A x 0.5 x sqrt(dT g H / T), and the formula is symmetric in E (1 : 3 equals 3 : 1)', [nearArr([sgE(2, 2)], [0.61 * 4 * 0.5 * Math.sqrt(6 * 9.8 * 2 / 300)], 1e-9), Math.abs(sgE(1, 3) - sgE(3, 1)) < 1e-12], [true, true]);
+const sg = w.eval('joNvSingle("one", 2, 0, 1.5, 1, 2.2, 6, 300)');
+check('Table 10: one opening of 2 m2, 1.5 m high, J = 1, 6 K: Q = 0.61 x (2 / 3) x sqrt(6 x 9.8 x 1.5 / 300); the wind term 0.025 x 2 x 2.2 = 0.11; the larger is taken', [+sg.Qstack.toFixed(4), +sg.Qwind.toFixed(3), sg.gov], [+(0.61 * 2 / 3 * Math.sqrt(6 * 9.8 * 1.5 / 300)).toFixed(4), 0.11, 'stack']);
+const ck = w.eval('joNvCrack(1, 10, 10)');
+check('equation (1): a pivoting window, 10 m of crack at 10 Pa: 0.21 x 10 x 10^0.67 = 9.8 L/s (range 2.8 to 37.4)', [+ck.mean.toFixed(2), +ck.lo.toFixed(2), +ck.hi.toFixed(2)], [9.82, 2.81, 37.42]);
+check('the form: regions 3, months 13, terrains 4, crack types 3, default case two openings with the Appendix D values', [doc.getElementById('nv_reg').options.length, doc.getElementById('nv_mon').options.length, doc.getElementById('nv_terr').options.length, doc.getElementById('nv_ck').options.length, doc.getElementById('nv_case').value, +doc.getElementById('nv_A1').value, +doc.getElementById('nv_H1').value], [3, 13, 4, 3, 'two', 5, 6]);
+const vis = id => doc.getElementById(id).closest('.form-section') && doc.getElementById(id).closest('.form-section').style.display !== 'none' && doc.getElementById(id).closest('.field').style.display !== 'none';
+setv(w, 'nv_case', 'single'); w.nvToggle();
+check('single-wall case: the Table 9 openings are hidden, the Table 10 ones shown (two openings first); the crack fields hidden', [vis('nv_A1'), vis('nv_sA1'), vis('nv_sA'), vis('nv_cL')], [false, true, false, false]);
+setv(w, 'nv_sw', 'one'); w.nvToggle();
+check('... one opening: the area, the height and J(Phi) appear instead', [vis('nv_sA1'), vis('nv_sA'), vis('nv_sJ')], [false, true, true]);
+setv(w, 'nv_case', 'crack'); w.nvToggle();
+check('crack case: only the crack fields', [vis('nv_cL'), vis('nv_A1'), vis('nv_sA'), vis('nv_vol')], [true, false, false, false]);
+w.calcResult('natvent');
+check('crack results: the three leakage rates and the Table 5 reference', ['9.82', '2.81', '37.42', 'المعادلة 1'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
+w.renderCalc('natvent'); w.calcResult('natvent');
+check('two-openings results: the wind and temperature flows, the governing effect, the air changes and the Table 11 note', ['7.14', '4.18', 'الحاكم: الريح', '12.9', 'الجدول 11 صورة نقطية'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
+check('HVAC category: 16 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('16 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
