@@ -555,3 +555,17 @@ The stiffening data of the same tables (maximum distance between joints and stif
 - There is no round table for the high-velocity class: Table 5 is used and the result says so. The aluminium tables exist for low velocities only and are used for both classes.
 - The longest side printed bands share their limits (e.g. 600 / 601): the upper limit belongs to the lower row. Sizes above the last row keep its thickness and are flagged (the high-velocity rectangular table has no upper limit).
 - Not done in this code: Table 3 (preferred duct dimensions, bitmap-like lists), 11 (gypsum ducts), 13 (fitting loss coefficients), 14 (duct materials), 18 (duct insulation), 19 - 21 (noise), 22 (refrigerants), 24 - 25 (pipe flows).
+
+
+## National codes, part 25: Jordanian mechanical ventilation code 7/3/1 and Table 18, duct insulation thickness in the duct takeoff
+
+`ductweight` (Jordan only), the insulation and hanger section: the material of Table 18 and the temperature difference of 7/3/1 fill the insulation thickness (fields dw_jo_ins, dw_jo_dt; `JO_DINS`, `joDuctIns`, `dwJoInsPick`).
+
+| Source | Used in | Notes |
+|---|---|---|
+| 7/3/1 | `joDuctIns` | the equivalent thickness of cork is 25 mm above a difference of 7 degrees between the duct air and the ambient air and 50 mm above 10 degrees (no value is printed below 7) |
+| Table 18 | `JO_DINS` | conductivity (W/m.K) of nine insulating materials: cork board 0.040 - 0.043, loose cork granules 0.043 - 0.050, kapok 0.030 - 0.034, mineral slag wool 0.036 - 0.040, expanded rubber (rigid) 0.028, glass wool 0.036, rock wool 0.036 - 0.040, fibreboard 0.050 - 0.064, pressed felt 0.038; density, vapour permeability, water collection, structural strength and fire resistance columns were read and are not used |
+
+Thickness of another material = cork-equivalent x k(material) / 0.043, rounded up to 5 mm, with the upper end of the conductivity range of the material.
+
+🔴 Uncertain: the code states the thickness "equivalent to cork" without naming the conductivity of the reference cork (0.040 - 0.043); the upper end 0.043 is used for the reference and for the material, so the cork board itself gives exactly 25 / 50 mm. Which other materials the code means by "equivalent" is not printed: the conductivity ratio is the tool's reading. The rule 7/3/1 sets no thickness below 7 degrees. The code gives no vapour barrier thickness for ducts. Not done in this code: Table 13 (fitting loss coefficients, a large diagram table), Tables 3 and 11 (preferred duct dimensions, gypsum ducts), 14, 19 - 22, 24 - 25.

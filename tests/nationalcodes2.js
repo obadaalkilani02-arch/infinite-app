@@ -1046,6 +1046,17 @@ check('the results quote the Jordanian code and not the SMACNA gauge sentence', 
 w = boot('intl'); w.renderCalc('ductweight'); w.calcResult('ductweight'); dwr = w.eval('calcDuctWeight()');
 check('other codes: the SMACNA gauges (24G for 600 and 26G ...) and no Jordanian fields or aluminium option', [dwr.jo, Object.keys(dwr.gaugeBreak).sort(), !!w.document.getElementById('dw_jo_cls'), [...w.document.getElementById('dw_material').options].some(o => o.value === 'aluminium')], [false, ['24G'], false, false]);
 
+// ---------- Jordan: mechanical ventilation code 7/3/1 and Table 18 (duct insulation thickness) ----------
+w = boot('jo'); doc = w.document;
+const DI = w.eval('JSON.parse(JSON.stringify(JO_DINS))');
+check('Table 18: nine insulating materials; cork board 0.040 - 0.043, kapok 0.030 - 0.034, glass wool 0.036, rock wool 0.036 - 0.040, fibreboard 0.050 - 0.064 W/m.K', [DI.length, DI[0].slice(1), DI[2].slice(1), DI[5].slice(1), DI[6].slice(1), DI[7].slice(1)], [9, [0.040, 0.043], [0.030, 0.034], [0.036, 0.036], [0.036, 0.040], [0.050, 0.064]]);
+const di = (i, t) => w.eval('joDuctIns(' + i + ', ' + JSON.stringify(t) + ')');
+check('7/3/1: cork board 25 mm above 7 K and 50 mm above 10 K; kapok above 10 K: 50 x 0.034 / 0.043 = 39.5 -> 40 mm; glass wool above 7 K: 20.9 -> 25 mm; fibreboard above 10 K: 74.4 -> 75 mm; no class: nothing', [di(0, '7').mm, di(0, '10').mm, di(2, '10').mm, di(5, '7').mm, di(7, '10').mm, di(0, '')], [25, 50, 40, 25, 75, null]);
+w.renderCalc('ductweight'); setv(w, 'dw_jo_ins', 2); setv(w, 'dw_jo_dt', '10'); w.dwJoInsPick();
+check('the duct takeoff fills the insulation thickness (40 mm) and shows the working', [+doc.getElementById('dw_ins_thk').value, doc.getElementById('dw_jo_ins_note').textContent.includes('39.5') && doc.getElementById('dw_jo_ins_note').textContent.includes('40 mm')], [40, true]);
+w = boot('intl'); w.renderCalc('ductweight');
+check('other codes: no Jordanian insulation fields', [!!w.document.getElementById('dw_jo_ins'), +w.document.getElementById('dw_ins_thk').value], [false, 25]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
