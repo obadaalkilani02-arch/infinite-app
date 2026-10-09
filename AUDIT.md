@@ -594,3 +594,23 @@ The layers use the Table 15 materials of the U-value calculator for the conducti
 - The suggestion of a Table 18 row for a Table 15 material is the tool's mapping (the code does not link the two tables); the row "felt and bitumen 20 mm" is kept as printed.
 - Appendix A6 columns were read as winter minimum / maximum and summer minimum / maximum (summer agrees with the values already in `JO_ZONES`).
 - Not done in this code: Tables 19 - 20 (puncture resistance and properties of vapour-barrier films, qualitative), 23 (specific heat capacity of materials, chapter 8) and chapter 7 (periodic heat flow, time lag and decrement factor).
+
+
+## National codes, part 27: Jordanian shelters code, new calculator `shelter` (units, built space, ventilation, sanitary units, water)
+
+NEW calculator (81st, HVAC 18, card after the condensation one): the services side of the shelters code (the user asked to continue in the Jordanian codes; the code was unused). The pages are plain text in the rendered images (the text layer loses most numbers); the structural chapters (wall and slab thicknesses, Tables 7 - 11 and 14 - 32) are not part of this calculator.
+
+| Source | Used in | Notes |
+|---|---|---|
+| Table 6 (3/2/1) | `JO_SHL`, `joShelter` | shelter units by occupancy: residential 1 per 15 m2 of the total area, health care 1 per bed, hotels 0.5 per bed, restaurants and gathering places 0.5 per seat, places of worship 25 % of the prayer hall area, offices and commercial 1 per office or shop and not below 1 per 20 m2, education 0.67 per seat, industry 1 per 25 m2 (other buildings: the nearest occupancy) |
+| 3/2/2 A - C | `joShelter` | at least 1.0 m2 and 2.5 m3 per unit; extra spaces: air lock 0.05 m2 and decontamination room 0.07 m2 per unit, storage 2.00 m2 per shelter room, toilets 1.00 m2 per 25 persons |
+| 5/2/2 | `joShelter` | unfiltered mechanical ventilation at least 6.0 m3/h per unit (15 in hot humid regions when cooling devices are not used); with filters 3.0 m3/h per unit; overpressure 50 - 150 N/m2 (5/3/1); 5/2/3: carbon dioxide reaches 2.5 % after about 3 hours when the ventilation is stopped (2.5 m3 of air per person) and 4.0 % after about 5 hours |
+| 6/3/4 | `joShelter` | one sanitary unit per 25 shelter units; a portable one is enough up to 25; at least two permanent between 25 and 100; above 100 at least three permanent and separated from the other rooms; at least two units (women and men) for two families or a public shelter; unit 1.20 x 0.75 m |
+| 6/4 | `joShelter` | supplies for at least two weeks; drinking water 50 litres per unit (containers of 20 - 50 L), 50 litres per shower; lighting power 5 - 15 W/m2 (6/3 K) |
+
+🔴 Uncertain:
+- Table 6 prints "15/1 square metre" for residential (read as one unit per 15 m2) and "25 % of the prayer hall area" for worship (read as 0.25 unit per m2 of that area: the unit of the quantity is not stated).
+- 3/2/2 C prints "300 square metres per extraction fan per shelter room", which is unreasonable (perhaps 3.00): not used.
+- 3/2/2 D (fixed spaces for small shelters up to 50 units: 0.9 m2 occupied space, 3.5 m2 air-lock and decontamination rooms, ceiling 2.0 - 3.0 m, 1.0 m2 toilet) and the climate requirements of Table 12 (oxygen at least 18 % long / 16 % short period, carbon dioxide at most 1.0 % long / 2.5 % short, the long-period value printed "10 %" read 1.0 % from the text of 5/2/2, temperature and humidity pairs) are in the notes only, not applied.
+- The rule for 25 to 100 units (at least two permanent) and for over 100 (at least three, separated) is combined with one unit per 25 units as the larger; the printed text does not say how the two rules combine.
+- Not done in this code: the structural tables (thickness of walls and roofs, reinforcement ratios, blast loads, Tables 7 - 11 and 14 - 32), the blast doors and valves, filters and the electrical rules other than the lighting power.
