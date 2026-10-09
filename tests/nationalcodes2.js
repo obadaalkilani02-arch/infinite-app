@@ -1103,6 +1103,17 @@ setv(w, 'sh_occ', 5); w.shToggle();
 check('the office / shop occupancy shows the second quantity (area); the others hide it', [doc.getElementById('sh_q2').closest('.field').style.display, (setv(w, 'sh_occ', 1), w.shToggle(), doc.getElementById('sh_q2').closest('.field').style.display)], ['', 'none']);
 check('HVAC category: 18 calculators and the shelter card', [doc.getElementById('main-categories-grid').textContent.includes('18 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('shelter')")], [true, true]);
 
+// ---------- Jordan: acoustics code, Table 20 (recommended noise criteria of the spaces) in the duct sizing sound check ----------
+w = boot('jo'); doc = w.document;
+const JN = w.eval('JSON.parse(JSON.stringify(JO_NOISE))');
+check('Table 20: twelve kinds of space; concert halls NC 10 - 20 and 20 - 30 dB(A); sleeping rooms and hotels PNC 25 - 40, NC 25 - 35, 35 - 45 dB(A); private offices NC 30 - 35; large offices and restaurants NC 35 - 50; rooms of office equipment and kitchens NC 45 - 60 and 55 - 70 dB(A); garages PNC 50 - 60 with no NC curve', [JN.length, JN[0].slice(1), JN[5].slice(1), JN[6][2], JN[8][2], JN[10].slice(2), JN[11].slice(1)], [12, [[10, 20], [10, 20], [20, 30]], [[25, 40], [25, 35], [35, 45]], [30, 35], [35, 50], [[45, 60], [55, 70]], [[50, 60], null, null]]);
+check('the NC class of the sound check chosen from the table: the three quietest groups and the music rooms -> 25, the next three -> 35, the living rooms, large offices, waiting halls and equipment rooms -> 45, garages (no NC curve) -> none', [...Array(12).keys()].map(i => w.eval('joNoiseNC(' + i + ')')), ['25', '25', '25', '25', '35', '35', '35', '45', '45', '45', '45', null]);
+w.renderCalc('ductsizing'); setv(w, 'dt_jo_sp', 6); w.dtJoNoisePick();
+check('duct sizing: choosing private offices sets NC/RC 35; concert halls NC 25; equipment rooms 45', [doc.getElementById('dt_nc').value, (setv(w, 'dt_jo_sp', 0), w.dtJoNoisePick(), doc.getElementById('dt_nc').value), (setv(w, 'dt_jo_sp', 10), w.dtJoNoisePick(), doc.getElementById('dt_nc').value)], ['35', '25', '45']);
+check('the results quote Table 20 with the NC, PNC and dB(A) bands; equipment rooms (NC up to 60) flag that the tool checks the highest class (45); garages say there is no NC curve and keep the class', [doc.getElementById('dt_results').textContent.includes('جدول 20') && doc.getElementById('dt_results').textContent.includes('55 إلى 70 dB(A)') && doc.getElementById('dt_results').textContent.includes('يتجاوز المدى 45'), (setv(w, 'dt_jo_sp', 11), w.dtJoNoisePick(), doc.getElementById('dt_nc').value, doc.getElementById('dt_results').textContent.includes('لا يطبع الجدول منحنى NC'))], [true, true]);
+w = boot('intl'); w.renderCalc('ductsizing');
+check('other codes: no Table 20 list', !!w.document.getElementById('dt_jo_sp'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

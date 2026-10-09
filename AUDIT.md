@@ -614,3 +614,28 @@ NEW calculator (81st, HVAC 18, card after the condensation one): the services si
 - 3/2/2 D (fixed spaces for small shelters up to 50 units: 0.9 m2 occupied space, 3.5 m2 air-lock and decontamination rooms, ceiling 2.0 - 3.0 m, 1.0 m2 toilet) and the climate requirements of Table 12 (oxygen at least 18 % long / 16 % short period, carbon dioxide at most 1.0 % long / 2.5 % short, the long-period value printed "10 %" read 1.0 % from the text of 5/2/2, temperature and humidity pairs) are in the notes only, not applied.
 - The rule for 25 to 100 units (at least two permanent) and for over 100 (at least three, separated) is combined with one unit per 25 units as the larger; the printed text does not say how the two rules combine.
 - Not done in this code: the structural tables (thickness of walls and roofs, reinforcement ratios, blast loads, Tables 7 - 11 and 14 - 32), the blast doors and valves, filters and the electrical rules other than the lighting power.
+
+
+## National codes, part 28: Jordanian acoustics code, Table 20 (recommended noise criteria) in the duct sizing sound check
+
+`ductsizing` (Jordan only): a list of the 12 kinds of space of Table 20 (4/4/2, preferred noise curves: PNC, NC and dB(A)) next to the NC/RC class of the official sound check; choosing a space sets the class (`JO_NOISE`, `joNoiseNC`, `dtJoNoisePick`) and the results quote the three bands of the table. The table is plain text in the rendered pages (PDF pages 79 - 81 of the acoustics code).
+
+| Space (Table 20) | PNC | NC | dB(A) |
+|---|---|---|---|
+| concert, opera and recital halls | 10 - 20 | 10 - 20 | 20 - 30 |
+| broadcast and recording studios (sensitive microphone) | 10 - 20 | 15 - 20 | 25 - 30 |
+| large lecture halls, drama theatres, places of worship | 20 max | 20 - 25 | 30 - 35 |
+| studios (ordinary microphone) | 25 max | 20 - 25 | 30 - 35 |
+| small lecture halls, small theatres, music rooms, large conference rooms | 35 max | 25 - 30 | 35 - 40 |
+| bedrooms, hospitals, houses, hotels | 25 - 40 | 25 - 35 | 35 - 45 |
+| private offices, small conference rooms, classrooms, libraries | 30 - 40 | 30 - 35 | 40 - 45 |
+| living rooms of houses | 30 - 40 | 35 - 45 | 45 - 55 |
+| large offices, reception, shops, cafeterias, restaurants | 35 - 45 | 35 - 50 | 45 - 60 |
+| waiting halls, laboratories, drawing rooms | 40 - 50 | 40 - 45 | 50 - 55 |
+| maintenance and equipment rooms, kitchens, dye works | 45 - 55 | 45 - 60 | 55 - 70 |
+| shops, garages, control rooms (speech and phone only) | 50 - 60 | - | - |
+| (row 13) workplaces where speech is not needed | 60 - 75 | - | - |
+
+The tool has three NC classes (25, 35, 45): the class is chosen from the upper end of the NC range of the space (up to 25 -> 25, up to 35 -> 35, above -> 45).
+
+🔴 Uncertain: the code prints ranges, not one value; the upper end of the NC range decides the class, so a space with NC 35 - 50 (large offices) is checked as 45 and a range above 45 (equipment rooms, NC up to 60) is flagged as beyond the highest class of the tool. The garages row has no NC curve (the class is not changed) and row 13 (PNC 60 - 75) is not offered. Table 21 (NR curves per octave band for the same environments), the sound insulation tables (2 - 19) and the exposure limits (Table 23) were not used.
