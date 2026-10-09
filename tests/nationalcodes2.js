@@ -917,6 +917,36 @@ check('the results show the Table 4 block first and the IPC result marked for co
 w = boot('intl'); w.renderCalc('vent'); w.calcResult('vent');
 check('other codes keep the IPC vent result without the Jordanian block', [w.calcVent().jo, w.document.getElementById('vent_result').textContent.includes('الجدول 4 والباب الخامس')], [null, false]);
 
+// ---------- Jordan: natural ventilation code, Table 4 (outdoor air for conditioned spaces) and Table 1 (respiration) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('ventilation');
+const N4 = w.eval('JSON.parse(JSON.stringify(JO_NV4))'), N1 = w.eval('JSON.parse(JSON.stringify(JO_NV1))');
+check('Table 4: 17 rows; factories 8 / 5 and 0.8 per m2; stores 3.0 per m2; hotel bedrooms 12 / 8 and 1.7; luxury homes 18 / 12; restaurant kitchens 20 per m2', [N4.length, N4[0].slice(2, 5), N4[2][4], N4[5].slice(2, 5), N4[11].slice(2, 5), N4[15][4]], [17, [8, 5, 0.8], 3.0, [12, 8, 1.7], [18, 12, null], 20]);
+check('Table 4: corridors 1.3, home kitchens 10, toilets 10 per m2 and no per-person values; closed offices 1.7 (the mechanical code prints 1.3) flagged', [N4[13].slice(2, 5), N4[14][4], N4[16][4], N4[7][4], N4[7][5]], [[null, null, 1.3], 10, 10, 1.7, 'm2']);
+check('Table 4: the three per-person tiers are 8 / 5, 12 / 8 and 18 / 12 (recommended / minimum)', [...new Set(N4.filter(r => r[2] != null).map(r => r[2] + '/' + r[3]))], ['8/5', '12/8', '18/12']);
+const na = (i, p, a) => w.eval('joNvAir(' + i + ',' + p + ',' + a + ')');
+let nv = na(0, 100, 2000);
+check('Table 4: a factory of 100 persons and 2000 m2: recommended 800, minimum the larger of 500 and 1600 = 1600, design 1600 L/s', [nv.qRec, nv.byP, nv.byA, nv.qMin, nv.design], [800, 500, 1600, 1600, 1600]);
+nv = na(3, 100, 500);
+check('Table 4: a theatre (no per-m2 value): minimum 500, recommended 800, design 800', [nv.qMin, nv.qRec, nv.design, nv.flag], [500, 800, 800, 'band']);
+nv = na(13, 0, 100);
+check('Table 4: corridors 100 m2: 130 L/s by area only, no recommended value', [nv.qMin, nv.qRec, nv.design], [130, null, 130]);
+nv = na(7, 4, 20);
+check('Table 4: a closed office of 4 persons and 20 m2: 12 x 4 = 48 recommended, minimum max(32, 34) = 34', [nv.qRec, nv.qMin, nv.design], [48, 34, 48]);
+check('Table 1: five activity levels; light work 160 - 320 W, 0.2 - 0.3 L/s oxygen, 1.3 - 2.6 L/s fresh air; very heavy 650 - 800 W and 5.3 - 6.4', [N1.length, N1[1].slice(1), N1[4].slice(1)], [5, [160, 320, 0.2, 0.3, 1.3, 2.6], [650, 800, 0.7, 0.9, 5.3, 6.4]]);
+let rs = w.eval('joNvResp(1, 10, 0)');
+check('Table 1: 10 persons at light work: 13 to 26 L/s; women only: 75 % = 9.75 to 19.5; 20 persons sitting, half of them women: 14', [rs.lo, rs.hi, w.eval('joNvResp(1, 10, 100)').lo, w.eval('joNvResp(1, 10, 100)').hi, w.eval('joNvResp(0, 20, 50)').lo].map(x => Math.round(x * 1e6) / 1e6), [13, 26, 9.75, 19.5, 14]);
+check('the Jordanian ventilation form has the Table 4 list (17 rows), the activity list (5) and the share of women', [doc.getElementById('vt_nv4').options.length, doc.getElementById('vt_nv1').options.length, !!doc.getElementById('vt_nvw')], [17, 5, true]);
+setv(w, 'vt_use', 'office'); setv(w, 'vt_pz', 100); setv(w, 'vt_az', 2000 * 10.764); setv(w, 'vt_nv4', 0); setv(w, 'vt_nv1', 1); setv(w, 'vt_nvw', 0);
+w.calcResult('ventilation');
+let vtx = doc.getElementById('vt_results').textContent;
+check('results: the Jordanian block with the factory figures (800, 1600) and the respiration range (130 - 260), next to the ASHRAE result', ['الجدولان 4 و1', '800.0', '1600.0', '130.0 – 260.0', 'للمقارنة: ASHRAE 62.1'].every(s => vtx.includes(s)), true);
+setv(w, 'vt_nv4', 7); w.calcResult('ventilation');
+check('closed offices: the note on the 1.7 / 1.3 difference between the two codes', doc.getElementById('vt_results').textContent.includes('1.3؛ أُخذت القيمة الأكبر'), true);
+setv(w, 'vt_nv4', 13); w.calcResult('ventilation');
+check('corridors: the note that the value is per m2 only', doc.getElementById('vt_results').textContent.includes('فحُسبت بالمساحة وحدها'), true);
+w = boot('intl'); doc = w.document; w.renderCalc('ventilation'); w.calcResult('ventilation');
+check('other codes: no Jordanian Tables 1 / 4 form and no block', [!!doc.getElementById('vt_nv4'), doc.getElementById('vt_results').textContent.includes('الجدولان 4 و1')], [false, false]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
