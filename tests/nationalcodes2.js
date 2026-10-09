@@ -435,6 +435,43 @@ setv(w, 'lp_ma', 'face'); mac = w.calcLiftPlan().machine;
 check('... facing: width 2500 + 3 x 2000 / 2 = 5500, depth 2 x 2100 + 1500 = 5700', [mac.width, mac.depth], [5500, 5700]);
 w.calcResult('liftplan');
 check('the results name Tables 2, 3, 16 and 17', ['الجدول 2', 'جدول 3', 'الجدول 16', 'الجدول 17'].every(s => doc.getElementById('lp_results').textContent.includes(s)), true);
+// Tables 9 - 13: standard lift dimensions
+w = boot('jo'); doc = w.document; w.renderCalc('liftplan');
+const LD = w.eval('JSON.parse(JSON.stringify(JO_LD))');
+check('five tables of passenger lifts: 4 + 2 + 5 + 3 + 4 rated loads', Object.keys(LD).map(k => LD[k].rows.length), [4, 2, 5, 3, 4]);
+let ldBad = [];
+for (const [k, t] of Object.entries(LD)) {
+  t.rows.forEach((r, i) => {
+    const id = k + '#' + r.load;
+    if (!(r.Ww > r.Cw && r.Wd > r.Cd && r.Ew < r.Cw + 1 && r.Eh < r.Ch + 1)) ldBad.push(id + ' shaft/car');
+    if (i && !(r.load > t.rows[i - 1].load && r.persons > t.rows[i - 1].persons)) ldBad.push(id + ' load order');
+    if (![r.ph, r.sh, r.rh].every(a => a.length === r.v.length) || (r.uh && r.uh.length !== r.v.length)) ldBad.push(id + ' per-speed arrays');
+    for (const a of [r.ph, r.sh]) { let p = null; a.forEach(x => { if (x == null) return; if (p != null && x < p) ldBad.push(id + ' non-increasing with speed'); p = x; }); }
+    if (!(r.Ra >= 7 && r.Rw >= 2000 && r.Rd >= 3200)) ldBad.push(id + ' machine room');
+  });
+}
+check('the transcription is consistent: shaft larger than the car, entrance inside the car, loads and persons rise, pit and overhead do not fall with the speed', ldBad, []);
+check('Table 9: 630 kg at 1.60 m/s: pit 1700, overhead 4200; 400 kg: car 1100 x 950, shaft 1800 x 1600, machine room 7.5 m2 (2200 x 3200)', [LD.t9.rows[1].ph[3], LD.t9.rows[1].sh[3], [LD.t9.rows[0].Cw, LD.t9.rows[0].Cd, LD.t9.rows[0].Ww, LD.t9.rows[0].Wd, LD.t9.rows[0].Ra, LD.t9.rows[0].Rw, LD.t9.rows[0].Rd]], [1700, 4200, [1100, 950, 1800, 1600, 7.5, 2200, 3200]]);
+check('Table 9: the pit of the 1000 kg lift at 1.00 and 1.60 m/s is not printed', LD.t9.rows[3].ph, [1500, 1500, null, null]);
+check('Table 10 (630 kg, 1.00 m/s): shaft 2000 x 1900, pit 1700; Table 11 (1000 kg): car 1600 x 1400 x 2300, shaft 2400 x 2300, entrance 1100 x 2100, pit 1800, overhead 4200, machine room 20 m2 3200 x 4900 x 2700', [[LD.t10.rows[0].Ww, LD.t10.rows[0].Wd, LD.t10.rows[0].ph[2]], [LD.t11.rows[2].Cw, LD.t11.rows[2].Cd, LD.t11.rows[2].Ch, LD.t11.rows[2].Ww, LD.t11.rows[2].Wd, LD.t11.rows[2].Ew, LD.t11.rows[2].Eh, LD.t11.rows[2].ph[0], LD.t11.rows[2].sh[0], LD.t11.rows[2].Ra, LD.t11.rows[2].Rw, LD.t11.rows[2].Rd, LD.t11.rows[2].rh[0]]],
+  [[2000, 1900, 1700], [1600, 1400, 2300, 2400, 2300, 1100, 2100, 1800, 4200, 20, 3200, 4900, 2700]]);
+check('Table 12 (heavy traffic, 1600 kg, 3.50 m/s): pit 3400, overhead 10600, no machine room height; Table 13 (2500 kg): car 1800 x 2700, pit 2100 at 1.60 m/s; (1600 kg at 2.50 m/s): pit 3200, overhead not printed, total 9700', [[LD.t12.rows[2].ph[1], LD.t12.rows[2].sh[1], LD.t12.rows[2].rh[1]], [LD.t13.rows[3].Cw, LD.t13.rows[3].Cd, LD.t13.rows[3].ph[3]], [LD.t13.rows[0].ph[4], LD.t13.rows[0].sh[4], LD.t13.rows[0].uh[4]]], [[3400, 10600, null], [1800, 2700, 2100], [3200, null, 9700]]);
+check('Table 13: the 1800 kg lift prints a machine room depth of 5000 mm below the 1600 kg value: 5800 mm is used and the print is kept for the note', [LD.t13.rows[1].Rd, LD.t13.rows[1].rdPrinted], [5800, 5000]);
+let lx = w.calcLiftPlan().dims;
+check('defaults: general-purpose passenger lift 1000 kg at 1.00 m/s', [lx.dt, lx.row.load, lx.speed, lx.ph, lx.sh, lx.rd], ['t11', 1000, 1, 1800, 4200, 4900]);
+setv(w, 'lp_dt', 't13'); w.lpDimFill('type');
+check('choosing the bed / passenger lift refills the loads (4) and the speeds (5 for 1600 kg: the third, 1.00 m/s, is chosen)', [doc.getElementById('lp_dl').options.length, doc.getElementById('lp_dv').options.length, doc.getElementById('lp_dv').value], [4, 5, '1']);
+setv(w, 'lp_dl', 2500); w.lpDimFill('load');
+check('the 2500 kg lift has 4 speeds (no 2.50 m/s)', [doc.getElementById('lp_dv').options.length, [...doc.getElementById('lp_dv').options].map(o => o.value)], [4, ['0.5', '0.63', '1', '1.6']]);
+setv(w, 'lp_dv', '1.6'); lx = w.calcLiftPlan().dims;
+check('2500 kg at 1.60 m/s: pit 2100, overhead 4600, machine room 29 m2', [lx.ph, lx.sh, lx.row.Ra], [2100, 4600, 29]);
+setv(w, 'lp_dt', 't11'); w.lpDimFill('type'); setv(w, 'lp_dl', 1000); w.lpDimFill('load'); setv(w, 'lp_dv', '1');
+setv(w, 'lp_aw', 2300); setv(w, 'lp_ad', 2300); lx = w.calcLiftPlan().dims;
+check('an available shaft of 2300 x 2300 mm against the 2400 x 2300 minimum: width fails, depth passes', [lx.wOk, lx.dOk], [false, true]);
+w.lpDimApply();
+check('the transfer button fills the Table 16 and 17 fields with C_d 1400, R_a 20, R_w 3200, R_d 4900, W_w 2400, W_d 2300', ['lp_cd', 'lp_ra', 'lp_rw', 'lp_rd', 'lp_ww', 'lp_wd'].map(id => +doc.getElementById(id).value), [1400, 20, 3200, 4900, 2400, 2300]);
+w.calcResult('liftplan');
+check('the results show the dimensions of the chosen lift and the note on Tables 14 and 15', ['أبعاد المصعد المعياري', 'جدول 11', 'الجدولان 14 و15'].every(s => doc.getElementById('lp_results').textContent.includes(s)), true);
 w = boot('intl'); w.renderCalc('liftplan');
 check('the calculator is available whatever the national code (seventy-one calculators)', [!!w.document.getElementById('lp_results'), w.document.querySelectorAll('.calc-card').length >= 71], [true, true]);
 

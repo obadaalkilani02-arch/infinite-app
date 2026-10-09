@@ -343,3 +343,18 @@ New calculator `septic` (SEP-01, 77th, plumbing category 21): the pages were rea
 | 3/2/2, 3/2/3, Tables 2 and 3 | note under `fixtureunits` (Jordan): equivalent units by intermittent flow for fixtures not in Table 1 (0.50 - 0.99 L/s: 2, 1.00 - 1.49: 3, 1.50 - 1.99: 4, 2.00 - 3.15: 5) and the maximum load of a trap (32 mm: 1, 40: 3, 50: 4, 80: 6, 100: 8 units); 4/1/5 building drain at least 150 mm | 🔴 the first row of Table 2 is printed "up to" without the number: 0.49 is assumed |
 
 Not done in the drainage code: the vent sizing of chapter 5 (the tables are the IPC ones in the tool), the gutter and rain-pipe details already in `raindrain`, the grease unit sizing (note only), the materials of 3/1 and 7/1.
+
+
+## National codes, part 13: Jordanian lifts code, standard lift dimensions (Tables 9 - 13)
+
+No new calculator (77): `liftplan` gets a section "أبعاد المصعد والبئر وغرفة المكنات" (lift type, rated load, rated speed, optional available shaft size) that gives, for the chosen lift, the car (Cw × Cd × Ch), minimum shaft (Ww × Wd), clear entrance (Ew × Eh), pit depth Ph, overhead Sh (or the total Uh at 2.50 m/s), and the machine room (Ra, Rw × Rd, Rh), checks an available shaft, and a button sends Cd, Ra, Rw, Rd, Ww, Wd to the Table 16 and 17 fields. The table bodies are bitmaps inside the PDF: they were read from crops enlarged 4 - 14 times (the digits are legible), cell by cell, with the merged speed cells mapped to speeds by the dividers.
+
+| Source | Used in | Notes |
+|---|---|---|
+| 3/2/1, 3/2/2, Table 9 (light-duty passenger lifts) | 400 kg (5 persons), 630 (8), 800 (10), 1000 (13) at 0.50 / 0.63 / 1.00 / 1.60 m/s: e.g. 630 kg: car 1100 × 1400 × 2200, shaft 1800 × 2100, entrance 800 × 2000, pit 1400 (0.50, 0.63) or 1700 (1.00, 1.60), overhead 4000 or 4200 (1.60), machine room 15 m² 2500 × 3700 × 2600 | 🔴 the first load is printed "4000" in the blurred image: read as 400 kg (5 persons and the 1100 × 950 car fit); the pit of the 1000 kg lift is not printed at 1.00 and 1.60 m/s: left empty |
+| Table 10 (residential lifts) | 630 kg and 1000 kg at 0.50 / 0.63 / 1.00 m/s: shaft 2000 × 1900 and 2000 × 2600, pit 1400 / 1700 and 1500 / 1700, overhead 4000, machine rooms 10 m² (2200 × 3700) and 12 m² (2400 × 4200), height 2600 | |
+| Table 11 (general-purpose passenger lifts) | 630 - 1600 kg at 1.00 / 1.60 m/s: e.g. 1000 kg: car 1600 × 1400 × 2300, shaft 2400 × 2300, entrance 1100 × 2100, pit 1800, overhead 4200, machine room 20 m² 3200 × 4900 × 2700 | the overhead of the 800 kg lift is printed 4000 at both speeds (the 630 kg lift is 4000 / 4200): kept as printed |
+| Table 12 (heavy-traffic passenger lifts) | 1000, 1250, 1600 kg at 2.50 / 3.50 m/s: pit 2800 / 3400, overhead 9400 / 10400, 9500 / 10400, 9700 / 10600, machine room 20, 22, 25 m² | the machine room height column is empty in the print |
+| Table 13 (passenger and bed lifts) | 1600 (21), 1800 (24), 2000 (26), 2500 kg (33) at 0.50 - 2.50 m/s: car, shaft, entrance 1300 × 2100, pit 1700 / 1900 / 3200 by speed band (1800 / 1900 / 2100 for 2500 kg), overhead 4600 up to 1.60 m/s and the total shaft height Uh 9700 at 2.50 m/s, machine room 25 - 29 m² | 🔴 the machine room depth of the 1800 kg lift reads 5000 mm, below the 1600 kg value (5500): 5800 mm (the 2000 kg value) is used and the print is noted in the result |
+
+Not done: Tables 14 and 15 (goods lifts, 500 - 5000 kg): the image rows have up to three stacked speed bands each for pit and overhead and are blurred at the cell edges, so the mapping was not trusted; Table 7 and the performance tables 3 and 4 were already in `liftplan`.
