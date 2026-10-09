@@ -708,6 +708,21 @@ check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chambe
 w = boot('intl'); w.renderCalc('septic');
 check('the septic calculator is available with every code and the plumbing screen counts 21 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('21 حاسبة متاحة')], [true, true]);
 
+// ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
+const hxj = vals => { Object.keys(vals).forEach(id => setv(w, id, vals[id])); return w.calcHeatExpansion().jo; };
+let hj = hxj({hx_q: 100, hx_vw: '', hx_ar: ''});
+check('boiler 100 kW: feed pipe 25 mm (58.6 - 146.5 kW), safety pipe 25 mm, drain valve 32 mm (87.9 - 175.8 kW); no tank minimum without a volume or a surface', [hj.feed, hj.safety, hj.drain, hj.tank], [25, 25, 32, null]);
+hj = hxj({hx_q: 50});
+check('50 kW: feed 20 mm (below 58.6 kW), safety 20 mm, drain valve 25 mm (43.95 - 87.9 kW)', [hj.feed, hj.safety, hj.drain], [20, 20, 25]);
+check('the limits of the printed bands go to the larger size: 58.6 kW -> 25 mm feed; 43.95 kW -> 25 mm drain; 586 kW -> 50 mm; 263.7 kW -> 50 mm drain', [hxj({hx_q: 58.6}).feed, hxj({hx_q: 43.95}).drain, hxj({hx_q: 586}).feed, hxj({hx_q: 263.7}).drain, hxj({hx_q: 293}).safety, hxj({hx_q: 1000}).safety], [25, 25, 50, 50, 40, 50]);
+hj = hxj({hx_q: 100, hx_vw: 500, hx_ar: ''});
+check('tank minimum: 0.08 x 500 L = 40 L; 60 m2 of radiating surface = 60 L; both: the larger (60 L)', [hj.tank, hxj({hx_vw: '', hx_ar: 60}).tank, hxj({hx_vw: 500, hx_ar: 60}).tank], [40, 60, 60], 1e-9);
+setv(w, 'hx_vw', 500); setv(w, 'hx_ar', 60); w.calcResult('heatexpansion');
+check('the results show Tables 9 - 11, 5/3/6 and the 0.08 note', ['جدول 9', 'جدول 10', 'جدول 11', '5/3/6', '5/3/8'].every(s => doc.getElementById('hx_results').textContent.includes(s)), true);
+w = boot('intl'); w.renderCalc('heatexpansion');
+check('other codes keep the Syrian expansion tank calculator without the Jordanian block', [!!w.document.getElementById('hx_results'), !w.document.getElementById('hx_vw'), w.calcHeatExpansion().jo], [true, true, null]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
