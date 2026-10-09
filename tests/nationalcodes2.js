@@ -761,6 +761,50 @@ check('the results show Tables 9 - 11, 5/3/6 and the 0.08 note', ['جدول 9', 
 w = boot('intl'); w.renderCalc('heatexpansion');
 check('other codes keep the Syrian expansion tank calculator without the Jordanian block', [!!w.document.getElementById('hx_results'), !w.document.getElementById('hx_vw'), w.calcHeatExpansion().jo], [true, true, null]);
 
+// ---------- Jordan: central heating code Tables 12, 13 and 14 (pipe supports and insulation, heatingpipes) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('heatingpipes');
+const H12 = w.eval('JSON.parse(JSON.stringify(JO_HANGERS))'), I13 = w.eval('JSON.parse(JSON.stringify(JO_INS_HOT))'), I14 = w.eval('JSON.parse(JSON.stringify(JO_INS_FROST))');
+const rise = a => a.every((x, i) => !i || x >= a[i - 1]), fall = a => a.every((x, i) => !i || x <= a[i - 1]);
+check('Table 12: nine sizes 15 - 100 mm, the spacing never falls with the size and is never longer for a horizontal than for a vertical pipe', [H12.length, rise(H12.map(r => r[1])), rise(H12.map(r => r[2])), H12.every(r => r[1] <= r[2])], [9, true, true, true]);
+check('Table 12 spot values: 15 mm 1.8 / 2.5 m, 32 mm 2.7 / 3.0, 65 mm 3.0 / 4.5, 100 mm 4.0 / 4.5; sizes above 100 mm take the last row; 15 mm is the floor', [15, 32, 65, 100, 150, 300, 12].map(d => w.joHanger(d).slice(1)), [[1.8, 2.5], [2.7, 3.0], [3.0, 4.5], [4.0, 4.5], [4.0, 4.5], [4.0, 4.5], [1.8, 2.5]]);
+check('Table 13: the thickness rises with the conductivity and with the diameter (4 bands x 5 columns); Table 14 rises with the conductivity, falls with the diameter, and the outdoor values exceed the indoor ones',
+  [I13.length, I13.every(b => b[1].length === 5 && rise(b[1])), I13.every((b, i) => !i || b[1].every((x, j) => x > I13[i - 1][1][j])), I14.every(b => rise(b[1]) && rise(b[2]) && b[1].every((x, j) => x < b[2][j])), I14.every((b, i) => !i || b[1].every((x, j) => x < I14[i - 1][1][j]))], [4, true, true, true, true]);
+const ins = (dn, k, loc) => w.joInsulation(dn, k, loc);
+check('Table 13 at 0.04 W/mK: 25 mm pipe 16 mm; at the printed limits the thicker band is taken (20 mm -> 16, not 12; 80 mm -> 23, not 16; 200 mm -> 31 flat-surface band 31, not 23); 15 mm -> 12', [25, 20, 80, 200, 15].map(d => ins(d, 0.04, '').hot), [16, 16, 23, 31, 12]);
+check('conductivity columns: 0.03 -> 8 mm (15 mm pipe), 0.035 uses the 0.04 column, 0.07 -> 31 mm, above 0.07 there is no value', [ins(15, 0.03, '').hot, ins(15, 0.035, '').col, ins(15, 0.07, '').hot, ins(15, 0.08, '')], [8, 0.04, 31, null]);
+check('Table 14 at 0.05: 40 mm indoors 46 (limit: the thicker band) and outdoors 54; 100 mm indoors 24 and outdoors 28; 80 mm indoors 30 (limit) ; the governing value is the larger of Tables 13 and 14', [ins(40, 0.05, 'in').frost, ins(40, 0.05, 'out').frost, ins(100, 0.05, 'in').frost, ins(100, 0.05, 'out').frost, ins(80, 0.05, 'in').frost, ins(100, 0.05, 'out').gov, ins(100, 0.05, '').gov], [46, 54, 24, 28, 30, 31, 31]);
+let fb = true; for (const dn of [15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300]) for (const k of [0.03, 0.04, 0.05, 0.06, 0.07]) for (const loc of ['in', 'out']) { const x = ins(dn, k, loc); if (!(x.frost > 0 && x.gov >= x.hot && x.gov >= x.frost)) fb = false; }
+check('every size and column has values in both tables and the governing thickness is the larger of the two', fb, true);
+setv(w, 'hp_ik', 0.04); setv(w, 'hp_loc', 'in');
+let hpj = w.calcHeatingPipes().jo;
+check('the calculator fills the supports and the insulation for each loaded pipe row (3 rows) with the 0.04 column and indoor frost protection', [hpj.rows.length, hpj.ik, hpj.loc, hpj.rows.every(r => r.hang && r.ins && r.ins.col === 0.04 && r.ins.frost != null), hpj.tooHigh], [3, 0.04, 'in', true, false]);
+w.calcResult('heatingpipes');
+check('the results show Tables 12 - 14 and the sleeve (10 mm, 30 mm), 20 mm / 80 mm clearance, 100 mm wall and 33.3 % expansion-joint rules', ['الجداول 12 و13 و14', '5/5/4 C', '10 mm', '30 mm', '20 mm', '80 mm', '100 mm', '33.3%'].every(s => doc.getElementById('hp_results').textContent.includes(s)), true);
+setv(w, 'hp_ik', 0.08); hpj = w.calcHeatingPipes().jo;
+check('a conductivity above 0.07 gives no thickness and a warning', [hpj.tooHigh, hpj.rows.every(r => r.ins === null)], [true, true]);
+w.calcResult('heatingpipes');
+check('... which the results state', doc.getElementById('hp_results').textContent.includes('أعلى من أكبر عمود'), true);
+w = boot('sy'); w.renderCalc('heatingpipes');
+check('other codes have no insulation fields and no Jordanian supports block', [!w.document.getElementById('hp_ik'), w.calcHeatingPipes().jo], [true, null]);
+
+// ---------- Jordan: sanitary drainage code Table 4 and chapter 5 (vents, `vent`) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('vent');
+const T4 = w.eval('JSON.parse(JSON.stringify({s: JO_DR_SIZES, v: JO_DR_VERT, h: JO_DR_HORZ, l: JO_DR_VLEN, vu: JO_VENT_UNITS, vl: JO_VENT_LEN}))');
+check('Table 4: 11 drain sizes 32 - 300 mm, units rise with the size, horizontal never above vertical; 9 vent sizes (32 - 200 mm) with units and lengths rising', [T4.s.length, rise(T4.v), rise(T4.h), T4.h.every((x, i) => x <= T4.v[i]), T4.vu.length, rise(T4.vu), rise(T4.vl), T4.l.filter(x => x != null).length], [11, true, true, true, 9, true, true, 9]);
+check('Table 4 cross-check: vents of 100 - 200 mm carry the vertical-drain units (256, 600, 1380, 3600) and vents of 32 and 80 - 200 mm have the vertical-drain lengths (13.7, 64.5, 91.8, 118.6, 155, 228)', [T4.vu.slice(5), [0, 4, 5, 6, 7, 8].map(i => T4.vl[i]), [0, 4, 5, 6, 7, 8].map(i => T4.l[i])], [[256, 600, 1380, 3600], [13.7, 64.5, 91.8, 118.6, 155, 228], [13.7, 64.5, 91.8, 118.6, 155, 228]]);
+const jv = (u, L, s, t) => w.joVent(u, L, s || 4, t || 'stack');
+check('vent size: 20 units over 30 m -> 50 mm (24 units, 36.5 m); over 40 m -> 65 mm; 1 unit 13 m -> 32 mm; 8 units 18 m -> 40 mm; 9 units over 10 m -> 50 mm', [jv(20, 30).size, jv(20, 40).size, jv(1, 13).size, jv(8, 18).size, jv(9, 10).size], [50, 65, 32, 40, 50]);
+check('5/3/1 C: 40 units (65 mm) over 70 m needs 100 mm by the table (91.8 m) but 80 mm for the whole length if the excess over the 65 mm length (54.7 m) is within a third (72.9 m); over 80 m only the table size remains', [jv(40, 70).size, jv(40, 70).altC, jv(40, 80).size, jv(40, 80).altC], [100, 80, 100, 100]);
+check('limits: 5000 units exceed the table; 30 units over 300 m exceed every length; wet vents: 1 unit 40 mm, 4 units 50 mm, 5 units not allowed', [jv(5000, 10).exceeds, jv(30, 300).exceeds, jv(1, 5, 4, 'wet').size, jv(4, 5, 4, 'wet').size, jv(5, 5, 4, 'wet').exceeds], ['units', 'length', 40, 50, 'wet']);
+check('the stack check uses the vertical units: a 4 in (100 mm) stack takes 256, so 300 fails and 200 passes; 1 1/2 in -> 40 mm takes 2', [jv(300, 10, 4).drainOk, jv(200, 10, 4).drainOk, jv(2, 5, 1.5).drainOk, jv(3, 5, 1.5).drainOk, jv(10, 5, 4).stackMm], [false, true, true, false, 100]);
+setv(w, 'vt_dfu', 40); setv(w, 'vt_length', 70); setv(w, 'vt_stackdia', 4); setv(w, 'vt_type', 'stack');
+let vj = w.calcVent().jo;
+check('the calculator gives the Jordanian result next to the IPC one (100 mm by the table, 80 mm by 5/3/1 C)', [vj.size, vj.altC, vj.stackMm], [100, 80, 100]);
+w.calcResult('vent');
+check('the results show the Table 4 block first and the IPC result marked for comparison, with the vent terminal (150 mm, 3 m, 2 m / 1 m) and the wet-vent / circuit-vent rules', ['الجدول 4 والباب الخامس', 'IPC للمقارنة', '150 mm', '3 m', 'مترين أفقيًا', '5/4/2', '5/4/3', '5/4/5', '45°'].every(s => doc.getElementById('vent_result').textContent.includes(s)), true);
+w = boot('intl'); w.renderCalc('vent'); w.calcResult('vent');
+check('other codes keep the IPC vent result without the Jordanian block', [w.calcVent().jo, w.document.getElementById('vent_result').textContent.includes('الجدول 4 والباب الخامس')], [null, false]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
