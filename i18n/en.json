@@ -8563,5 +8563,21 @@
  "مطبوع بحرف زائد بجانبه": "is printed with an extra character beside it",
  "قُرئ": "read as",
  "، والعبارة": ", and the word",
- "بين الشرطين تُفهم أن أيهما أكبر يحكم": "between the two conditions is understood to mean that the larger governs"
+ "بين الشرطين تُفهم أن أيهما أكبر يحكم": "between the two conditions is understood to mean that the larger governs",
+ "يُستعمل في الجدول": "Used in Table",
+ "للمبنى متعدد الطوابق": "for a multi-storey building",
+ "متعدد الطوابق": "multi-storey",
+ "ساعة للطابق الأرضي وما فوقه وعن": "hours for the ground floor and above and not less than",
+ "ساعة لطابق التسوية، لمبنى ارتفاعه": "hours for the basement, for a building of height",
+ "ومساحة أكبر طابق فيه": "and largest floor area",
+ "؛ ويكون المعيار نصف ساعة للعناصر التي تكون جزءًا من طابق تسوية لا تتعدى مساحته": "; and the criterion is half an hour for elements that are part of a basement whose area does not exceed",
+ "يتكرر في الجدول سطران بالحدين نفسيهما وبمعيارين مختلفين فاعتُمد الأعلى": "the table repeats two rows with the same limits and different criteria, so the higher one was adopted",
+ "لا صف في الجدول": "There is no row in Table",
+ "لمبنى ارتفاعه": "for a building of height",
+ "يتجاوز الحدود المبينة لهذا الإشغال": "exceeds the limits shown for this occupancy",
+ "ارجع إلى الجهة الرسمية المختصة": "refer to the competent official authority",
+ "قراءة الجدول": "Reading of Table",
+ "عمود المساحة في الجدول المطبوع بلا حدود صفوف، فرُبطت قيمه بالصفوف بترتيبها": "The area column in the printed table has no row borders, so its values were paired with the rows by their order",
+ "لكل إشغال من قيم المساحة بقدر ما فيه من صفوف المعيار": "each occupancy has as many area values as it has criterion rows",
+ "وبالصف الأول الذي يحوي ارتفاع المبنى ومساحته": "and the first row that contains the building height and area is taken"
 }
