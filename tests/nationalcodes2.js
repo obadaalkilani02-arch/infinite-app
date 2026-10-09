@@ -989,7 +989,7 @@ w.calcResult('natvent');
 check('crack results: the three leakage rates and the Table 5 reference', ['9.82', '2.81', '37.42', 'المعادلة 1'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
 w.renderCalc('natvent'); w.calcResult('natvent');
 check('two-openings results: the wind and temperature flows, the governing effect, the air changes and the Table 11 note', ['7.14', '4.18', 'الحاكم: الريح', '12.9', 'الجدول 11 صورة نقطية'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
-check('HVAC category: 16 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('16 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
+check('HVAC category: 17 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('17 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
 
 // ---------- Jordan: mechanical ventilation and air conditioning code, Tables 23 (persons), 12 (duct velocities) and 16 (outlet velocities) ----------
 w = boot('jo'); doc = w.document;
@@ -1056,6 +1056,34 @@ w.renderCalc('ductweight'); setv(w, 'dw_jo_ins', 2); setv(w, 'dw_jo_dt', '10'); 
 check('the duct takeoff fills the insulation thickness (40 mm) and shows the working', [+doc.getElementById('dw_ins_thk').value, doc.getElementById('dw_jo_ins_note').textContent.includes('39.5') && doc.getElementById('dw_jo_ins_note').textContent.includes('40 mm')], [40, true]);
 w = boot('intl'); w.renderCalc('ductweight');
 check('other codes: no Jordanian insulation fields', [!!w.document.getElementById('dw_jo_ins'), +w.document.getElementById('dw_ins_thk').value], [false, 25]);
+
+// ---------- Jordan: thermal insulation code chapters 5 and 6 (Tables 17, 18, 21, 22, formula 5/5), `condensation` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('condensation');
+const PS = w.eval('JSON.parse(JSON.stringify(JO_PSAT))');
+const magnus = t => 611.2 * Math.exp(17.62 * t / (243.12 + t));
+check('Table 17: 31 whole degrees x 10 tenths, rising along every row and down the table; spot values 0 C 611, 5 C 872, 20 C 2340, 30.9 C 4469; the printed 27.8 C (3793) was corrected to 3738', [PS.length, PS.every(r => r.length === 10), PS.flat().every((x, i, a) => i === 0 || x > a[i - 1]), PS[0][0], PS[5][0], PS[20][0], PS[30][9], PS[27][8]], [31, true, true, 611, 872, 2340, 4469, 3738]);
+check('Table 17 agrees with the Magnus formula within 0.6 % over the whole table', PS.flat().every((x, i) => Math.abs(x / magnus(i / 10) - 1) < 0.006), true);
+check('saturation pressure: interpolation between the printed tenths (20.25 C -> 2376.5), the printed values at whole degrees, Magnus outside the table (-5 C about 402, 35 C about 5613)', [w.eval('joPsat(20.25)'), w.eval('joPsat(5)'), Math.round(w.eval('joPsat(-5)')), Math.round(w.eval('joPsat(35)'))], [2376.5, 872, 402, 5613]);
+const VP = w.eval('JSON.parse(JSON.stringify(JO_VAPOUR))');
+check('Tables 18 and 22: 34 materials; stones 80 - 135, hollow concrete bricks 27 - 54, polystyrene 25 kg/m3 160 - 380, mineral and vegetable fibres 5.4, glass brick 800, PE film 0.10 mm 350000, cold bituminous paint 3240', [VP.length, VP[0].slice(1), VP[2].slice(1), VP[21].slice(1), VP[24].slice(1), VP[5].slice(1), VP[31].slice(1), VP[33].slice(1)], [34, [80, 135], [27, 54], [160, 380], [5.4, 5.4], [800, 800], [350000, 350000], [3240, 3240]]);
+check('the lower value is taken by default (5/4): polystyrene 25 kg/m3 -> 160, cement plaster -> 80; the higher value on request', [w.eval('joVres(21, "lo")'), w.eval('joVres(11, "lo")'), w.eval('joVres(21, "hi")')], [160, 80, 380]);
+check('the Table 15 material -> Table 18 row suggestion: gypsum plaster -> 12, hollow concrete block -> 2, polystyrene 25 -> 21, cement plaster -> 11, loose perlite -> none', [49, 10, 76, 47, 99].map(i => w.eval('joVapourGuess(' + i + ')')), [12, 2, 21, 11, null]);
+let cn = w.eval('JSON.parse(JSON.stringify(calcCondensation()))');
+check('default wall (gypsum plaster 15, hollow block 200, polystyrene 50, cement plaster 20 mm) at 5 C and 70 %: R = 1.911, U = 0.523, vapour pressure 1150 / 610 N/m2, total vapour resistance 15.81, no condensation', [+cn.Rt.toFixed(3), +cn.U.toFixed(3), +cn.pi.toFixed(1), +cn.po.toFixed(1), +cn.RvT.toFixed(2), cn.c, cn.surface], [1.911, 0.523, 1150.4, 610.4, 15.81, -1, false]);
+check('... the temperatures of the planes 19.06, 18.89, 17.15, 5.60, 5.47 and the vapour pressures 1150, 1123, 938, 665, 610', [cn.planes.map(p => +p.th.toFixed(2)), cn.planes.map(p => Math.round(p.pv))], [[19.06, 18.89, 17.15, 5.60, 5.47], [1150, 1123, 938, 665, 610]]);
+check('... the insulation (polystyrene, vapour resistivity 160) is in group 2 and a barrier of at most 0.06 g/(MN s) (resistance of at least 16.7) is advised for a wall', [cn.grp, cn.perm], [2, 0.06]);
+doc.getElementById('nc-tbody').innerHTML = w.eval('ncRowHTML(76, 50, 21) + ncRowHTML(10, 200, 2) + ncRowHTML(47, 20, 11)');
+setv(w, 'nc_to', 0); setv(w, 'nc_rho', 90); cn = w.eval('JSON.parse(JSON.stringify(calcCondensation()))');
+check('insulation on the inside at 0 C and 90 %: condensation at the plane between the insulation and the block (Pv 802 > Ps 768 N/m2), Rvi 8 and Rvo 7', [cn.c, Math.round(cn.planes[1].pv), Math.round(cn.planes[1].ps), cn.Rvi, cn.Rvo], [1, 802, 768, 8, 7]);
+check('... the remaining condensate by 5/5: W = 0.005 x [(Pi - Ps) / 8 - (Ps - Po) / 7] about 0.045 kg/m2, within the limit of 1.0 (ok), and the table marks the plane', [+cn.W.toFixed(3), +(0.005 * ((cn.pi - cn.planes[1].ps) / 8 - (cn.planes[1].ps - cn.po) / 7)).toFixed(3), cn.ok, (w.calcResult('condensation'), doc.getElementById('nc_results').textContent.includes('⚠ تكاثف'))], [0.045, 0.045, true, true]);
+setv(w, 'nc_pm', 'special'); cn = w.eval('calcCondensation()');
+check('large kitchens (5/2/3): the indoor vapour pressure is the outdoor one + 1080 N/m2; with an entered indoor humidity of 50 % at 20 C it is 1170', [Math.round(cn.pi - cn.po), (setv(w, 'nc_pm', 'rh'), Math.round(w.eval('calcCondensation().pi')))], [1080, 1170]);
+setv(w, 'nc_zone', 0); w.ncZoneChange();
+check('choosing zone 1 (Table A) fills the winter design temperature 6 C and the winter relative humidity 73 % (Table A6)', [+doc.getElementById('nc_to').value, +doc.getElementById('nc_rho').value], [6, 73]);
+check('Table 21: group 2 needs 0.06 g/(MN s) for every element; group 3: walls 0.06, ceiling underside 0.02, roof back 0.02, metal construction 0.002; group 1 needs none', [w.eval('JO_BARRIER[2]'), w.eval('JO_BARRIER[3]'), w.eval('JO_BARRIER[1]') === undefined], [[0.06, 0.06, 0.06, 0.06], [0.06, 0.02, 0.02, 0.002], true]);
+w.renderCalc('condensation'); w.addNcLayer();
+check('the form: four default layers and the add button gives a fifth; the zone list has four zones', [doc.querySelectorAll('#nc-tbody tr').length, doc.getElementById('nc_zone').options.length], [5, 5]);
+check('HVAC category: 17 calculators and the condensation card', [doc.getElementById('main-categories-grid').textContent.includes('17 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('condensation')")], [true, true]);
 
 // the other codes are unchanged
 w = boot('sa');

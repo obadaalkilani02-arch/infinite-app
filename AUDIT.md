@@ -569,3 +569,28 @@ The stiffening data of the same tables (maximum distance between joints and stif
 Thickness of another material = cork-equivalent x k(material) / 0.043, rounded up to 5 mm, with the upper end of the conductivity range of the material.
 
 🔴 Uncertain: the code states the thickness "equivalent to cork" without naming the conductivity of the reference cork (0.040 - 0.043); the upper end 0.043 is used for the reference and for the material, so the cork board itself gives exactly 25 / 50 mm. Which other materials the code means by "equivalent" is not printed: the conductivity ratio is the tool's reading. The rule 7/3/1 sets no thickness below 7 degrees. The code gives no vapour barrier thickness for ducts. Not done in this code: Table 13 (fitting loss coefficients, a large diagram table), Tables 3 and 11 (preferred duct dimensions, gypsum ducts), 14, 19 - 22, 24 - 25.
+
+
+## National codes, part 26: Jordanian thermal insulation code, chapters 5 and 6, condensation inside building elements (new calculator `condensation`)
+
+NEW calculator (80th, HVAC 17, card in "air networks" after the natural ventilation one): interstitial condensation of a wall or roof by the vapour pressure method (Glaser) with the data and rules of the thermal insulation code (the earlier parts took Tables 1 - 3, 13 - 16 and 24 / 25 from this code; Tables 17 - 22 were open). The pages are plain text; the digits of Table 17 are in the PDF text layer (checked against the image).
+
+| Source | Used in | Notes |
+|---|---|---|
+| 5/2/2, 5/2/3 | field "indoor vapour pressure" | the vapour pressure indoors exceeds the outdoor one by 540 N/m2 (3.4 g/kg, ordinary occupancies) or 1080 N/m2 (large kitchens, 6.8 g/kg); or an entered indoor humidity |
+| Table 17 | `JO_PSAT`, `joPsat` | saturated water vapour pressure 0 - 30.9 C (31 x 10 values, linear interpolation between tenths); agrees with Magnus within 0.6 %; outside the table the Magnus formula is used and flagged |
+| Table 18 | `JO_VAPOUR` | vapour resistivity (MN.s/(g.m)) of 26 materials as ranges; the lower value is the default (5/4: "when the true value is not known the lowest values are taken"), the upper on request |
+| Table 22 | `JO_VAPOUR` (8 more rows) | epoxy and melamine paints, polypropylene, PVC films 0.4 / 0.5 mm, PE films 0.10 / 0.30 mm, cold bituminous paint 1.0 mm |
+| 5/5 | `joGlaser` | W = 0.005 [(Pi - Ps) / sum Rvi - (Ps - Po) / sum Rvo] kg/m2 with the limit 1.0 kg/m2 (0.5 for condensation in an air cavity or in a highly absorbent insulation) |
+| Table 21 | `JO_BARRIER` | maximum permeance of the vapour barrier by the insulation group (resistivity above 2000 / 160 - 2000 / below 160) and the element: group 2 0.06 g/(MN.s) everywhere; group 3 walls 0.06, ceiling underside 0.02, roof back 0.02, metal construction 0.002; group 1 needs none |
+| Appendix A, Tables A1 - A4 and A6 | field "climate zone" | the winter design temperature (6 / 10 / 5 / 3 C) and the maximum winter design relative humidity (73 / 63 / 70 / 66 %) of the four zones; the temperatures were already in `JO_ZONES` |
+
+The layers use the Table 15 materials of the U-value calculator for the conductivity (`JO_MATS`) with an automatic suggestion of the Table 18 row (`joVapourGuess`, by the position of the material in the list: stones, bricks, concrete, foam concrete, tiles, plasters, wood and boards, asbestos cement, felt and bitumen, polystyrene by density, polyurethane, mineral and glass fibres, cork boards); every value can be edited. Films of Table 22 need their real thickness.
+
+🔴 Uncertain:
+- Table 17 prints 3793 at 27.8 C: a transposition of 3738 (the neighbours 3717 and 3759 fix it); 3738 is used and the result says so.
+- The code states the 5/5 formula for the cold face of the insulation; here it is applied at the plane where the vapour pressure exceeds the saturated one by the most (one plane only), and 5/5 gives no drying rule for the summer.
+- Table 22 prints polyethylene film 0.10 mm = 350000 and 0.30 mm = 184000 (the thinner film more resistive than the thicker one: possibly swapped); the values are used as printed. The Table 22 values are resistivities (MN.s/(g.m)), so the film thickness must be entered.
+- The suggestion of a Table 18 row for a Table 15 material is the tool's mapping (the code does not link the two tables); the row "felt and bitumen 20 mm" is kept as printed.
+- Appendix A6 columns were read as winter minimum / maximum and summer minimum / maximum (summer agrees with the values already in `JO_ZONES`).
+- Not done in this code: Tables 19 - 20 (puncture resistance and properties of vapour-barrier films, qualitative), 23 (specific heat capacity of materials, chapter 8) and chapter 7 (periodic heat flow, time lag and decrement factor).
