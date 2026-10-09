@@ -1023,6 +1023,29 @@ check('diffuser selection: choosing hotel bedrooms / private offices sets the ne
 w = boot('intl'); w.renderCalc('diffuserselection');
 check('other codes: no Table 16 list', !!w.document.getElementById('df_jo'), false);
 
+// ---------- Jordan: mechanical ventilation code, Tables 4, 5, 6, 8 and 9 (duct sheet thickness) in the duct takeoff ----------
+w = boot('jo'); doc = w.document;
+const sh = (shape, dim, mat, cls, gal) => w.eval('joSheet(' + [JSON.stringify(shape), dim, JSON.stringify(mat), JSON.stringify(cls), !!gal].join(',') + ')');
+check('Table 4 (rectangular steel, low velocity): by the longest side 400 / 600 -> 0.6, 800 / 1000 -> 0.8, 1500 / 2250 -> 1.0, 3000 -> 1.2; beyond 3000 the last row is kept and flagged', [350, 600, 601, 1000, 1200, 2250, 3000, 3200].map(d => sh('RECTANGLE', d, 'galv', 'low').mm).concat([sh('RECTANGLE', 3200, 'galv', 'low').beyond, sh('RECTANGLE', 3000, 'galv', 'low').beyond]), [0.6, 0.6, 0.8, 0.8, 1.0, 1.0, 1.2, 1.2, true, false]);
+check('Table 6 (rectangular steel, 10 - 40 m/s): up to 1000 -> 0.8, 1500 -> 1.0, above 1500 -> 1.2 (no upper limit); the table number is 6', [300, 1000, 1200, 1500, 2000, 3500].map(d => sh('RECTANGLE', d, 'galv', 'high').mm).concat(sh('RECTANGLE', 1200, 'galv', 'high').tab), [0.8, 0.8, 1.0, 1.0, 1.2, 1.2, '6']);
+check('Table 5 (round steel): 500 -> 0.6, 750 -> 0.8, 1250 -> 1.0, 1750 and 2500 -> 1.2; the same table for the high-velocity class (the code has no round table for it)', [400, 600, 1000, 1500, 2500].map(d => sh('ROUND', d, 'galv', 'low').mm).concat([sh('ROUND', 600, 'galv', 'high').mm, sh('ROUND', 600, 'galv', 'high').tab]), [0.6, 0.8, 1.0, 1.2, 1.2, 0.8, '5']);
+check('Tables 8 and 9 (aluminium): rectangular 400 / 600 -> 0.8, 800 / 1000 -> 1.0, 1500 / 2250 -> 1.2, 3000 -> 1.6; round 500 -> 0.8, 750 -> 1.0, 1250 -> 1.2, 1750 / 2500 -> 1.6', [[400, 600, 800, 1000, 1500, 2250, 3000].map(d => sh('RECTANGLE', d, 'aluminium', 'low').mm), [500, 750, 1250, 1750, 2500].map(d => sh('ROUND', d, 'aluminium', 'low').mm), sh('RECTANGLE', 700, 'aluminium', 'low').tab, sh('ROUND', 700, 'aluminium', 'low').tab], [[0.8, 0.8, 1.0, 1.0, 1.2, 1.2, 1.6], [0.8, 1.0, 1.2, 1.6, 1.6], '8', '9']);
+check('ducts galvanized after fabrication: rectangular 300 -> 1.2, above -> 1.6; round 300 -> 1.0, 450 -> 1.2, above -> 1.6', [sh('RECTANGLE', 250, 'galv', 'low', true).mm, sh('RECTANGLE', 400, 'galv', 'low', true).mm, sh('ROUND', 300, 'galv', 'low', true).mm, sh('ROUND', 450, 'galv', 'low', true).mm, sh('ROUND', 800, 'galv', 'low', true).mm], [1.2, 1.6, 1.0, 1.2, 1.6]);
+const JS = w.eval('JSON.parse(JSON.stringify(JO_SHEET))');
+check('the thickness never falls as the duct grows (every table) and the aluminium tables are never thinner than the steel ones', [Object.values(JS).every(t => t.every((r, i) => i === 0 || r[1] >= t[i - 1][1])), JS.alRect.every((r, i) => r[1] >= JS.rectLow[i][1]), JS.alRound.every((r, i) => r[1] >= JS.round[i][1])], [true, true, true]);
+w.renderCalc('ductweight'); w.calcResult('ductweight');
+let dwr = w.eval('calcDuctWeight()');
+check('the takeoff under the Jordanian code: the default rows (600 x 400 rectangular, 600 round) use Table 4 (0.6 mm) and Table 5 (0.8 mm) and the weight breaks down by thickness', [dwr.jo, Object.keys(dwr.gaugeBreak).sort(), dwr.joTables.sort()], [true, ['0.6 mm — جدول 4', '0.8 mm — جدول 5'], ['4', '5']]);
+const dwAll = w.eval('calcDuctWeight().totalWeight'), dwArea = w.eval('calcDuctWeight().totalArea');
+setv(w, 'dw_material', 'aluminium'); dwr = w.eval('calcDuctWeight()');
+check('aluminium (density 2.70): rectangular 600 -> 0.8 mm (Table 8) and round 600 -> 1.0 mm (Table 9)', [dwr.density, dwr.joTables.sort(), Object.keys(dwr.gaugeBreak)], [2.70, ['8', '9'], ['0.8 mm — جدول 8', '1.0 mm — جدول 9']]);
+setv(w, 'dw_material', 'galv'); setv(w, 'dw_jo_cls', 'high'); dwr = w.eval('calcDuctWeight()');
+check('high-velocity class: the rectangular rows move to Table 6 (0.8 mm for 600) and the round row stays on Table 5', dwr.joTables.sort(), ['5', '6']);
+setv(w, 'dw_jo_cls', 'low'); w.calcResult('ductweight');
+check('the results quote the Jordanian code and not the SMACNA gauge sentence', [doc.getElementById('dw_results').textContent.includes('5/2'), doc.getElementById('dw_results').textContent.includes('26G')], [true, false]);
+w = boot('intl'); w.renderCalc('ductweight'); w.calcResult('ductweight'); dwr = w.eval('calcDuctWeight()');
+check('other codes: the SMACNA gauges (24G for 600 and 26G ...) and no Jordanian fields or aluminium option', [dwr.jo, Object.keys(dwr.gaugeBreak).sort(), !!w.document.getElementById('dw_jo_cls'), [...w.document.getElementById('dw_material').options].some(o => o.value === 'aluminium')], [false, ['24G'], false, false]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

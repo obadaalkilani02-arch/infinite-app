@@ -533,3 +533,25 @@ The mechanical ventilation code (PDF "كودة التهوية الميكانيك
 - Table 16: the range is printed with the lower end for quiet use; the upper end is used as the limit (the user can still edit the field). Table 15 (velocities 0.1 - 0.45 m/s, titled "through air grilles" but with the size of occupied-zone air speeds) was not used.
 - Table 17 (maximum temperature difference of the supply air by outlet height) is cut off in the PDF (only the 3.00 m and 3.50 m rows, 8 / 11 and 9 / 12 K, are visible): not used.
 - Not done in this code: Tables 3 - 11 (duct dimensions and sheet gauges for rectangular and round steel and aluminium ducts), 13 (fitting loss coefficients), 14, 18 (thermal insulation of ducts), 19 - 21 (noise), 22 (refrigerants), 24 - 25 (water flow in pipes, a bitmap table), 26 - 31 (calculation forms and unit conversions).
+
+
+## National codes, part 24: Jordanian mechanical ventilation code, Tables 4, 5, 6, 8 and 9 (duct sheet thickness) in the duct takeoff
+
+`ductweight` (Jordan only): the sheet thickness of each duct comes from the code instead of the SMACNA gauge table (5/2, "ducts made of steel sheets" and "of aluminium sheets"). The tables are plain text in the rendered pages and were read from the images (the text layer has the numbers but the rows are scrambled).
+
+| Source | Used in | Notes |
+|---|---|---|
+| Table 4 (rectangular steel ducts, up to 10 m/s and 500 Pa) | `JO_SHEET.rectLow`, `joSheet` | longest side up to 400 / 600 mm 0.6 mm, 800 / 1000 0.8, 1500 / 2250 1.0, 3000 1.2 |
+| Table 6 (rectangular steel, 10 - 40 m/s and up to 2500 Pa) | `JO_SHEET.rectHigh` | up to 1000 mm 0.8, 1500 1.0, 1501 and above 1.2 |
+| Table 5 (round steel, up to 10 m/s and 500 Pa) | `JO_SHEET.round` | diameter up to 500 mm 0.6, 750 0.8, 1250 1.0, 1750 / 2500 1.2 |
+| Tables 8 and 9 (aluminium rectangular / round) | `alRect`, `alRound` | rectangular 0.8 (to 600) / 1.0 (to 1000) / 1.2 (to 2250) / 1.6 (to 3000); round 0.8 / 1.0 / 1.2 / 1.6 / 1.6 for 500 / 750 / 1250 / 1750 / 2500 mm; an aluminium material (2.70 kg/m2 per mm) was added to the Jordanian material list |
+| Bottom rows of Tables 4 and 5 (ducts galvanized after fabrication) | `galRect`, `galRound`, field dw_jo_gal | rectangular up to 300 mm 1.2, above 1.6; round up to 300 1.0, to 450 1.2, above 1.6 |
+
+The stiffening data of the same tables (maximum distance between joints and stiffeners with and without a bead or bend, minimum stiffening angle: 3 x 25 x 25 ... 5 x 50 x 50) are not used by the weight calculation; the note says so. Tables 7 and 10 (steel and aluminium connections to equipment at 500 - 1000 Pa: 1.0 / 1.0 / 1.2 / 1.6 mm steel and 1.2 / 1.2 / 1.6 / 2.0 aluminium for 800 / 1000 / 2250 / 3000 mm) were read and not used (they are joint details, not the duct).
+
+🔴 Uncertain:
+- The title of Table 8 is printed "of steel sheets" while 5/2 (b) assigns Tables 8, 9 and 10 to aluminium and the thicknesses are the aluminium ones (thicker than Table 4): treated as aluminium.
+- "ducts galvanized after fabrication" is my reading of the Arabic word printed under Tables 4 and 5 (hot-dip galvanizing after the duct is made); the thicker values apply to it.
+- There is no round table for the high-velocity class: Table 5 is used and the result says so. The aluminium tables exist for low velocities only and are used for both classes.
+- The longest side printed bands share their limits (e.g. 600 / 601): the upper limit belongs to the lower row. Sizes above the last row keep its thickness and are flagged (the high-velocity rectangular table has no upper limit).
+- Not done in this code: Table 3 (preferred duct dimensions, bitmap-like lists), 11 (gypsum ducts), 13 (fitting loss coefficients), 14 (duct materials), 18 (duct insulation), 19 - 21 (noise), 22 (refrigerants), 24 - 25 (pipe flows).
