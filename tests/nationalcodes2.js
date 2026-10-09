@@ -787,6 +787,28 @@ check('... which the results state', doc.getElementById('hp_results').textConten
 w = boot('sy'); w.renderCalc('heatingpipes');
 check('other codes have no insulation fields and no Jordanian supports block', [!w.document.getElementById('hp_ik'), w.calcHeatingPipes().jo], [true, null]);
 
+// ---------- Jordan: thermal insulation code 8/3, Tables 24 and 25 (design ratio of the heating energy, heatingload) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('heatingload');
+const HRT = w.eval('JSON.parse(JSON.stringify({d: JO_OCC_DAILY, w: JO_OCC_WEEK, p: JO_PLANT}))');
+check('Table 24: daily factors for 4 / 8 / 12 / 16 h: light 0.68 / 1.00 / 1.25 / 1.40, heavy 0.96 / 1.00 / 1.02 / 1.03; five days: light 0.75, heavy 0.85; Table 25 (low / high time lag): light 0.55 / 0.70, medium 0.70 / 0.85, heavy 0.85 / 0.95', [HRT.d, HRT.w, HRT.p], [{light: {4: 0.68, 8: 1, 12: 1.25, 16: 1.4}, heavy: {4: 0.96, 8: 1, 12: 1.02, 16: 1.03}}, {light: 0.75, heavy: 0.85}, {light: {low: 0.55, high: 0.70}, medium: {low: 0.70, high: 0.85}, heavy: {low: 0.85, high: 0.95}}]);
+check('the daily factor rises with the hours (and changes far more for a light building), and Table 25 rises with the inertia of the building and with its time lag', [Object.values(HRT.d.light).every((x, i, a) => !i || x >= a[i - 1]), Object.values(HRT.d.heavy).every((x, i, a) => !i || x >= a[i - 1]), HRT.d.light[16] - HRT.d.light[4] > HRT.d.heavy[16] - HRT.d.heavy[4], ['light', 'medium', 'heavy'].every((k, i, a) => HRT.p[k].high > HRT.p[k].low && (!i || HRT.p[k].low > HRT.p[a[i - 1]].low))], [true, true, true, true]);
+const hr = w.joHeatRatio('light', 5, 12, 'intermittent', 'high');
+check('the code example (8/3/3): light building, high time lag, 12 h a day, 5 days a week: 0.70 x 1.25 x 0.75 = 0.656 (printed 0.66)', [hr.daily, hr.weekly, hr.plant, Math.abs(hr.ratio - 0.65625) < 1e-9, hr.mean], [1.25, 0.75, 0.70, true, false]);
+check('continuous plant and seven days: only the daily factor remains (heavy 16 h: 1.03); heavy, 4 h, 5 days, intermittent, low lag: 0.96 x 0.85 x 0.85', [w.joHeatRatio('heavy', 7, 16, 'continuous', 'low').ratio, +w.joHeatRatio('heavy', 5, 4, 'intermittent', 'low').ratio.toFixed(4)], [1.03, +(0.96 * 0.85 * 0.85).toFixed(4)]);
+const hm = w.joHeatRatio('medium', 5, 12, 'intermittent', 'low');
+check('the medium column is empty in the print: the mean of the light and heavy values is used (12 h: 1.135, 5 days: 0.80) and flagged; 8 h and 7 days is exact', [Math.abs(hm.daily - 1.135) < 1e-9, Math.abs(hm.weekly - 0.80) < 1e-9, hm.plant, hm.mean, w.joHeatRatio('medium', 7, 8, 'continuous', 'high').mean, w.joHeatRatio('medium', 7, 8, 'continuous', 'high').ratio], [true, true, 0.70, true, false, 1]);
+let hl = w.calcHeatingLoad();
+check('defaults: heavy building, 7 days, 8 h, continuous plant: ratio 1.0 (no reduction)', [hl.jo.inertia, hl.jo.days, hl.jo.hours, hl.jo.ops, hl.jo.ratio], ['heavy', 7, 8, 'continuous', 1]);
+setv(w, 'hl_inertia', 'light'); setv(w, 'hl_wk', '5'); setv(w, 'hl_hrs', '12'); setv(w, 'hl_ops', 'intermittent'); setv(w, 'hl_lag', 'high');
+hl = w.calcHeatingLoad();
+check('the form values give the code example (0.656)', Math.abs(hl.jo.ratio - 0.65625) < 1e-9, true);
+w.calcResult('heatingload');
+check('the results show Tables 24 and 25, the ratio 0.66 example and the reduced load beside the full one, and the medium-column warning only for a medium building', [['جدول 24', 'جدول 25', '0.70 × 1.25 × 0.75 = 0.66', 'حمل التدفئة بعد النسبة'].every(s => doc.getElementById('hl_results').textContent.includes(s)), doc.getElementById('hl_results').textContent.includes('عمود المبنى المتوسط')], [true, false]);
+setv(w, 'hl_inertia', 'medium'); w.calcResult('heatingload');
+check('... the warning appears for the medium building', doc.getElementById('hl_results').textContent.includes('عمود المبنى المتوسط'), true);
+w = boot('sy'); w.renderCalc('heatingload');
+check('other codes have no occupancy fields and no ratio block', [!w.document.getElementById('hl_inertia'), w.calcHeatingLoad().jo], [true, null]);
+
 // ---------- Jordan: thermal insulation code 4/3 (surface resistances, cavities and materials in `uvalue`) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('uvalue');
 const FRM = w.eval('JSON.parse(JSON.stringify({rse: JO_RSE, rsi: JO_RSI, cav: JO_CAVITY, mats: JO_MATS}))');

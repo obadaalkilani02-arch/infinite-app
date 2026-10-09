@@ -437,3 +437,18 @@ Tables 1 - 3 (maximum U-values) and Appendix A (climate zones) were already used
 🔴 Uncertain: the exposure classes and surface types follow the printed definitions, but the table prints no outside film for a floor in moderate or severe exposure (the sheltered 0.09 is reused and flagged) and no inside film of type B for downward flow (A reused); Table 15 rows are paired with their material by the order of the printed list: the mineral-fibre, glass-wool, cork and "pitch and bitumen" rows are flagged because the printed value rows do not line up one to one with the labels (several densities per label, ranges such as 0.045 - 0.060 where the larger value is used); the "volcanic rocks" heading prints no value (left out), and rubber and glass brick print no density; two rows of baked clay brick (solid and the first hollow row) both print 2000 / 1.00, one is kept; the values are for the natural dry state as the code says.
 
 Not done in the thermal insulation code: Tables 17 - 22 (vapour pressure, vapour barriers and condensation), Table 23 (specific heat capacities), Tables 24 and 25 (heat reduction for intermittent occupancy and heating), and the thermal-bridge rules of chapter 4.
+
+
+## National codes, part 19: Jordanian thermal insulation code, Tables 24 and 25 (design ratio of the heating energy, `heatingload`)
+
+Plain numbers in the rendered pages (8/1 - 8/3). `heatingload` (Jordan only): a new section "heating energy reduction by occupancy" with the thermal inertia of the building (8/2: heavy = stone or concrete multi-storey structures with solid partitions; medium = lightweight materials with solid partitions; light = one storey without partitions or with few non-solid ones, upper floors without partitions count as light), the weekly period (7 or 5 days), the daily period (4, 8, 12 or 16 h), the operation of the heat supply equipment (continuous or intermittent daily) and the time lag of the building (low or high). The result is the design ratio = daily factor x weekly factor x plant factor, shown with the reduced heating load and boiler capacity beside the full ones. The default (heavy, 7 days, 8 h, continuous) is neutral (1.0). The ratio does not change the existing outputs or the load sent to the other calculators.
+
+| Source | Used in | Notes |
+|---|---|---|
+| Table 24 | `heatingload` | daily period 4 / 8 / 12 / 16 h: light 0.68 / 1.00 / 1.25 / 1.40, heavy 0.96 / 1.00 / 1.02 / 1.03; weekly: 7 days 1.0, 5 days light 0.75 and heavy 0.85 |
+| Table 25 | `heatingload` | continuous operation 1.0; daily intermittent operation (low / high time lag): light buildings 0.55 / 0.70, medium 0.70 / 0.85, heavy 0.85 / 0.95 |
+| 8/3/3 (example) | test | light building, high time lag, 12 h, 5 days: 0.70 x 1.25 x 0.75 = 0.66 of the total design load, reproduced (0.656) |
+
+🔴 Uncertain: the medium column of Table 24 is empty in the print (the heading lists light, medium and heavy but only the first and last carry numbers, and the "1.0" for continuous days is centred): the mean of the light and heavy values is used for the medium building (daily value except at 8 h, weekly value at 5 days) and flagged; the code gives the ratio for the design on the basis of "optimum energy consumption" and says it is preferable ("يفضل"), it does not say that the equipment may be selected on the reduced load, so both numbers are shown and the choice is left to the designer.
+
+Not done: Table 23 (specific heat capacities, used only for the time lag and decrement factor of chapter 7), the periodic heat flow method itself (the time lag and decrement factor of a wall), Tables 17 - 22 (vapour and condensation).
