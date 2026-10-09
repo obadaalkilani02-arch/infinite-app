@@ -636,6 +636,41 @@ check('the detector layout is available with every code', !!w.document.getElemen
 w = boot('intl'); w.renderCalc('egress');
 check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 10]);
 
+// ---------- Jordan: septic tank, collecting pit, inspection chamber, Table 7 (sanitary drainage code 6/2, 6/3, 4/3) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('septic');
+const sp = vals => { Object.keys(vals).forEach(id => setv(w, id, vals[id])); return w.calcSeptic(); };
+let sx = sp({sp_P: 20, sp_q: 180, sp_W: 1.2, sp_d: 1.2, sp_days: 45, sp_hd: 4, sp_shape: 'circ', sp_pw: 2, sp_ic_h: 1.2, sp_ic_n: 2, sp_ic_bs: 100, sp_db: '', sp_dp: '', sp_dw: '', sp_dt: ''});
+check('septic tank for 20 people: C = 0.18 x 20 + 2 = 5.6 m3; first compartment 2/3 = 3.73 m3, second 1/3 = 1.87 m3', [sx.tank.C, sx.tank.V1, sx.tank.V2], [5.6, 5.6 * 2 / 3, 5.6 / 3], 1e-9);
+check('... 1.2 m wide and 1.2 m deep: lengths 2.59 m and 1.30 m (the 1.5 m limit of the second compartment applies above 6 m3 only), no extra opening, all checks pass', [+sx.tank.L1.toFixed(2), +sx.tank.L2.toFixed(2), sx.tank.rows[3].ok, sx.tank.rows[4].val, sx.tank.ok], [2.59, 1.30, null, 'غير مطلوبة', true]);
+sx = sp({sp_P: 2});
+check('2 people: C = 2.36 m3 is raised to 3 m3 (2 m3 + 1 m3), flagged', [sx.tank.C, sx.tank.Ct, sx.tank.V1, sx.tank.V2, sx.tank.raised], [2.36, 3, 2, 1, true], 1e-9);
+sx = sp({sp_P: 100, sp_W: 1.5, sp_d: 1.5});
+check('100 people: C = 20 m3, 13.33 + 6.67 m3 in a 1.5 x 1.5 m section: 5.93 m and 2.96 m, an extra opening above the baffle (first compartment over 3.7 m)', [sx.tank.C, +sx.tank.L1.toFixed(2), +sx.tank.L2.toFixed(2), sx.tank.rows[4].val, sx.tank.ok], [20, 5.93, 2.96, 'مطلوبة', true], 1e-9);
+sx = sp({sp_P: 40, sp_W: 2, sp_d: 1.8});
+check('40 people (9.2 m3) in a 2 x 1.8 m section: the second compartment is 0.85 m long, below 1.5 m (the tank exceeds 6 m3): fails', [+sx.tank.L2.toFixed(2), sx.tank.rows[3].ok, sx.tank.ok], [0.85, false, false]);
+check('width below 1 m or liquid depth above 1.8 m or below 0.6 m fail', [sp({sp_P: 20, sp_W: 0.8, sp_d: 1.2}).tank.rows[0].ok, sp({sp_W: 1.2, sp_d: 2}).tank.rows[1].ok, sp({sp_d: 0.5}).tank.rows[1].ok], [false, false, false]);
+sx = sp({sp_W: 1.2, sp_d: 1.2});
+check('collecting pit, 20 people x 180 L x 45 days = 162 m3; total depth 4 m (effective 3.4 m): 47.6 m2, circular 7.79 m, square 6.90 m, rectangular 23.8 x 2 m', [+sx.pit.V.toFixed(6), +sx.pit.A.toFixed(1), +sx.pit.dim.toFixed(2), +sp({sp_shape: 'square'}).pit.dim.toFixed(2), +sp({sp_shape: 'rect', sp_pw: 2}).pit.dim.toFixed(1)], [162, 47.6, 7.79, 6.9, 23.8]);
+sp({sp_shape: 'circ'});
+check('pit checks: 45 days, 180 L and 4 m depth pass; 30 days, 150 L or 5 m fail', [sx.pit.ok, sp({sp_days: 30}).pit.rows[0].ok, sp({sp_days: 45, sp_q: 150}).pit.rows[1].ok, sp({sp_q: 180, sp_hd: 5}).pit.rows[2].ok], [true, false, false, false]);
+sp({sp_hd: 4});
+check('inspection chamber, 1.2 m deep, 2 branches of 100 mm: round 600 mm (400 and 500 are too shallow), rectangular 900 x 600', [sp({}).ic.round[1], w.calcSeptic().ic.rect[1]], ['600', '900 × 600']);
+check('0.5 m deep: 400 mm; 0.7 m deep: 500 mm (400 mm is only 600 mm deep); 3 branches at 0.5 m: 500 mm', [sp({sp_ic_h: 0.5}).ic.round[1], sp({sp_ic_h: 0.7}).ic.round[1], sp({sp_ic_h: 0.5, sp_ic_n: 3}).ic.round[1]], ['400', '500', '500']);
+check('3 m deep with 4 branches of 200 mm: round 900 mm, rectangular 1500 x 900; step irons from 1.5 m', [sp({sp_ic_h: 3, sp_ic_n: 4, sp_ic_bs: 200}).ic.round[1], w.calcSeptic().ic.rect[1], w.calcSeptic().ic.stepIrons, sp({sp_ic_h: 1.4, sp_ic_n: 2, sp_ic_bs: 100}).ic.stepIrons], ['900', '1500 × 900', true, false]);
+check('a 200 mm branch needs the 900 mm round or the 1200 x 900 mm rectangular chamber; 5 branches or 5 m of depth: no chamber in Table 8', [sp({sp_ic_h: 1.2, sp_ic_n: 2, sp_ic_bs: 200}).ic.round[1], w.calcSeptic().ic.rect[1], sp({sp_ic_n: 5, sp_ic_bs: 100}).ic.round, w.calcSeptic().ic.rect, sp({sp_ic_n: 2, sp_ic_h: 5}).ic.round], ['900', '1200 × 900', null, null, null]);
+sp({sp_ic_h: 1.2, sp_ic_n: 2, sp_ic_bs: 100});
+sx = sp({sp_db: 1, sp_dp: 2, sp_dw: 3, sp_dt: 3});
+check('Table 7: 1 m to a building fails for the tank (1.5) and the pit (3.5); 2 m to the property line passes for the tank only; 3 m to a watertight water tank fails (3.5) with the drain pipe passing (2.5); 3 m to trees passes for both', [sx.t7.map(r => r.okTank), sx.t7.map(r => r.okPit), sx.t7[2].okDrain, sx.pitFails], [[false, true, false, true], [false, false, false, true], true, true]);
+sx = sp({sp_db: 4, sp_dp: 4, sp_dw: 16, sp_dt: 5});
+check('4 m, 4 m, 16 m and 5 m: every distance passes (tank and pit)', [sx.t7.every(r => r.okTank && r.okPit), sx.pitFails], [true, false]);
+sx = sp({sp_db: '', sp_dp: '', sp_dw: '', sp_dt: ''});
+check('blank distances: shown without a check', [sx.t7.map(r => r.okTank), sx.pitFails], [[null, null, null, null], false]);
+setv(w, 'sp_dw', 3); w.calcResult('septic');
+const spText = doc.getElementById('sp_results').textContent;
+check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
+w = boot('intl'); w.renderCalc('septic');
+check('the septic calculator is available with every code and the plumbing screen counts 21 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('21 حاسبة متاحة')], [true, true]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
