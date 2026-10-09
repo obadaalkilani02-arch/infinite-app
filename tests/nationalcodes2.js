@@ -787,6 +787,39 @@ check('... which the results state', doc.getElementById('hp_results').textConten
 w = boot('sy'); w.renderCalc('heatingpipes');
 check('other codes have no insulation fields and no Jordanian supports block', [!w.document.getElementById('hp_ik'), w.calcHeatingPipes().jo], [true, null]);
 
+// ---------- Jordan: thermal insulation code 4/3 (surface resistances, cavities and materials in `uvalue`) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('uvalue');
+const FRM = w.eval('JSON.parse(JSON.stringify({rse: JO_RSE, rsi: JO_RSI, cav: JO_CAVITY, mats: JO_MATS}))');
+check('Table 13 outside film: walls A 0.08 / 0.06 / 0.03 and B 0.10 / 0.07 / 0.03; roofs A 0.07 / 0.04 / 0.02 and B 0.09 / 0.05 / 0.02; the exposed underside of a floor 0.09 (sheltered only)', [FRM.rse.wall.A, FRM.rse.wall.B, FRM.rse.roof.A, FRM.rse.roof.B, FRM.rse.floor.A], [[0.08, 0.06, 0.03], [0.10, 0.07, 0.03], [0.07, 0.04, 0.02], [0.09, 0.05, 0.02], [0.09, null, null]]);
+check('Table 14 inside film: walls A 0.12 and B 0.31, roofs (upward) A 0.10 and B 0.21, floors (downward) A 0.15; Table 16 cavities: 5 mm A 0.11 / 0.11, B 0.18 / 0.18; 20 mm and more A 0.18 / 0.20, B 0.35 / 1.06', [FRM.rsi.wall, FRM.rsi.roof, FRM.rsi.floor.A, FRM.cav[5], FRM.cav[20]], [{A: 0.12, B: 0.31}, {A: 0.10, B: 0.21}, 0.15, {A: [0.11, 0.11], B: [0.18, 0.18]}, {A: [0.18, 0.20], B: [0.35, 1.06]}]);
+check('the outside film falls with the exposure and a shiny surface (B) resists more than a building material (A); a wider cavity resists more and downward flow more than horizontal', [FRM.rse.wall.A.every((x, i) => !i || x < FRM.rse.wall.A[i - 1]), FRM.rse.wall.B.every((x, i) => x >= FRM.rse.wall.A[i]), FRM.rse.roof.A.every((x, i) => !i || x < FRM.rse.roof.A[i - 1]), [5, 20].every(wd => ['A', 'B'].every(t => FRM.cav[wd][t][1] >= FRM.cav[wd][t][0])), ['A', 'B'].every(t => FRM.cav[20][t][0] >= FRM.cav[5][t][0])], [true, true, true, true, true]);
+check('joFilm: wall B in severe exposure 0.31 + 0.03; roof A moderate 0.10 + 0.04; the floor has only its sheltered outer value (0.09 reused for moderate: flagged) and no inner B (0.15 reused: flagged)', [w.joFilm('wall', 2, 'B'), w.joFilm('roof', 1, 'A'), w.joFilm('floor', 1, 'A'), w.joFilm('floor', 0, 'B')].map(f => [f.rsi, f.rse, f.fallback.join('+')]), [[0.31, 0.03, ''], [0.10, 0.04, ''], [0.15, 0.09, 'rse'], [0.15, 0.09, 'rse+rsi']]);
+const fam = (n) => FRM.mats.filter(m => m[0].startsWith(n)).sort((a, b) => a[1] - b[1]);
+check('Table 15 families: k rises with the density for foam concrete (10 rows), lightweight concrete (6), hollow concrete block (4 + 1 for slabs), hollow clay brick (5), soft stone (2), asbestos cement (2), asphalt mix (2)', ['خرسانة رغوية', 'خرسانة بركام طبيعي خفيف', 'طوب خرساني مفرغ', 'طوب طيني مشوي مفرغ', 'حجر رخو', 'ألواح أسبست إسمنتي', 'خلطة زفتية'].map(n => [fam(n).length, fam(n).every((m, i) => !i || m[2] >= fam(n)[i - 1][2])]), [[10, true], [6, true], [5, true], [5, true], [2, true], [2, true], [2, true]]);
+const mat = (n, d) => FRM.mats.find(m => m[0] === n && m[1] === d);
+check('Table 15 spot values: marble 2.90, soft stone 1750 1.05, normal concrete 1.75, foam concrete 1000 0.42 and 400 0.14, hollow concrete block 1400 0.90, cement plaster 1.20, mortar 1.40, steel 60, aluminium 200, EPS 25 0.034, XPS 0.030, cork 145 0.042', [mat('رخام', 2600)[2], mat('حجر رخو', 1750)[2], mat('خرسانة عادية ومسلحة بركام عادي الوزن', 2300)[2], mat('خرسانة رغوية', 1000)[2], mat('خرسانة رغوية', 400)[2], mat('طوب خرساني مفرغ', 1400)[2], mat('قصارة إسمنتية', 2000)[2], mat('ملاط (مونة إسمنتية)', 2000)[2], mat('فولاذ', 7800)[2], mat('ألومنيوم', 2800)[2], mat('بوليسترين ممدد (ألواح)', 25)[2], mat('بوليسترين مبثوق (ألواح)، لا تقل كثافته عن', 25)[2], mat('ألواح فلين', 145)[2]], [2.90, 1.05, 1.75, 0.42, 0.14, 0.90, 1.20, 1.40, 60, 200, 0.034, 0.030, 0.042]);
+check('every row has a positive conductivity, and rows flagged as paired by position are only the fibre, glass wool, cork and bitumen ones', [FRM.mats.every(m => m[2] > 0), [...new Set(FRM.mats.filter(m => m[3]).map(m => m[0].split(':')[0].split(' (')[0]))].sort()], [true, ['ألواح فلين', 'ألياف معدنية', 'زفت وبيتومين', 'صوف زجاجي'].sort()]);
+check('Jordan U-value form: film 0.12 + 0.06 (wall, moderate, type A); the Table 15 materials are an extra group at the end of every layer list', [+doc.getElementById('uv_rsi').value, +doc.getElementById('uv_rse').value, doc.querySelectorAll('#uv-tbody tr:first-child .uv-mat optgroup option').length], [0.12, 0.06, FRM.mats.length]);
+let uj = w.calcUValue();
+check('the default external wall (plaster 30, block 150, insulation 40, mortar 30, limestone 30) with the code film: U = 1 / (0.12 + 1.2359 + 0.06) = 0.706', +uj.U.toFixed(3), 0.706);
+setv(w, 'uv_cav', '20'); uj = w.calcUValue();
+check('a 20 mm unventilated cavity adds 0.18 m2K/W (horizontal flow, type A): U = 0.627', [uj.Rcav, +uj.U.toFixed(3)], [0.18, 0.627]);
+setv(w, 'uv_cav', ''); setv(w, 'uv_exp', '2'); w.uvJoChange();
+check('severe exposure lowers the outside film to 0.03 (U rises to 0.722)', [+doc.getElementById('uv_rse').value, +w.calcUValue().U.toFixed(3)], [0.03, 0.722]);
+setv(w, 'uv_mt', 'B'); w.uvJoChange();
+check('a shiny surface (B): inside 0.31 and outside 0.03 in severe exposure', [+doc.getElementById('uv_rsi').value, +doc.getElementById('uv_rse').value], [0.31, 0.03]);
+setv(w, 'uv_elemtype', 'roof'); w.uvElemTypeChange(doc.getElementById('uv_elemtype'));
+check('changing the element to a roof refills the film from Tables 13 and 14 (B, severe: 0.21 + 0.02)', [+doc.getElementById('uv_rsi').value, +doc.getElementById('uv_rse').value], [0.21, 0.02]);
+setv(w, 'uv_elemtype', 'floor'); setv(w, 'uv_cav', '20'); setv(w, 'uv_mt', 'B'); const ujf = w.calcUValue();
+check('a floor with a 20 mm type B cavity (heat flow downward) takes 1.06 m2K/W', ujf.Rcav, 1.06);
+setv(w, 'uv_cav', ''); setv(w, 'uv_mt', 'A'); setv(w, 'uv_exp', '1'); w.uvJoChange();
+w.loadUvAssembly('int_wall');
+check('the internal partition takes the inner film on both faces (0.12 + 0.12 for a wall, type A) from the code, not the office value 0.123', [doc.getElementById('uv_elemtype').value, +doc.getElementById('uv_rsi').value, +doc.getElementById('uv_rse').value], ['wall', 0.12, 0.12]);
+w.calcResult('uvalue');
+check('the results state the Jordanian film and the unused values of the code (Tables 13, 14, 16, the position-paired rows of Table 15)', ['كودة العزل الحراري الأردنية', 'الجدولين 13 و14', 'الجدول 16', 'رُبطت بموادها بترتيب ورودها'].every(s => doc.getElementById('uv_results').textContent.includes(s)), true);
+w = boot('intl'); w.renderCalc('uvalue');
+check('other codes keep the ISO film and the material list without the Jordanian group', [+w.document.getElementById('uv_rsi').value, !w.document.getElementById('uv_exp'), w.document.querySelectorAll('#uv-tbody tr:first-child .uv-mat optgroup').length, w.calcUValue().Rcav], [0.123, true, 0, 0]);
+
 // ---------- Jordan: sanitary drainage code Table 4 and chapter 5 (vents, `vent`) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('vent');
 const T4 = w.eval('JSON.parse(JSON.stringify({s: JO_DR_SIZES, v: JO_DR_VERT, h: JO_DR_HORZ, l: JO_DR_VLEN, vu: JO_VENT_UNITS, vl: JO_VENT_LEN}))');

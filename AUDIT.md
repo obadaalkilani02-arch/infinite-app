@@ -418,3 +418,22 @@ All of these are plain text in the page images (the text layer lost the numbers,
 🔴 Uncertain: 5/3/1 C is printed "by an amount that exceeds a third" (a negative particle is probably missing: read as "not exceeding a third"); 5/4/1 C gives the independent vent as "50 mm or one and a half times the drain size" without saying which governs; the footnote marks of Table 4 (except the trap arm / sinks / water closets) are printed incompletely, so they were listed but not applied to individual figures; the vent block uses the entered length as the developed length of the vent and the entered units as the equivalent units of the vent, not summing the branches.
 
 Not done: Table 12 for plastic or copper pipes of light gauge (only the heavy gauge is printed), the radiator and chimney rules of the later chapters of the heating code, heating Table 8 (unit doubtful), drainage Tables 9 to 13 beyond those already used (grease Table 9 and rain Tables 10 - 13 are in the notes of `grease` and `raindrain`), fire chapters 16 and 17.
+
+
+## National codes, part 18: Jordanian thermal insulation code, Tables 13 - 16 (`uvalue`)
+
+Tables 1 - 3 (maximum U-values) and Appendix A (climate zones) were already used in earlier parts; this part makes the U-value calculation itself follow the code (4/3). Read from the rendered pages (plain text in the images).
+
+`uvalue` (Jordan only): the inside and outside film resistances come from Tables 14 and 13 instead of ISO 6946 (new fields: wind exposure, surface type A / B; filled when the element, exposure or surface changes, and when an assembly button is pressed; an internal partition takes the inner film on both faces), an optional unventilated air cavity from Table 16 is added to the resistance, and the layer material list has an extra group with the 104 rows of Table 15 (k in the dry state, with the density).
+
+| Source | Used in | Notes |
+|---|---|---|
+| Table 13 (outside film, m².K/W) | `uvalue` | exposure sheltered / moderate / severe (wind below 0.5 / 0.5 - 5.0 / above 5.0 m/s): walls type A 0.08 / 0.06 / 0.03, B 0.10 / 0.07 / 0.03; roofs A 0.07 / 0.04 / 0.02, B 0.09 / 0.05 / 0.02; the underside of a floor exposed to air 0.09 (sheltered only) |
+| Table 14 (inside film) | `uvalue` | walls (horizontal) A 0.12, B 0.31; roofs and floors upward A 0.10, B 0.21; downward A 0.15 |
+| Table 16 (unventilated cavity) | `uvalue` | 5 mm: A 0.11 / 0.11, B 0.18 / 0.18; 20 mm and more: A 0.18 horizontal or upward and 0.20 downward, B 0.35 and 1.06 (heat flow horizontal or upward / downward) |
+| Table 15 (conductivity of materials) | `uvalue` | stone, sand, concrete and clay bricks, concrete (normal, lightweight 2000 - 1000 kg/m³ and foam 1600 - 400), floor finishes, plasters, mortar, wood and boards, asbestos cement, damp-proof layers, glass, metals, plastic foams, mineral fibres, glass wool, cork and loose fills |
+| 2/4/1 | note | the U-value of a wall with openings is the area-weighted average, compared with Table 3 |
+
+🔴 Uncertain: the exposure classes and surface types follow the printed definitions, but the table prints no outside film for a floor in moderate or severe exposure (the sheltered 0.09 is reused and flagged) and no inside film of type B for downward flow (A reused); Table 15 rows are paired with their material by the order of the printed list: the mineral-fibre, glass-wool, cork and "pitch and bitumen" rows are flagged because the printed value rows do not line up one to one with the labels (several densities per label, ranges such as 0.045 - 0.060 where the larger value is used); "volcanic rocks" and "rubber, glass brick" have no density; two rows of baked clay brick (solid and the first hollow row) both print 2000 / 1.00, one is kept; the values are for the natural dry state as the code says.
+
+Not done in the thermal insulation code: Tables 17 - 22 (vapour pressure, vapour barriers and condensation), Table 23 (specific heat capacities), Tables 24 and 25 (heat reduction for intermittent occupancy and heating), Table 26 onwards, and the thermal-bridge and window rules of chapter 4.
