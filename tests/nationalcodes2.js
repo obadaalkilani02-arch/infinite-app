@@ -991,6 +991,38 @@ w.renderCalc('natvent'); w.calcResult('natvent');
 check('two-openings results: the wind and temperature flows, the governing effect, the air changes and the Table 11 note', ['7.14', '4.18', 'الحاكم: الريح', '12.9', 'الجدول 11 صورة نقطية'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
 check('HVAC category: 16 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('16 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
 
+// ---------- Jordan: mechanical ventilation and air conditioning code, Tables 23 (persons), 12 (duct velocities) and 16 (outlet velocities) ----------
+w = boot('jo'); doc = w.document;
+const PPL = w.eval('JSON.parse(JSON.stringify({t: JO_PPL_T, r: JO_PPL}))');
+check('Table 23: six activities at the room temperatures 28, 26, 24 and 21 C; the total (sensible + latent) is constant along a row within 3 W, the sensible part rises and the latent part falls as the room gets cooler', [PPL.t, PPL.r.length, PPL.r.every(r => { const tot = r[1].map(x => x[0] + x[1]); return Math.max(...tot) - Math.min(...tot) <= 3 && r[1].every((x, i) => i === 0 || (x[0] > r[1][i - 1][0] && x[1] < r[1][i - 1][1])); })], [[28, 26, 24, 21], 6, true]);
+check('Table 23 spot values: office staff and hotels at 24 C: 74 sensible + 62 latent = 136 W; walking at 5 km/h at 21 C: 138 + 162 = 300 W; primary school at 28 C: 52 + 52; a temperature outside the four columns gives nothing', [w.eval('joPeople(2, 24)'), w.eval('joPeople(5, 21)'), w.eval('joPeople(0, 28)'), w.eval('joPeople(0, 25)')], [{s: 74, l: 62, t: 136}, {s: 138, l: 162, t: 300}, {s: 52, l: 52, t: 104}, null]);
+w.renderCalc('coolingload'); setv(w, 'cl_mode', 'detailed'); setv(w, 'cl_ppl', 10); setv(w, 'cl_pact', 2); setv(w, 'cl_pt', 24);
+let clr = w.eval('calcCoolingLoad()');
+check('cooling load under the Jordanian code: 10 persons, office staff, 24 C: 10 x 136 W x 3.412 = 4640 BTU/hr instead of 10 x 450', [Math.round(clr.Q_people), clr.joP.t], [4640, 136]);
+setv(w, 'cl_pact', 5); setv(w, 'cl_pt', 21); clr = w.eval('calcCoolingLoad()');
+check('... walking at 5 km/h at 21 C: 10 x 300 W x 3.412 = 10236 BTU/hr; the results line quotes the sensible and latent watts', [Math.round(clr.Q_people), (w.calcResult('coolingload'), doc.getElementById('cl_results').textContent.includes('138 W') && doc.getElementById('cl_results').textContent.includes('162 W'))], [10236, true]);
+w = boot('intl'); w.renderCalc('coolingload'); setv(w, 'cl_mode', 'detailed'); setv(w, 'cl_ppl', 10); clr = w.eval('calcCoolingLoad()');
+check('other codes: 450 BTU/hr per person and no Table 23 fields', [clr.Q_people, clr.joP, !!w.document.getElementById('cl_pact')], [4500, null, false]);
+const DV = w.eval('JSON.parse(JSON.stringify(JO_DUCTV))');
+check('Table 12: eight applications; main ducts 5 - 8 m/s (public) and 6 - 12 (industrial); branches 2.5 - 3 and 4.5 - 9; outdoor air intakes 2.5 - 4.5 and 5 - 6; supply grilles 1.2 - 2.3 (public only); supply openings 1.5 - 2.5 (industrial only)', [DV.length, DV[3].slice(1), DV[4].slice(1), DV[0].slice(1), DV[5].slice(1), DV[6].slice(1)], [8, [5, 8, 6, 12], [2.5, 3, 4.5, 9], [2.5, 4.5, 5, 6], [1.2, 2.3, null, null], [null, null, 1.5, 2.5]]);
+const jdv = (t, u) => w.eval('joDuctVel("' + t + '", "' + u + '")');
+check('Table 12 in fpm: public main 984 - 1575, industrial branch 886 - 1772, outdoor air 492 - 886; the table has no row for exhaust ducts', [jdv('supply_main', 'pub'), jdv('return_branch', 'ind'), jdv('outdoor', 'pub'), jdv('exhaust', 'pub')].map(x => x && [x.minFpm, x.maxFpm]), [[984, 1575], [886, 1772], [492, 886], null]);
+w = boot('jo'); doc = w.document; w.renderCalc('ductsizing'); setv(w, 'dt_type', 'supply_main'); let dsz = w.eval('calcDuctSizing()');
+check('ductsizing under the Jordanian code: the speed limits of a supply main come from Table 12 (984 - 1575 fpm) instead of 800 - 1500', [dsz.vl.min, dsz.vl.max, dsz.joV.from, dsz.joV.to], [984, 1575, 5, 8]);
+setv(w, 'dt_jo_use', 'ind'); setv(w, 'dt_type', 'supply_branch'); dsz = w.eval('calcDuctSizing()');
+check('... industrial branch: 886 - 1772 fpm; an exhaust duct keeps the practice limit (400 - 700 fpm) with no Table 12 reference', [dsz.vl.min, dsz.vl.max, (setv(w, 'dt_type', 'exhaust'), w.eval('calcDuctSizing().joV')), w.eval('calcDuctSizing().vl.max')], [886, 1772, null, 700]);
+setv(w, 'dt_type', 'supply_main'); setv(w, 'dt_jo_use', 'pub'); w.calcResult('ductsizing');
+check('the results quote the table: "Table 12: 5 - 8 m/s"', doc.getElementById('dt_results').textContent.includes('جدول 12: 5–8 m/s'), true);
+w = boot('intl'); w.renderCalc('ductsizing'); setv(w, 'dt_type', 'supply_main'); dsz = w.eval('calcDuctSizing()');
+check('other codes: the practice limits 800 - 1500 fpm and no Jordanian field', [dsz.vl.min, dsz.vl.max, dsz.joV, !!w.document.getElementById('dt_jo_use')], [800, 1500, null, false]);
+w = boot('jo'); doc = w.document; w.renderCalc('diffuserselection');
+const OV = w.eval('JSON.parse(JSON.stringify(JO_OUTV))');
+check('Table 16: four groups of spaces with 1.75 - 2.5, 2.5 - 4.5, 4.0 - 5.0 and 5.0 - 7.5 m/s', [OV.length, OV.map(r => r.slice(1))], [4, [[1.75, 2.5], [2.5, 4.5], [4.0, 5.0], [5.0, 7.5]]]);
+setv(w, 'df_jo', 1); w.dfJoPick();
+check('diffuser selection: choosing hotel bedrooms / private offices sets the neck-velocity limit to 4.5 m/s', +doc.getElementById('df_maxvel').value, 4.5);
+w = boot('intl'); w.renderCalc('diffuserselection');
+check('other codes: no Table 16 list', !!w.document.getElementById('df_jo'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

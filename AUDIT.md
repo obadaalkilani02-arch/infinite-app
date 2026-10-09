@@ -515,3 +515,21 @@ NEW calculator (79th, HVAC 16, card in "air networks"): the natural ventilation 
 - J(phi) of Table 10 for a window with a hinged light opening is read from Figure 8 (curves against the opening angle and the height : width ratio): a graph, not transcribed, so the value is entered by the user (1 = no hinge).
 - The code's own worked example rounds A_b to 4.4 in the formula (4.47 in the line above) and Q_b to 4.2.
 - Not done in this code: Table 6 (b) pressures by height and temperature difference, Appendix A / B (contaminant concentration, condensation) and Appendix C (examples of air quantities).
+
+
+## National codes, part 23: Jordanian mechanical ventilation and air conditioning code, Tables 23, 12 and 16 in the cooling load, duct sizing and diffuser calculators
+
+The mechanical ventilation code (PDF "كودة التهوية الميكانيكية", 239 pages) had only its Tables 1 and 2 in the app (parts 1 and 21); this part takes three more of its small tables into the calculators they belong to. Jordan only; the other codes are unchanged. The three tables are plain text in the PDF (the digits of Table 23 are in the text layer and agree with the rendered page).
+
+| Source | Used in | Notes |
+|---|---|---|
+| Table 23 (heat gain from persons, W per person) | `coolingload` (fields cl_pact, cl_pt; `JO_PPL`, `joPeople`) | six activities x room temperatures 28 / 26 / 24 / 21 C, sensible and latent; replaces the flat 450 BTU/hr per person when internal gains are added (detailed mode, or the office method of the quick mode); default: office and hotel staff at 24 C = 74 + 62 = 136 W. Totals are constant along a row within 2 W (104 - 105, 120 - 121, 134 - 136, 150 - 151, 165 - 166, 299 - 302) |
+| Table 12 (recommended maximum air velocities in ducts, m/s) | `ductsizing` (field dt_jo_use; `JO_DUCTV`, `joDuctVel`) | public buildings / industrial columns; main and branch ducts and outdoor air intakes replace the practice limits (supply and return main 5 - 8 or 6 - 12 m/s, branches 2.5 - 3 or 4.5 - 9, outdoor air 2.5 - 4.5 or 5 - 6); the other rows (air washers, heater-to-fan connection, grilles and openings) are in the data and tests only |
+| Table 16 (air velocity at the outlet for accepted noise levels) | `diffuserselection` (field df_jo; `JO_OUTV`, `dfJoPick`) | four groups of spaces 1.75 - 2.5, 2.5 - 4.5, 4.0 - 5.0 and 5.0 - 7.5 m/s: choosing one fills the neck-velocity limit with the upper end |
+
+🔴 Uncertain:
+- Table 23, the sixth row ("walking at 5 km/h, moderate heavy work") has more latent than sensible heat at 21 C (162 against 138 W); the totals and the monotone columns agree with the other rows, so it is kept as printed. "عمل موضعي" (restaurants) is kept as printed. The table has only four temperature columns: there is no interpolation, the user picks the column (24 C by default, the app's cooling design temperature).
+- Table 12: the table has no row for exhaust ducts, so exhaust keeps the practice limit. "Maximum recommended" is read as the upper end of the printed range and the lower end as the lower end of the acceptable band (the existing check flags both too high and too low).
+- Table 16: the range is printed with the lower end for quiet use; the upper end is used as the limit (the user can still edit the field). Table 15 (velocities 0.1 - 0.45 m/s, titled "through air grilles" but with the size of occupied-zone air speeds) was not used.
+- Table 17 (maximum temperature difference of the supply air by outlet height) is cut off in the PDF (only the 3.00 m and 3.50 m rows, 8 / 11 and 9 / 12 K, are visible): not used.
+- Not done in this code: Tables 3 - 11 (duct dimensions and sheet gauges for rectangular and round steel and aluminium ducts), 13 (fitting loss coefficients), 14, 18 (thermal insulation of ducts), 19 - 21 (noise), 22 (refrigerants), 24 - 25 (water flow in pipes, a bitmap table), 26 - 31 (calculation forms and unit conversions).
