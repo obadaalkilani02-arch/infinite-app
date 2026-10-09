@@ -744,7 +744,7 @@ setv(w, 'sp_dw', 3); w.calcResult('septic');
 const spText = doc.getElementById('sp_results').textContent;
 check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
 w = boot('intl'); w.renderCalc('septic');
-check('the septic calculator is available with every code and the plumbing screen counts 21 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('21 حاسبة متاحة')], [true, true]);
+check('the septic calculator is available with every code and the plumbing screen counts 22 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('22 حاسبة متاحة')], [true, true]);
 
 // ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
@@ -786,6 +786,63 @@ w.calcResult('heatingpipes');
 check('... which the results state', doc.getElementById('hp_results').textContent.includes('أعلى من أكبر عمود'), true);
 w = boot('sy'); w.renderCalc('heatingpipes');
 check('other codes have no insulation fields and no Jordanian supports block', [!w.document.getElementById('hp_ik'), w.calcHeatingPipes().jo], [true, null]);
+
+// ---------- Jordan: sanitary fixture count (natural ventilation and sanitary principles code, chapter 4 and Appendix E, `sanfix`) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('sanfix');
+const SFT = w.eval('JSON.parse(JSON.stringify(JO_SF))');
+check('Appendix E tables: counts never fall with the head count; 12 cinema rows (2 at 100 seats up to 11 at 1200), offices 3 / 5 / 6 / 8 / 9 / 10 / 12 / 14, 19 school rows (4 at 100 boys up to 34), industrial men 3 - 13, women 4 - 21 and urinals 2 - 11 for 50 - 400 persons',
+  [Object.values(SFT).every(t => t.every((r, i) => !i || (r[0] > t[i - 1][0] && r[1] >= t[i - 1][1]))), SFT.cinema.length, SFT.office.map(r => r[1]), SFT.school.length, [SFT.school[0][1], SFT.school[18][1]], SFT.indM.map(r => r[1]), SFT.indW.map(r => r[1]), SFT.indU.map(r => r[1])],
+  [true, 12, [3, 5, 6, 8, 9, 10, 12, 14], 19, [4, 34], [3, 4, 6, 7, 9, 10, 12, 13], [4, 6, 9, 11, 14, 17, 19, 21], [2, 4, 6, 7, 8, 9, 10, 11]]);
+const sfRun = (t, o) => { setv(w, 'sf_type', t); for (const [k, x] of Object.entries(Object.assign({sf_n: 0, sf_m: 0, sf_f: 0, sf_cust: 0, sf_sp: 'ratio', sf_pw: 66.7, sf_sex: 'boys', sf_staff: 'no', sf_ind: 'clean', sf_wait: 'no', sf_sport: 'no', sf_area: ''}, o || {}))) setv(w, k, x); return w.calcSanFix(); };
+const sfr = (r, who) => r.rows.find(x => x.who.includes(who));
+let sf = sfRun('cinema', {sf_n: 1200});
+check('the code example, a 1200 seat cinema: 11 water closets -> women 4 + 2 basins; men 8 water closets, 4 basins, 6 urinals, and 8 - 2 = 6 water closets (not below 3/4 of 8)', [sfr(sf, 'نساء').wc, sfr(sf, 'نساء').basin, sfr(sf, 'رجال').wc, sfr(sf, 'رجال').basin, sfr(sf, 'رجال').urinal], [4, 2, 6, 4, 6]);
+sf = sfRun('theatre', {sf_n: 1200});
+check('a theatre adds 20 %: 11 -> 14 water closets; women 5, men 10 required, 7 urinals, men 10 - 2 = 8 (3/4 of 10 = 7.5 -> 8), basins 3 and 5', [sfr(sf, 'نساء').wc, sfr(sf, 'نساء').basin, sfr(sf, 'رجال').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'رجال').basin], [5, 3, 8, 7, 5]);
+sf = sfRun('office', {sf_n: 90, sf_sp: 'full'});
+check('the code example, offices 90 persons for each sex: 5 water closets and 3 basins for women; men 5 - 1 = 4 water closets, 3 urinals and 3 basins (3/4 x 5 < 4)', [sfr(sf, 'نساء').wc, sfr(sf, 'نساء').basin, sfr(sf, 'رجال').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'رجال').basin], [5, 3, 4, 3, 3]);
+sf = sfRun('office', {sf_n: 240, sf_sp: 'full'});
+check('... 240 persons: 9 water closets and 5 basins for women; men 8, 5 urinals, 5 basins', [sfr(sf, 'نساء').wc, sfr(sf, 'نساء').basin, sfr(sf, 'رجال').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'رجال').basin], [9, 5, 8, 5, 5]);
+sf = sfRun('office', {sf_n: 90});
+check('offices by the 2 : 1 ratio: 90 persons = 60 women (the 100 row: 5 water closets) and 30 men (the 50 row: 3, no reduction below 3/4: 3), 2 urinals and 2 basins', [sfr(sf, 'نساء').wc, sfr(sf, 'رجال').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'رجال').basin], [5, 3, 2, 2]);
+sf = sfRun('community', {sf_n: 4500, sf_sport: 'yes'});
+check('a community centre of 4500 people: men 3, women 2 water closets; a urinal per men\'s water closet; two basins per 3 water closets; sports facilities add 3 water closets, 2 basins, 5 showers and 20 lockers per sex', [sfr(sf, 'رجال').wc, sfr(sf, 'نساء').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'رجال').basin, sfr(sf, 'نساء').basin, sfr(sf, 'المرافق').shower, sfr(sf, 'المرافق').other], [3, 2, 3, 2, 2, 5, '20 صندوق ملابس']);
+sf = sfRun('park', {sf_n: 6000});
+check('a park of 6000 people: 3600 men (the 4500 row: 3) and 2400 women (the 3000 row: 2), a urinal and a basin per 2 water closets', [sfr(sf, 'رجال').wc, sfr(sf, 'نساء').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'رجال').basin], [3, 2, 2, 2]);
+sf = sfRun('station', {sf_n: 6000, sf_wait: 'yes'});
+check('a station of 6000 travellers waiting over an hour (+30 %): 4500 men -> 3 x 1.3 = 3.9 -> 4; 1500 women -> 2 x 1.3 = 2.6 -> 3', [sfr(sf, 'رجال').wc, sfr(sf, 'نساء').wc], [4, 3]);
+sf = sfRun('mosque', {sf_n: 500});
+check('a mosque of 500: 3 + 2 = 5 water closets and basins, 10 + 4 = 14 ablution places', [sfr(sf, 'المصلون').wc, sfr(sf, 'المصلون').basin, sfr(sf, 'المصلون').other], [5, 5, '14 مكان وضوء']);
+sf = sfRun('commercial', {sf_n: 100, sf_sp: 'full', sf_cust: 400});
+check('commercial: 100 workers: men 4 - 1 = 3 water closets, 2 urinals and 2 basins; women 4 and 2; 400 customers = 100 equivalent workers (basins max(ceil(5 / 3), 2) = 2)', [sfr(sf, 'العاملون — رجال').wc, sfr(sf, 'العاملون — رجال').urinal, sfr(sf, 'العاملون — رجال').basin, sfr(sf, 'العاملون — نساء').wc, sfr(sf, 'العاملون — نساء').basin, sf.eqCust, sfr(sf, 'الزبائن — رجال').basin], [3, 2, 2, 4, 2, 100, 2]);
+sf = sfRun('school', {sf_n: 800, sf_staff: 'yes'});
+check('a boys\' school of 800: 21 water closets, 21 basins, 21 urinals, 11 drinking fountains (1 per 75); the staff add 30 %: 7', [sfr(sf, 'الطلاب').wc, sfr(sf, 'الطلاب').basin, sfr(sf, 'الطلاب').urinal, sfr(sf, 'الطلاب').other, sfr(sf, 'الهيئة').wc], [21, 21, 21, '11 مشرب ماء', 7]);
+sf = sfRun('school', {sf_n: 800, sf_sex: 'girls'});
+check('a girls\' school of 800: 21 x 1.125 = 23.6 -> 24 water closets and basins, no urinals', [sfr(sf, 'الطالبات').wc, sfr(sf, 'الطالبات').basin, sfr(sf, 'الطالبات').urinal], [24, 24, 0]);
+sf = sfRun('industrial', {sf_m: 300, sf_f: 200});
+check('a clean industry of 300 men and 200 women: men 10 water closets and 9 urinals, women 11; basins: men max(10, 300 / 25 = 12) = 12, women max(11, 8) = 11', [sfr(sf, 'رجال').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'نساء').wc, sfr(sf, 'رجال').basin, sfr(sf, 'نساء').basin], [10, 9, 11, 12, 11]);
+sf = sfRun('industrial', {sf_m: 500, sf_f: 500, sf_ind: 'toxic'});
+check('beyond 400 persons: + 1 water closet per 33 more men (13 + 4 = 17), + 1 urinal per 50 (11 + 2 = 13), + 1 per 20 more women (21 + 5 = 26); toxic industries 1 basin per 7 persons: 72', [sfr(sf, 'رجال').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'نساء').wc, sfr(sf, 'رجال').basin], [17, 13, 26, 72]);
+sf = sfRun('industrial', {sf_m: 300, sf_f: 300, sf_ind: 'unclean'});
+check('unclean industries: a basin per 15 persons (20); high hazard industries: an open shower per 50 persons (6)', [sfr(sf, 'رجال').basin, sfRun('industrial', {sf_m: 300, sf_f: 300, sf_ind: 'hazard'}).rows[0].shower], [20, 6]);
+sf = sfRun('hospital', {sf_m: 40, sf_f: 40});
+check('a hospital of 40 male and 40 female patients: 5 water closets (1 per 8), 4 basins (1 per 10), 2 showers (1 per 20) for each sex', [sf.rows.map(x => [x.wc, x.basin, x.shower])], [[[5, 4, 2], [5, 4, 2]]]);
+sf = sfRun('dorm', {sf_m: 100, sf_f: 42});
+check('a hostel: 100 men: 10 water closets and urinals, 9 showers, basins 11 + 10 + 4 = 25 (the first 42 and the next 40 per 4, then per 5); 42 women: 6 water closets (1 per 8), 11 basins, 4 showers', [sfr(sf, 'رجال').wc, sfr(sf, 'رجال').urinal, sfr(sf, 'رجال').shower, sfr(sf, 'رجال').basin, sfr(sf, 'نساء').wc, sfr(sf, 'نساء').basin, sfr(sf, 'نساء').shower], [10, 10, 9, 25, 6, 11, 4]);
+sf = sfRun('temp', {sf_n: 50});
+check('temporary housing: one of each per 12 persons: 5', [sf.rows[0].wc, sf.rows[0].basin, sf.rows[0].urinal, sf.rows[0].shower], [5, 5, 5, 5]);
+check('beyond the last printed row the last value is kept and flagged (1500 seats; 600 women in a shop above 350), but an industry above 400 persons has the code\'s own extension rule and no flag', [sfRun('cinema', {sf_n: 1500}).flags.includes('beyond'), sfRun('cinema', {sf_n: 1200}).flags.includes('beyond'), sfRun('commercial', {sf_n: 900, sf_sp: 'ratio'}).flags.includes('beyond'), sfRun('industrial', {sf_m: 500, sf_f: 500}).flags.includes('beyond')], [true, false, true, false]);
+sf = sfRun('office', {sf_n: 90, sf_sp: 'full', sf_area: 12, sf_h: 2.7});
+check('sanitary room of 12 m2 x 2.7 m: windows 5 % = 0.6 m2, mechanical 10 changes = 324 m3/h, a vertical duct 0.06 + 0.03 x (9 - 1) = 0.30 m2 for the 9 water closets', [+sf.room.win5.toFixed(2), sf.room.flow, sf.room.wcTotal, +sf.room.ductWC.toFixed(2)], [0.6, 324, 9, 0.30]);
+check('the form lists the 13 occupancies, starts with offices and hides the fields of the other types', [doc.getElementById('sf_type').options.length, doc.getElementById('sf_type').value, doc.getElementById('sf_m').closest('.field').style.display, doc.getElementById('sf_n').closest('.field').style.display], [13, 'office', 'none', '']);
+setv(w, 'sf_type', 'industrial'); w.sfToggle();
+check('choosing an industry shows the men and women fields and hides the head count; choosing a cinema relabels it', [doc.getElementById('sf_m').closest('.field').style.display, doc.getElementById('sf_n').closest('.field').style.display], ['', 'none']);
+setv(w, 'sf_type', 'cinema'); w.sfToggle();
+check('... a cinema asks for the seats', [doc.getElementById('sf_nlab').textContent, doc.getElementById('sf_n').closest('.field').style.display], ['عدد المقاعد', '']);
+setv(w, 'sf_n', 1200); w.calcResult('sanfix');
+check('the results show the table, the rules of Table E1 and the sanitary-unit rules (1.5 m, 1.2 m and 1.75 m tiling, 0.82 m taps, 10 air changes)', ['جدول هـ1', 'المجموع', '1.5 m', '1.75 m', '0.82 m', '10 تغييرات'].every(s => doc.getElementById('sf_results').textContent.includes(s)), true);
+w = boot('intl'); w.renderCalc('sanfix');
+check('the sanitary fixture calculator is available with every code (default: offices of 90 persons)', [!!w.document.getElementById('sf_results'), w.calcSanFix().rows.length], [true, 2]);
 
 // ---------- Jordan: thermal insulation code 8/3, Tables 24 and 25 (design ratio of the heating energy, heatingload) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatingload');
