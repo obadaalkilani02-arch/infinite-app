@@ -301,3 +301,29 @@ One new calculator in the fire category (now ten, 76 calculators in all): `fadet
 | 2/10/3, 2/10/4 (standby power) | `alarmbattery`: new Jordanian option for a facility with an automatic emergency generator or a generator running all the time: 6 hours of standby instead of 24, then 30 minutes of alarm (2/10/4 B 3 and 4); the maximum alarm load is every sounder together with the detectors of 25 % of the zones and not fewer than two zones (2/10/3 D); standby duration is now editable, with the minimum taken from the system type | 🔴 the code gives no safety margin on the amp-hour: the NFPA 72 20 % stays (as before) |
 
 Not done in the fire alarm code: the number and placement of sounders and loudspeakers beyond the level (2/3), control panel and loop capacity and cable lengths, the extra rules for special occupancies (2/7 beyond the circulation rule), air-sampling and flame detectors, the equipment standards of chapter 3.
+
+
+## National codes, part 11: Jordanian electrical installations code, cable current-carrying capacity and voltage drop
+
+No new calculator (76 in all): the cable-sizing calculator `cablesizing` gets a third reference, "الكودة الأردنية للتمديدات الكهربائية" (`cs_std = jo`), which is the default when the Jordanian code is selected (it used the IEC tables before). The numbers come from the text layer of the code (the digits are exact; the words are reversed) and were checked against the page images; headings, method letters and the rows the text layer loses (Table 23 rows 70 - 400, the 3-phase tails of Tables 50 - 55) were read from the images.
+
+| Source | Used in | Notes |
+|---|---|---|
+| 4/5/1 - 4/5/3 | `cablesizing` (jo): tables at 30 °C and 50 Hz; In ÷ (ambient factor × grouping factor) must not exceed the table value; the voltage drop is the table mV/A/m × Ib × length (the worst phase angle) against the 2.5 % limit of 4/5 | 🔴 the list of standard device ratings is the common one (as for IEC), not from the code |
+| Table 8 (grouping, more than three cables) | `cablesizing` (jo): single-core cables by loaded conductors (4: 0.80, 6: 0.69, 8: 0.62, 10: 0.59, 12: 0.55, 16: 0.51, 20: 0.48, 24: 0.43, 28: 0.41, 32: 0.39, 36: 0.38, 40: 0.36), multi-core by cables (2: 0.80, 3: 0.70, 4: 0.65, 5: 0.60, 6: 0.57, 8: 0.52, 10: 0.48, 12: 0.45, 14: 0.43, 16: 0.41, 18: 0.39, 20: 0.38); the next higher printed count is used; no factor for cables in air (J, K) which are spaced | the note "no reduction when the spacing exceeds twice the cable diameter" is quoted |
+| Tables 9 - 11 (methods A - K) | the cable list labels: A conduit, B trunking, C underground ducts, E - H clipped direct, J and K in air | Tables 12 - 15 (enclosed trenches L, M, N and their factors) are not used |
+| Tables 16 - 25 (copper) | ten cable families: PVC 70 °C single-core in conduit or trunking (16), clipped direct (17 for BS 6004, 20 for BS 6004 / 6346), hung in air (18, flat or trefoil); PVC twin and multi-core in conduit (19) and in air (21); PVC armoured clipped (22) and in air (23); thermosetting (XLPE) 90 °C armoured clipped (24) and in air (25) | 🔴 printed misprints, see below |
+| Tables 47 - 55 (aluminium) | nine families: PVC single-core in conduit (47), clipped (48), in air (49); PVC multi-core clipped (50) and in air (51); PVC armoured clipped (52) and in air (53); XLPE armoured clipped (54) and in air (55) | the two-cable column stops at 95 mm² in Tables 50 - 55 (as printed) |
+| Ambient factors under each table | PVC tables 25 °C 1.06, 35 °C 0.94, 40 °C 0.87, 45 °C 0.79, 50 °C 0.71, 55 °C 0.61, 60 °C 0.50, 65 °C 0.35; XLPE tables 25 °C 1.04 up to 80 °C 0.41; reference 30 °C; the next higher printed temperature is used | |
+
+Printed misprints and how they are handled (also shown with the result):
+- Table 17, 300 mm²: the two-cable current is printed 460 A, below the three-cable value 500 A: left empty (single-phase circuits skip 300 mm²).
+- Table 20, 50 and 150 mm² (two-cable current 136 and 230 A, below the three-cable values) and 300 mm² (three-phase 350 A, below 240 mm²): left empty. Tables 17 and 20 both cover methods E - H and give different values (Table 20 lower by 5 to 10 %); both are offered, labelled by the printed standard numbers, with no way to tell from the text which cable each is meant for.
+- Table 25, 95 mm², voltage drop for two cables printed 0.25: 0.52 used (Table 24, the same cable).
+- Table 51, 50 mm², three-phase current printed 10 A: left empty.
+- Table 22, 4 mm²: voltage drops 12 and 9.6 are not in the ratio 0.866 of the other rows: used as printed. Tables 52 - 55: a few three-phase drops are up to 7 % below 0.866 × the two-cable value: used as printed.
+- Table 24 / 25: both voltage-drop columns for two cables are headed "a.c.": the larger (right) is taken as a.c., the left as d.c., as in all other tables.
+- Table 23 starts at 6 mm² (no rows for 1.5 - 4 mm²); Table 21 starts at 25 mm²; Tables 16, 19 and 47 are for methods A, B, C and the code limits method C (underground ducts) to 35 mm²: a selector enforces it.
+- Table 18 (copper single-core in air): the 240 mm² voltage drops are slightly above the 185 mm² ones in the print (conservative): kept.
+
+Not done: tables of rubber (26 - 28, 33, 34), paper (29 - 32, 56 - 59), mineral-insulated (36 - 46, 60, 61) and flexible cords (35), the cable-use guidance (62, 63), the trench factors (13 - 15), the conduit and trunking capacity (4/6, Table 67 onwards) and the clip spacing (70 onwards), the thermal-insulation factor (4/2/1 A 5), and every cable type or method the code does not tabulate (single-core XLPE, direct burial): those stay with the SBC 401 / IEC reference.

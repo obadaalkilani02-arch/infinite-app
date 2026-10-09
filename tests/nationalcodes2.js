@@ -109,10 +109,79 @@ check('Jordanian minimum outdoor air: 10 rows, first row factories 0.8 L/s per m
 check('... offered in the ventilation list', doc.getElementById('calc-body').innerHTML.includes('الكودة الأردنية للتهوية الميكانيكية جدول 2'), true);
 
 w.renderCalc('cablesizing');
-check('cable sizing: IEC reference and 2.5 % voltage drop', [doc.getElementById('cs_std').value, +doc.getElementById('cs_vdlim').value, +doc.getElementById('cs_amb').value], ['iec', 2.5, 40]);
+check('cable sizing: the Jordanian code reference (Tables 16 - 25 and 47 - 55) and 2.5 % voltage drop', [doc.getElementById('cs_std').value, +doc.getElementById('cs_vdlim').value, +doc.getElementById('cs_amb').value], ['jo', 2.5, 40]);
 setv(w, 'cs_len', 250);
 cs = w.eval('calcCableSizing()');
 check('... 250 m: limit stays 2.5 %', cs.vdLimEff, 2.5, 1e-9);
+
+// ---------- Jordan: cable current-carrying capacity and voltage drop (4/5, Tables 8, 16 - 25, 47 - 55) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('cablesizing');
+const J = w.eval('JSON.parse(JSON.stringify(JO_CABLE))');
+const jo = vals => { Object.keys(vals).forEach(id => setv(w, id, vals[id])); w.csToggle(); return w.eval('calcCableSizing()'); };
+const joBase = {cs_std: 'jo', cs_phase: '3', cs_volt: 400, cs_mode: 'kw', cs_load: 55, cs_pf: 0.85, cs_len: 80, cs_amb: 40, cs_ngroup: 1, cs_par: 1, cs_metal: 'cu', cs_vdlim: 2.5, cs_jo_arr: 'flat', cs_jo_c: 'no'};
+check('Jordan cable tables: 10 copper families, 9 aluminium families (19 tables)', [Object.keys(J).filter(k => J[k].m === 'cu').length, Object.keys(J).filter(k => J[k].m === 'al').length], [10, 9]);
+check('the copper list is offered and Table 24 (XLPE armoured, clipped direct) is the default; the IEC fields are hidden and the Jordanian fields shown', [doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value, doc.querySelector('.cs-iec').style.display, doc.querySelector('.cs-jo').style.display], [10, 'cu_xlpea_clip', 'none', '']);
+setv(w, 'cs_metal', 'al'); w.csToggle('metal');
+check('aluminium: the list switches to the nine aluminium tables and Table 54', [doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value], [9, 'al_xlpea_clip']);
+setv(w, 'cs_metal', 'cu'); w.csToggle('metal');
+check('table entries as printed: Table 16 (16 mm2), 17 (50), 19 (35), 22 (16), 24 (95), 47 (150), 54 (300)', [J.cu_pvc1_encl.rows['16'], J.cu_pvc1_clip.rows['50'], J.cu_pvcm_encl.rows['35'], J.cu_pvca_clip.rows['16'], J.cu_xlpea_clip.rows['95'], J.al_pvc1_encl.rows['150'], J.al_xlpea_clip.rows['300']],
+  [[74, 2.7, 66, 2.3], [175, 0.93, 160, 0.82], [98, 1.3, 86, 1.1], [86, 2.7, 73, 2.3], [338, 0.52, 289, 0.45], [235, 0.73, 200, 0.64], [null, null, 460, 0.26]]);
+check('Table 23 rows 70 - 400 read from the page image; Table 49 (air, flat and trefoil) row 50; the Table 25 misprint (0.25) replaced by 0.52', [J.cu_pvca_air.rows['240'], J.al_pvc1_air.rows['50'], J.cu_xlpea_air.rows['95']], [[485, 0.25, 420, 0.20], [155, 1.5, 1.34, 140, 1.3], [356, 0.52, 304, 0.45]]);
+check('printed values that contradict their neighbours are left empty (Table 17 300 mm2 two cables, Table 51 50 mm2 three-phase)', [J.cu_pvc1_clip.rows['300'][0], J.al_pvcm_air.rows['50'][2]], [null, null]);
+let bad = [];
+for (const [id, f] of Object.entries(J)) {
+  const sizes = Object.keys(f.rows).map(Number).sort((a, b) => a - b), cols = f.ar ? [0, 3] : [0, 2];
+  for (const c of cols) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x <= p) bad.push(id + ' I' + c + ' ' + s); p = x; } }
+  if (!f.ar) for (const c of [1, 3]) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x > p) bad.push(id + ' v' + c + ' ' + s); p = x; } }
+}
+check('every table: the current rises and the voltage drop falls with the conductor size (a typing check on the transcription)', bad, []);
+let r = jo(joBase);
+check('55 kW, 400 V, cos phi 0.85, 80 m, 40 C, Table 24: Ib 93.4 A, In 100 A, factor 0.91; 25 mm2 carries it (126 x 0.91 = 114.7) but drops 2.99 %: 35 mm2 (1.2 mV/A/m, 8.97 V = 2.24 %)', [r.mm2, +r.Ib.toFixed(1), r.ocpd, r.kT, r.kG, r.tab, +r.vdPct.toFixed(2), r.governs, r.byAmp.s], [35, 93.4, 100, 0.91, 1, 153, 2.24, 'vd', 25]);
+r = jo({cs_jo: 'cu_pvca_clip'});
+check('Table 22 (PVC armoured) at 40 C (0.87): 35 mm2 (119 x 0.87 = 103.5 A) and 1.1 mV/A/m = 8.22 V = 2.05 %', [r.mm2, r.kT, r.tab, +r.vdPct.toFixed(2)], [35, 0.87, 119, 2.05]);
+check('ambient: PVC 28 C -> 1, 25 C -> 1.06, 66 C -> not tabulated; XLPE 25 C -> 1.04, 66 C -> 0.58 (the next printed temperature), 85 C -> not tabulated', [w.eval("joAmbFactor('pvc', 28)"), w.eval("joAmbFactor('pvc', 20)"), w.eval("joAmbFactor('pvc', 66)"), w.eval("joAmbFactor('xlpe', 25)"), w.eval("joAmbFactor('xlpe', 66)"), w.eval("joAmbFactor('xlpe', 85)")], [1, 1.06, null, 1.04, 0.58, null]);
+r = jo({cs_jo: 'cu_pvca_clip', cs_amb: 66});
+check('PVC at 66 C: no factor, the calculation stops with a warning', [r.invalid === true, r.warnings.length > 0], [true, true]);
+r = jo({cs_jo: 'cu_pvca_clip', cs_amb: 30, cs_ngroup: 3});
+check('Table 8, multi-core cables: 3 cables 0.70', r.kG, 0.70, 1e-9);
+check('... 2 cables 0.80, 5 cables 0.60, 7 cables 0.52 (the next higher printed count), 21 cables 0.38 with a warning', [jo({cs_ngroup: 2}).kG, jo({cs_ngroup: 5}).kG, jo({cs_ngroup: 7}).kG, jo({cs_ngroup: 21}).kG, jo({cs_ngroup: 21}).warnings.length > 0], [0.8, 0.6, 0.52, 0.38, true]);
+r = jo({cs_jo: 'cu_pvc1_clip', cs_ngroup: 2});
+check('Table 8, single-core cables: two three-phase circuits = 6 loaded conductors 0.69; three circuits = 9 -> 0.59 (10 conductors); a single circuit 1', [r.kG, jo({cs_ngroup: 3}).kG, jo({cs_ngroup: 1}).kG], [0.69, 0.59, 1]);
+check('... two single-phase circuits = 4 loaded conductors 0.80', jo({cs_phase: '1', cs_volt: 230, cs_ngroup: 2}).kG, 0.8, 1e-9);
+setv(w, 'cs_phase', '3'); setv(w, 'cs_volt', 400);
+check('cables in air (methods J, K) are spaced: no grouping factor', [jo({cs_jo: 'cu_pvcm_air', cs_ngroup: 6}).kG, jo({cs_jo: 'cu_pvc1_air', cs_ngroup: 6}).kG], [1, 1]);
+r = jo({cs_jo: 'cu_pvc1_air', cs_ngroup: 1, cs_amb: 30, cs_mode: 'amp', cs_load: 150, cs_len: 20, cs_jo_arr: 'flat'});
+const flat = [r.mm2, r.tab];
+r = jo({cs_jo_arr: 'trefoil'});
+check('single-core cables hung in air, three-phase 150 A: flat uses 195 A at 50 mm2 (0.85 mV), trefoil 170 A (0.80 mV): both 50 mm2', [flat, r.mm2, r.tab], [[50, 195], 50, 170]);
+r = jo({cs_jo_arr: 'flat', cs_load: 175});
+check('175 A flat: 195 A at 50 mm2 is not enough with In = 200 A: 70 mm2 (240 A)', [r.mm2, r.tab, r.ocpd], [70, 240, 200]);
+r = jo({cs_jo: 'cu_xlpea_clip', cs_phase: '1', cs_volt: 230, cs_mode: 'amp', cs_load: 60, cs_len: 30, cs_amb: 30, cs_ngroup: 1});
+check('single-phase 60 A, 30 m, Table 24: two-cable columns: 16 mm2 (108 A, 2.9 mV/A/m = 5.22 V = 2.27 %)', [r.mm2, r.tab, +r.vdPct.toFixed(2)], [16, 108, 2.27]);
+r = jo({cs_jo: 'cu_pvc1_clip', cs_load: 470, cs_len: 1, cs_vdlim: 10});
+check('single-phase 470 A on Table 17: In 500 A; 300 mm2 is empty (printed misprint) so the next, 400 mm2 (680 A), is chosen', [r.ocpd, r.mm2, r.tab], [500, 400, 680]);
+setv(w, 'cs_phase', '3'); setv(w, 'cs_volt', 400); setv(w, 'cs_vdlim', 2.5);
+r = jo({cs_jo: 'cu_pvc1_encl', cs_mode: 'amp', cs_load: 150, cs_len: 1, cs_amb: 30, cs_jo_c: 'no'});
+const open = [r.mm2, r.tab, r.ocpd];
+r = jo({cs_jo_c: 'yes'});
+check('Table 16 (methods A, B, C), 150 A three-phase: In 160 A, 70 mm2 (160 A); with method C (underground ducts) the values stop at 35 mm2 (106 A): no size, with a warning', [open, !!r.chosen, r.warnings.length > 0], [[70, 160, 160], false, true]);
+r = jo({cs_jo: 'cu_pvc1_encl', cs_jo_c: 'no', cs_load: 250});
+check('... 250 A is beyond the table (120 mm2, 220 A): no size and a warning naming the Table', [!!r.chosen, r.warnings.some(x => x.includes('16'))], [false, true]);
+r = jo({cs_jo: 'cu_pvcm_encl', cs_mode: 'amp', cs_load: 60, cs_len: 20, cs_jo_c: 'no'});
+check('Table 19 (multi-core in conduit), three-phase 60 A, 20 m: In 63 A; 16 mm2 (62 A) is short, 25 mm2 (70 A) passes; 1.5 mV/A/m x 60 A x 20 m = 1.8 V', [r.mm2, r.tab, +r.dV.toFixed(2)], [25, 70, 1.8]);
+setv(w, 'cs_metal', 'al'); w.csToggle('metal');
+r = jo({cs_jo: 'al_xlpea_clip', cs_mode: 'kw', cs_load: 55, cs_pf: 0.85, cs_len: 80, cs_amb: 40, cs_jo_c: 'no'});
+check('aluminium Table 54, the same 55 kW / 80 m / 40 C: 35 mm2 (113 A) is enough for 100 A but drops 3.55 %; 50 mm2 2.6 %; 70 mm2 (176 A, 0.99 mV) 1.85 %', [r.mm2, r.byAmp.s, +r.vdPct.toFixed(2)], [70, 35, 1.85]);
+r = jo({cs_jo: 'al_pvcm_air', cs_mode: 'amp', cs_load: 100, cs_len: 1, cs_amb: 30, cs_vdlim: 10});
+check('aluminium Table 51 (three-phase 50 mm2 is empty): 100 A -> In 100 A -> 70 mm2 (139 A)', [r.mm2, r.tab], [70, 139]);
+setv(w, 'cs_metal', 'cu'); w.csToggle('metal');
+doc.getElementById('cs_jo').value = 'cu_xlpea_clip'; setv(w, 'cs_amb', 40); setv(w, 'cs_mode', 'kw'); setv(w, 'cs_load', 55); setv(w, 'cs_len', 80); setv(w, 'cs_vdlim', 2.5); w.calcResult('cablesizing');
+const csText = doc.getElementById('cs_results').textContent;
+check('the results quote the table, the printed misprint notes and the 4/5/3 method', ['جدول 24', '4/5/3', '4/5', '🔴', 'عنوانا عمودي'].every(s => csText.includes(s)), true);
+w.feedSendAmps({src: 'x', desc: '', I: 120, ph: 3, V: 400, contPct: 0, std: 'iec', metal: 'al', sysName: 'ثلاثي الطور 400 V'});
+check('a load sent from another calculator selects the Jordanian reference and the aluminium list', [doc.getElementById('cs_std').value, doc.getElementById('cs_metal').value, doc.getElementById('cs_jo').value, +doc.getElementById('cs_load').value], ['jo', 'al', 'al_xlpea_clip', 120]);
+w = boot('intl'); w.renderCalc('cablesizing');
+check('other codes offer the Jordanian reference too, but start on NEC', [[...w.document.getElementById('cs_std').options].map(o => o.value), w.document.getElementById('cs_std').value, w.document.querySelector('.cs-jo').style.display], [['nec', 'iec', 'jo'], 'nec', 'none']);
 
 // ---------- UAE: maximum demand, DBC G.4.16 and Tables G.15 / G.16 ----------
 w = boot('ae');
