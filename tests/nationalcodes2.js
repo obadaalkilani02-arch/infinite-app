@@ -1237,6 +1237,22 @@ check('4 h: the plain wall thickness is not printed (null, no check) and the res
 w = boot('intl'); w.showCalc('concretefire');
 check('the calculator is available with every code (chapter 17 data) and opens with its results', !!w.document.getElementById('cf_results') && w.document.getElementById('cf_results').textContent.includes('جدول 13'), true);
 
+// ---------- Jordan: mechanical ventilation code Table 3 (preferred duct dimensions) in the duct sizing ----------
+w = boot('jo'); doc = w.document;
+const PD = w.eval('JSON.parse(JSON.stringify({R: JO_PREF_ROUND, Q: JO_PREF_RECT, O: JO_PREF_OVAL}))');
+check('Table 3: 32 round sizes from 75 to 1800 mm, 25 rectangular sizes from 150 x 100 to 800 x 800 and 41 flat oval sizes from 150 x 550 to 500 x 980', [PD.R.length, PD.R[0], PD.R[PD.R.length - 1], PD.Q.length, PD.Q[0], PD.Q[PD.Q.length - 1], PD.O.length, PD.O[0], PD.O[PD.O.length - 1]], [32, 75, 1800, 25, [150, 100], [800, 800], 41, [150, 550], [500, 980]]);
+check('round sizes rise (75 to 400 by 25 up to 400; 450 to 800 by 50; 900 to 1800 by 100); rectangles keep width at least height; the oval major axis is 80 mm larger step by step in every minor-axis group', [PD.R.every((x, i) => i === 0 || x > PD.R[i - 1]), PD.R.slice(0, 14), PD.R.slice(14, 22), PD.R.slice(22), PD.Q.every(r => r[0] >= r[1]), PD.O.every((r, i) => i === 0 || r[0] !== PD.O[i - 1][0] || r[1] - PD.O[i - 1][1] === 80)], [true, [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400], [450, 500, 550, 600, 650, 700, 750, 800], [900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800], true, true]);
+const jp = (d, q) => w.eval('joPref(' + d + ', ' + (q || 0.5) + ')');
+const pp = jp(300), pq = jp(301), pr = jp(2000);
+check('300 mm: the preferred round size is 300; 301 mm: 325; 2000 mm: none; no rectangle beyond the 800 x 800 section', [pp.round, pq.round, pr.round, pr.rect.length], [300, 325, null, 0]);
+check('the rectangles offered for 300 mm: at most four, each with an equivalent diameter of at least 300 mm, smallest area first; the velocity is the flow over the area', [pp.rect.length, pp.rect.every(x => x.De >= 300 - 1e-9), pp.rect.every((x, i) => i === 0 || x.a * x.b >= pp.rect[i - 1].a * pp.rect[i - 1].b), Math.round(pp.rect[0].v * 100) / 100 === Math.round(0.5 / (pp.rect[0].a * pp.rect[0].b / 1e6) * 100) / 100], [4, true, true, true]);
+check('the equivalent diameter of 300 x 250 by the ASHRAE formula is 1.3 (a b)^0.625 / (a + b)^0.25 = 299 mm (so it does not qualify for 300 mm)', [Math.round(w.eval('joPrefDe(300, 250)')), pp.rect.some(x => x.a === 300 && x.b === 250)], [299, false]);
+w.renderCalc('ductsizing'); w.calcResult('ductsizing');
+const dsr = doc.getElementById('dt_results').textContent, dc = w.eval('calcDuctSizing()');
+check('duct sizing results show the Table 3 block with the preferred round size for the calculated diameter', [dsr.includes('جدول 3'), dsr.includes('الأبعاد المفضلة'), w.eval('joPref(calcDuctSizing().D_calc * 25.4, 1).round') >= dc.D_calc * 25.4 - 1e-9], [true, true, true]);
+w = boot('intl'); w.renderCalc('ductsizing'); w.calcResult('ductsizing');
+check('other codes: no preferred-size block', w.document.getElementById('dt_results').textContent.includes('الأبعاد المفضلة'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

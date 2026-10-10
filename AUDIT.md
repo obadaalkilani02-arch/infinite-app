@@ -725,3 +725,16 @@ Lookup: the first row of at least the boiler capacity; between two printed heigh
 Rules applied: 17/2/4 and 17/3/5 (no bar cover below half the table value or the 0.5 h value), 17/2/5 (extra mesh of 2 mm wires at 100 mm, 0.5 kg/m2, when the cover exceeds 40 mm), 17/2/6 (T beams: cover x sqrt(b / bw) when bw is at least b / 3; below that the table does not apply), 17/4/4 (additional steel at 20 mm from the surface).
 
 🔴 Uncertain: "or" in 17/2/4 and 17/3/5 is read as both limits (the larger); Table 14 row D prints no plaster thickness; the footnote of Table 17 names slabs A, B, C while the first row names A to D; the table header of Table 15 / 16 prints four hour values for six columns (read as 0.5 to 4); the cover rule of 17/2/6 is applied to the cover only. Not done: interpolation between hours, the explanation of the other aggregates (17/1/4), insulation on the soffit by Table 17 inside the slab check (the table is shown, not added automatically).
+
+
+## National codes, part 34: Jordanian mechanical ventilation code Table 3 (preferred duct dimensions) in the duct sizing
+
+`ductsizing` (Jordan only, `JO_PREF_ROUND`, `JO_PREF_RECT`, `JO_PREF_OVAL`, `joPrefDe`, `joPref`, `joPrefHTML`): after the calculated diameter, the results list the nearest preferred round size (not smaller than the calculated diameter, with its velocity in m/s) and the four preferred rectangular sizes of smallest area whose equal-friction equivalent diameter De = 1.3 (a b)^0.625 / (a + b)^0.25 is at least the calculated diameter (with velocity), and the whole of Table 3 in the note. Table 3 (page 74 - 75 of the code, 5/2/1 C 3) read from the rendered pages.
+
+| Shape | Preferred sizes (mm) |
+|---|---|
+| Round (32) | 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 450, 500, 550, 600, 650, 700, 750, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800 |
+| Rectangular (25, width x height) | 150x100, 250x100, 200x150, 250x150, 400x150, 200x200, 300x200, 500x200, 600x200, 250x250, 300x250, 500x250, 600x250, 500x300, 700x300, 400x400, 600x400, 700x400, 600x500, 700x500, 700x600, 800x600, 700x700, 800x700, 800x800 |
+| Flat oval spiral (41, minor x major) | 150 x 550 to 790 (4), 200 x 520 to 1000 (7), 250 x 570 to 970 (6), 300 x 620 to 940 (5), 350 x 670 to 990 (5), 400 x 640 to 960 (5), 450 x 690 to 930 (4), 500 x 660 to 980 (5), steps of 80 mm |
+
+🔴 Uncertain: the table is a list without any rule for choosing between shapes; the rectangle choice here is by the smallest area (the designer may prefer a flatter section for the ceiling space); the ASHRAE equal-friction formula is the one the tool already uses for rectangular ducts, not a formula of the code. Not done: Table 11 (gypsum ducts: the digits of the wall thickness and the reinforcement length are lost in the print), tables 14 and 19 - 22 (bitmaps).

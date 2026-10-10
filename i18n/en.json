@@ -9996,5 +9996,18 @@
  "تذكر العقدات": "mentions slabs",
  "بينما يذكر السطر الأول العقدات من": "while the first row mentions slabs from",
  "مطبَّق على سماكة الغطاء الخرساني فقط وليس على العرض": "is applied to the thickness of the concrete cover only and not to the width",
- "لا يُجرى استيفاء بين مدد المقاومة المطبوعة": "No interpolation is made between the printed resistance periods"
+ "لا يُجرى استيفاء بين مدد المقاومة المطبوعة": "No interpolation is made between the printed resistance periods",
+ "الأبعاد المفضلة لأقنية الهواء": "Preferred dimensions of air ducts",
+ "أقرب قطر مفضل مستدير": "Nearest preferred round diameter",
+ "مقطع مستطيل مفضل": "Preferred rectangular section",
+ "لا مقطع مستطيل مفضل في الجدول بقطر مكافئ يبلغ": "There is no preferred rectangular section in the table with an equivalent diameter of",
+ "أكبر مقطع": "largest section",
+ "تكون الأبعاد المفضلة لأقنية الهواء بحسب الجدول": "The preferred dimensions of air ducts are according to Table",
+ "المقاسات الاسمية المفضلة للأقنية المستديرة": "The preferred nominal sizes of round ducts",
+ "؛ والمستطيلة": "; rectangular ducts",
+ "؛ والمفلطحة البيضاوية الملفوفة لفًّا حلزونيًا": "; and spirally wound flat oval ducts",
+ "البعد الأصغر": "smaller dimension",
+ "تُعرض هنا أقرب المقاسات المفضلة التي لا يقل قطرها": "The nearest preferred sizes shown here are those whose diameter",
+ "أو قطرها المكافئ بالاحتكاك المتساوي": "or equal-friction equivalent diameter",
+ "عن القطر المحسوب، وأصغر أربعة مقاطع مستطيلة مساحةً": "is not less than the calculated diameter, and the four rectangular sections of smallest area"
 }
