@@ -976,3 +976,18 @@ Source: PDF pages 191 - 192 of the fire protection code (chapter 8, assembly occ
 | 8/2/4 C aisles | width at least 0.75 m serving 60 seats or fewer; above 60 seats 0.9 m (seats on one side) or 1.1 m (both sides); widens 25 mm per metre of length toward the exit; an aisle ending at a cross aisle, foyer or exit: the largest aisle + 50 % of the total width of the other aisles; dead ends at most 6 m; slope not steeper than 1 : 8 (stairs of class A otherwise) |
 
 🔴 Uncertain: the aisle width bands for 60 seats are read from the page (0.75 m up to 60 seats; 0.9 and 1.1 m above); the "50 %" rule is applied to the sum of the widths of the other aisles entered by the user. Not done in this chapter: 8/2/6 and later (stage, projection rooms), the occupant load tables already in `egress`.
+
+## National codes, part 49: Jordanian city beauty code (كودة جمال المدينة), outdoor lighting in `lightingcalc` and parks services in `sanfix`
+
+Source: PDF pages 22, 26, 41 - 42, 81 - 85 of the city beauty code, read from the rendered pages (the text layer loses every digit). A Jordan-only panel in `lightingcalc` (fields lt_jo_od_k, lt_jo_od_lux, lt_jo_od_sw, lt_jo_od_sl, lt_jo_od_h, lt_jo_od_aes, lt_jo_od_cd; results lt_jo_od_res; `JO_OD`, `joOutdoorHTML`, `joOutdoorUpdate`) and a park block in `sanfix` (fields sf_pk_area, sf_pk_cls, sf_pk_play; `joSfParkCalc`, `joSfParkHTML`, `out.pk`).
+
+| Rule | Value |
+|---|---|
+| 2/2/1 B Table 1 | pedestrian paths, public stairs, plazas 50 lux; other traffic and pedestrian movement areas 20 lux |
+| 2/3/7 A, C, I, K | pavement lighting mandatory on streets wider than 30 m (and special or distinctive streets whatever their width); lamp unit at least 2.5 m high unless an aesthetic element or within walls or gardens; at least 50 lux on lit pavements, preferably not above the street level (commercial and narrow streets excepted); pole at least 300 mm from the curb edge |
+| 8/2/10 Table 6 | gardens: outdoor paths and plazas 50 lux, other pedestrian places 20 lux; cables below natural ground; control switches in a locked cabinet |
+| 8/2/6 Table 5 | sanitary units per sex by park area: 3000 - 6000 m2 two, 6000 - 10000 three, 10000 - 20000 five, above 20000 one more per 10000 m2; municipal, large, regional and special-character parks above 3000 m2; regional above 20000 m2 add special units for the disabled and children |
+| 8/2/6 F, H, I | first-aid box in parks with children playgrounds or above 6000 m2; fire-fighting equipment and a public telephone above 6000 m2 |
+| 8/2/12 B, C and 2/1/3 D | one waste container per 5000 m2 and one litter basket per 250 m2 in gardens; litter baskets at most 200 m apart in congested streets |
+
+🔴 Uncertain: Table 5 prints "additional unit / 10 000 m2" above 20 000 m2 (read as one per 10 000 m2 or part of it, the larger value); where two rows share a boundary (6000, 10000) the larger row is used; the "not less than 50 lux and preferably not more than the street" sentence is a 50 lux minimum with a warning only. Not done: tree and planting rules, pavement structure, seats, play equipment, gardening staff (8/2/5, 8/2/7, 8/1, 8/3) which are landscape items.
