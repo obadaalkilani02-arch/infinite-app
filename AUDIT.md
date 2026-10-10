@@ -1022,3 +1022,20 @@ Digitising method (so that it can be reproduced): the grid lines of each chart w
 | Pipe lines | copper (Figure 4) 10 - 150 mm, steel (Figure 5) 15 - 600 mm, plastic (Figure 6) 15 - 200 mm |
 
 🔴 Uncertain: the chart lines and curves carry the digitising error (about 0.15 L/s on the curves, about 5 % on the loss); Figure 3b stops at 10 units and Figure 3a at 3000 units (the end values are kept and flagged); in the copper figure every size up to 40 mm has three lines (probably three tube types) and the line with the highest loss is used (the sizes 10, 12, 16 and 90 mm are the labels printed on the chart); the 15 mm tee "9.0" of Table 6 was read 0.9; Table 6 stops at 150 mm; the code gives no velocity limit; fixtures that Table 2 does not list were left without a minimum flow. Not done: Table 2 minimum flows as a separate check, Appendix B examples.
+
+## National codes, part 52: Jordanian mechanical ventilation code 8/3, noise and vibration, NEW calculator `ductnoise` (DN-01, HVAC 19, 87 calculators)
+
+Source: PDF pages 114 - 122 of the mechanical ventilation and air conditioning code (book pages 129 - 138), read from the rendered pages (the text layer loses the digits of Tables 20 and 21 and all formulas).
+
+| Rule | Value |
+|---|---|
+| Table 19 | typical sound levels in dB (minimum / normal / maximum) for 19 spaces, e.g. studios 10/14/20, classrooms 30/35/45, dwellings 33/40/48, private offices 35/43/50, restaurants 50/60/70, factories 65/77/90 |
+| 8/3/3 | permitted level of one device = typical level - 5 dB; two equal devices raise the level 3 dB |
+| 8/3/4 | fan sound level 100 dB when unknown |
+| Table 20 | straight metal ducts below 500 Hz: 0.32 dB/m (up to 0.15 m), 0.16 (up to 0.60 m), 0.03 (up to 1.80 m); bends 6.56 / 4.92 / 3.28 dB (up to 0.40 / 0.90 / above 0.90 m) |
+| Table 21 | absorption coefficients of 13 materials at 125 / 500 / 2000 Hz |
+| 8/3/6 B | lining at least 25 mm; R = (P/A) a^1.4 dB/m, for 125 - 2000 Hz and duct areas 0.22 - 0.45 m2 |
+| 8/3/7 | grille attenuation R2 = 10 log (b/s); +1 dB per large right-angle elbow in unlined ducts (doubled when lined); fan speed doubled = +17 dB; grille free area at least 0.1 m2 per 180 L/s; canvas flexible joint at least 150 mm |
+| 8/3/9, 8/3/10 | springs below 700 cycles/min, rubber pad 700 - 1200, cork above 1200; isolation 85 % at a frequency ratio 3 (99 % and ratio 10 above occupied rooms); fn = sqrt(250 / h) Hz with h in mm; machines above 4 kW on a sunken concrete block |
+
+🔴 Uncertain: the Table 20 bend values 6.56 / 4.92 / 3.28 dB are exactly 2 / 1.5 / 1 dB times 3.28, a feet-to-metre factor that belongs to a length, so they are probably a unit slip (the calculator uses them as printed and offers the corrected ones); Table 20 is valid below 500 Hz and the whole chain is a single-number estimate (no octave bands); the larger side of the duct selects the straight-duct row and the smaller side the bend row. Not done: 8/3/4 fan sound power tables (not in the code), the rest of chapter 8.

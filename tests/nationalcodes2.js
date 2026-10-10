@@ -989,7 +989,7 @@ w.calcResult('natvent');
 check('crack results: the three leakage rates and the Table 5 reference', ['9.82', '2.81', '37.42', 'المعادلة 1'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
 w.renderCalc('natvent'); w.calcResult('natvent');
 check('two-openings results: the wind and temperature flows, the governing effect, the air changes and the Table 11 note', ['7.14', '4.18', 'الحاكم: الريح', '12.9', 'الجدول 11 صورة نقطية'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
-check('HVAC category: 18 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('18 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
+check('HVAC category: 19 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('19 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
 
 // ---------- Jordan: mechanical ventilation and air conditioning code, Tables 23 (persons), 12 (duct velocities) and 16 (outlet velocities) ----------
 w = boot('jo'); doc = w.document;
@@ -1083,7 +1083,7 @@ check('choosing zone 1 (Table A) fills the winter design temperature 6 C and the
 check('Table 21: group 2 needs 0.06 g/(MN s) for every element; group 3: walls 0.06, ceiling underside 0.02, roof back 0.02, metal construction 0.002; group 1 needs none', [w.eval('JO_BARRIER[2]'), w.eval('JO_BARRIER[3]'), w.eval('JO_BARRIER[1]') === undefined], [[0.06, 0.06, 0.06, 0.06], [0.06, 0.02, 0.02, 0.002], true]);
 w.renderCalc('condensation'); w.addNcLayer();
 check('the form: four default layers and the add button gives a fifth; the zone list has four zones', [doc.querySelectorAll('#nc-tbody tr').length, doc.getElementById('nc_zone').options.length], [5, 5]);
-check('HVAC category: 18 calculators and the condensation card', [doc.getElementById('main-categories-grid').textContent.includes('18 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('condensation')")], [true, true]);
+check('HVAC category: 19 calculators and the condensation card', [doc.getElementById('main-categories-grid').textContent.includes('19 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('condensation')")], [true, true]);
 
 // ---------- Jordan: shelters code (Table 6, 3/2/2, chapter 5, 6/3/4, 6/4), `shelter` ----------
 w = boot('jo'); doc = w.document; w.renderCalc('shelter');
@@ -1101,7 +1101,7 @@ w.calcResult('shelter');
 check('the results show the units, the ventilation flows and the notes (the 300 m2 fan area is flagged as unusable)', ['100', '600', '300', '118.0', '5000', 'غير معقول'].every(t => doc.getElementById('sh_results').textContent.includes(t)), true);
 setv(w, 'sh_occ', 5); w.shToggle();
 check('the office / shop occupancy shows the second quantity (area); the others hide it', [doc.getElementById('sh_q2').closest('.field').style.display, (setv(w, 'sh_occ', 1), w.shToggle(), doc.getElementById('sh_q2').closest('.field').style.display)], ['', 'none']);
-check('HVAC category: 18 calculators and the shelter card', [doc.getElementById('main-categories-grid').textContent.includes('18 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('shelter')")], [true, true]);
+check('HVAC category: 19 calculators and the shelter card', [doc.getElementById('main-categories-grid').textContent.includes('19 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('shelter')")], [true, true]);
 
 // ---------- Jordan: acoustics code, Table 20 (recommended noise criteria of the spaces) in the duct sizing sound check ----------
 w = boot('jo'); doc = w.document;
@@ -1621,6 +1621,27 @@ check('residual pressure below 0.20 bar is flagged', (wjSet({wj_n_bath: 10, wj_p
 check('pipe data: copper 14 sizes (with 90 mm), steel 19 sizes (150 mm: 25.2621 L/s at 100 Pa/m), plastic 11 sizes (no 125 mm)', [w.eval('JO_WSP.copper[1].length'), w.eval('JO_WSP.copper[1].some(r => r[0] === 90)'), w.eval('JO_WSP.steel[1].length'), w.eval('JO_WSP.steel[1].find(r => r[0] === 150)[1]'), w.eval('JO_WSP.plastic[1].length'), w.eval('JO_WSP.plastic[1].some(r => r[0] === 125)')], [14, true, 19, 25.2621, 11, false]);
 check('chart lines grow with the size on all three materials (flow at 100 Pa/m increases) and the exponents lie between 1.6 and 2.0', ['copper', 'steel', 'plastic'].map(m => { const a = w.eval('JO_WSP.' + m + '[1]'); return a.every((r, i) => (i === 0 || r[1] > a[i - 1][1]) && r[2] > 1.6 && r[2] < 2.0); }), [true, true, true]);
 check('empty form shows the instruction and the screen opens with the other codes', [(wjSet({}), doc.getElementById('wj_results').textContent.includes('أدخل أعداد القطع')), ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('watersupplyjo'); return !!x.document.getElementById('wj_results'); }).every(Boolean)], [true, true]);
+
+// ---------- part 52: Jordanian mechanical ventilation code 8/3 (Tables 19 - 21, noise and vibration), new calculator `ductnoise` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('ductnoise');
+check('Table 19 has 19 spaces: studios 10 / 14 / 20, dwellings 33 / 40 / 48, offices 50 / 60 / 70, factories 65 / 77 / 90; minimum <= normal <= maximum everywhere', [w.eval('JO_AC19.length'), w.eval('JSON.stringify(JO_AC19[0].slice(1))'), w.eval('JSON.stringify(JO_AC19[6].slice(1))'), w.eval('JSON.stringify(JO_AC19[16].slice(1))'), w.eval('JSON.stringify(JO_AC19[18].slice(1))'), w.eval('JO_AC19.every(r => r[1] <= r[2] && r[2] <= r[3])')], [19, '[10,14,20]', '[33,40,48]', '[50,60,70]', '[65,77,90]', true]);
+check('Table 20: straight ducts 0.32 dB/m up to 0.15 m, 0.16 up to 0.60 m, 0.03 up to 1.80 m (larger side); bends 6.56 / 4.92 / 3.28 dB by the smaller side up to 0.40 / 0.90 / above', [w.eval('joAcStraight(0.15, 0.1).db'), w.eval('joAcStraight(0.5, 0.4).db'), w.eval('joAcStraight(1.2, 0.8).db'), w.eval('joAcStraight(2, 1).beyond'), w.eval('joAcBend(0.4)'), w.eval('joAcBend(0.6)'), w.eval('joAcBend(1.2)')], [0.32, 0.16, 0.03, true, 6.56, 4.92, 3.28]);
+check('Table 21: glass wool 25 mm 0.08 / 0.65 / 0.80, mineral wool 100 kg/m3 50 mm 0.4 / 0.8 / 0.95, polystyrene with a gap 0.1 / 0.55 / 0.1; 13 materials', [w.eval('JSON.stringify(JO_AC21[0].slice(1))'), w.eval('JSON.stringify(JO_AC21[11].slice(1))'), w.eval('JSON.stringify(JO_AC21[12].slice(1))'), w.eval('JO_AC21.length')], ['[0.08,0.65,0.8]', '[0.4,0.8,0.95]', '[0.1,0.55,0.1]', 13]);
+const dnSet = o => { Object.entries(Object.assign({dn_sp: 6, dn_lv: 2, dn_n: 1, dn_lw: 100, dn_sr: 1, dn_w: 0.5, dn_h: 0.4, dn_ls: 10, dn_nb: 2, dn_bm: 'p', dn_ne: 0, dn_lm: 9, dn_hz: 2, dn_ll: 0, dn_lt: 25, dn_b: 20, dn_s: 0.2, dn_q: 100, dn_af: 0.2, dn_rpm: 1450, dn_dh: 25, dn_loc: 'a', dn_kw: 0}, o || {})).forEach(([k, x]) => setv(w, k, x)); w.calcResult('ductnoise'); return w.eval('calcDuctNoise()'); };
+let dnr = dnSet();
+check('dwelling normal level 40 dB, the permitted level per device is 35 dB (5 dB lower); the default chain 100 dB - 0.16 x 10 - 2 x 6.56 (smaller side 0.40 m) - 10 log (20 / 0.2) = 100 - 1.6 - 13.12 - 20 = 65.28 dB', [dnr.Ltyp, dnr.perDev, +dnr.LroomN.toFixed(2)], [40, 35, 65.28]);
+check('lining R = (P/A) a^1.4: duct 0.5 x 0.4 (P 1.8 m, A 0.2 m2) with mineral wool 50 mm (a = 0.75 at 500 Hz) gives 9 x 0.75^1.4 = 6.02 dB/m', +dnSet({dn_ll: 1}).R.toFixed(2), 6.02);
+dnr = dnSet({dn_ll: 5});
+check('5 m of that lining remove 30.1 dB, so the level falls to 35.2 dB and the 35 dB limit still needs 0.03 m more', [+dnr.aLine.toFixed(1), +dnr.LroomN.toFixed(1), +dnr.extraLen.toFixed(2)], [30.1, 35.2, 0.03]);
+check('two equal devices add 3 dB; the fan speed doubled adds 17 dB; the corrected bend values are the printed ones divided by 3.28', [+dnSet({dn_n: 2}).plus.toFixed(2), +dnSet({dn_sr: 2}).dSpeed.toFixed(1), +dnSet({dn_bm: 'c'}).bd.toFixed(2)], [3.01, 17, 2]);
+check('grille: R2 = 10 log (b / s); free area at least 0.1 m2 per 180 L/s (360 L/s needs 0.2 m2)', [+dnSet({dn_b: 20, dn_s: 2}).R2.toFixed(2), +dnSet({dn_q: 360}).afMin.toFixed(3), doc.getElementById('dn_results').textContent.includes('0.2')], [10, 0.2, true]);
+check('the elbows add 1 dB each in an unlined duct and 2 dB each when a lined length is given', [dnSet({dn_ne: 3}).aElb, dnSet({dn_ne: 3, dn_ll: 2}).aElb], [3, 6]);
+dnr = dnSet({dn_rpm: 1450, dn_dh: 25, dn_loc: 'a'});
+check('1450 rpm = 24.17 Hz, 25 mm static deflection gives fn = sqrt(250/25) = 3.16 Hz, ratio 7.64, efficiency 98.3 %; the minimum deflection for ratio 3 is 250 / (24.17 / 3)^2 = 3.85 mm', [+dnr.ff.toFixed(2), +dnr.fn.toFixed(2), +dnr.ratio.toFixed(2), +dnr.eff.toFixed(1), +dnr.hReq.toFixed(2)], [24.17, 3.16, 7.64, 98.3, 3.85]);
+check('above occupied rooms the ratio is 10 and 99 %: 1450 rpm needs 250 / (24.17 / 10)^2 = 42.8 mm; 25 mm fails and 45 mm passes', [dnSet({dn_loc: 'b'}).ratioReq, +dnSet({dn_loc: 'b'}).hReq.toFixed(1), dnSet({dn_loc: 'b', dn_dh: 25}).ratio >= 10, dnSet({dn_loc: 'b', dn_dh: 45}).ratio >= 10], [10, 42.8, false, true]);
+check('isolator type by speed: springs below 700 rpm, rubber pad 700 - 1200, cork above 1200', [dnSet({dn_rpm: 500}).iso, dnSet({dn_rpm: 1000}).iso, dnSet({dn_rpm: 1450}).iso], ['نوابض', 'مخدة مطاط' + 'ية', 'فلين']);
+check('a machine above 4 kW gets the sunken concrete block note; the lining outside 0.22 - 0.45 m2 and below 25 mm is flagged', [(dnSet({dn_kw: 5}), doc.getElementById('dn_results').textContent.includes('كتلة خرسانية غاطسة')), (dnSet({dn_ll: 3, dn_lt: 20}), doc.getElementById('dn_results').textContent.includes('أقل من 25 mm')), (dnSet({dn_ll: 3, dn_w: 1, dn_h: 1}), doc.getElementById('dn_results').textContent.includes('بين 0.22 و0.45'))], [true, true, true]);
+check('the calculator opens with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('ductnoise'); return !!x.document.getElementById('dn_results'); }).every(Boolean), true);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
