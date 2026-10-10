@@ -667,7 +667,7 @@ check('the results show the requirements table, the general alarm rules and the 
 setv(w, 'fr_occ', 'hotel'); w.frOcc();
 check('fields that do not apply are hidden (hotel shows rooms, hides sales area)', [doc.getElementById('fr_f_units').style.display, doc.getElementById('fr_f_sales').style.display], ['', 'none']);
 w = boot('intl'); w.renderCalc('fireprot');
-check('the three new calculators are available with every code; the fire category now has nine', [!!w.document.getElementById('fr_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 10]);
+check('the three new calculators are available with every code; the fire category now has eleven', [!!w.document.getElementById('fr_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 11]);
 
 // ---------- Jordanian fire alarm code: detector layout, zones, sounders ----------
 w = boot('jo'); doc = w.document; w.renderCalc('fadetect');
@@ -709,7 +709,7 @@ w = boot('intl'); w.renderCalc('fadetect');
 check('the detector layout is available with every code', !!w.document.getElementById('fd_results'), true);
 
 w = boot('intl'); w.renderCalc('egress');
-check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 10]);
+check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 11]);
 
 // ---------- Jordan: septic tank, collecting pit, inspection chamber, Table 7 (sanitary drainage code 6/2, 6/3, 4/3) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('septic');
@@ -1198,6 +1198,44 @@ setv(w, 'ch_jo_kw', 3000); w.calcResult('chimney');
 check('3000 kW: the result warns that it is beyond the table and the table check is not evaluated', [doc.getElementById('ch_results').textContent.includes('أكبر من أكبر سطر'), w.eval('calcChimney().checks[0].ok')], [true, null]);
 w = boot('intl'); w.renderCalc('chimney'); w.calcResult('chimney');
 check('other codes: the Syrian chimney check and fields stay (no Table 3 fields)', [!!w.document.getElementById('ch_jo_kw'), w.document.getElementById('ch_results').textContent.includes('الكود السوري'), w.eval('calcChimney().jo === undefined')], [false, true, true]);
+
+// ---------- Jordan: fire protection code chapter 17 (fire resistance of concrete, Tables 13 - 19): the concrete fire resistance calculator ----------
+w = boot('jo'); doc = w.document;
+check('fire category: 11 calculators and the concrete fire resistance card', [doc.getElementById('main-categories-grid').textContent.includes('11 حاسبة متاحة'), doc.getElementById('fire-category').innerHTML.includes("showCalc('concretefire')")], [true, true]);
+const CFD = w.eval('JSON.parse(JSON.stringify({H: JO_CF_H, E: JO_CF, T17: JO_CF_T17}))');
+const cfv = (el, i, j) => CFD.E[el][2][i][2][j][1];
+check('Table 13 (reinforced beams): 4 rows; plain concrete cover 15 / 25 / 35 / 45 / 55 / 65 and width 80 / 110 / 140 / 180 / 240 / 280; lightweight aggregate cover 15 / 20 / 30 / 35 / 45 / 50', [CFD.H, CFD.E.beamRC[2].length, cfv('beamRC', 0, 0), cfv('beamRC', 0, 1), cfv('beamRC', 3, 0)], [[0.5, 1, 1.5, 2, 3, 4], 4, [15, 25, 35, 45, 55, 65], [80, 110, 140, 180, 240, 280], [15, 20, 30, 35, 45, 50]]);
+check('Table 14 (prestressed beams): 7 rows; plain concrete cover 25 / 40 / 50 / 65 / 85 / 100; row G 20 / 30 / 40 / 50 / 65 / 80 and width 80 to 250; row F width 60 / 60 / 70 / 85 / 125 / 140', [CFD.E.beamPC[2].length, cfv('beamPC', 0, 0), cfv('beamPC', 6, 0), cfv('beamPC', 6, 1), cfv('beamPC', 5, 1)], [7, [25, 40, 50, 65, 85, 100], [20, 30, 40, 50, 65, 80], [80, 100, 130, 160, 200, 250], [60, 60, 70, 85, 125, 140]]);
+check('Table 15 (reinforced slabs): solid cover 15 / 15 / 20 / 20 / 25 / 25 and depth 100 / 100 / 125 / 125 / 150 / 150; hollow depth 100 to 190; box depth 105 to 230; ribs F side cover 10 / 15 / 20 / 25 / 30 / 40', [CFD.E.slabRC[2].length, cfv('slabRC', 0, 0), cfv('slabRC', 0, 1), cfv('slabRC', 1, 2), cfv('slabRC', 2, 2), cfv('slabRC', 5, 1)], [6, [15, 15, 20, 20, 25, 25], [100, 100, 125, 125, 150, 150], [100, 110, 140, 160, 175, 190], [105, 130, 155, 180, 205, 230], [10, 15, 20, 25, 30, 40]]);
+check('Table 16 (prestressed slabs): solid cover 15 / 25 / 30 / 40 / 50 / 65 and depth 90 / 100 / 125 / 125 / 150 / 150; T beams cover 25 / 40 / 50 / 65 / 85 / 100 and web 60 / 90 / 110 / 150 / 200 / 250; box flange 25 / 25 / 30 / 40 / 50 / 65', [cfv('slabPC', 0, 0), cfv('slabPC', 0, 1), cfv('slabPC', 4, 0), cfv('slabPC', 4, 2), cfv('slabPC', 2, 1)], [[15, 25, 30, 40, 50, 65], [90, 100, 125, 125, 150, 150], [25, 40, 50, 65, 85, 100], [60, 90, 110, 150, 200, 250], [25, 25, 30, 40, 50, 65]]);
+check('Tables 18, 19 and 17: columns A 150 / 200 / 250 / 300 / 400 / 450, B 150 / 150 / 150 / 225 / 275 / 300, C 120 / 120 / 150 / 200 / 225 / 275, D 150 / 190 / 200 / 225 / 275 / 300; walls A 75 / 75 / 100 / 100 / 150 / 180, C 65 / 65 / 75 / 75 / 100 / 125; Table 17 rows 10 / 10 / 15 / 15 / 25, 10 / 10 / 10 / 10 / 15 and 10 / 10 / 15 / 20 / 25', [[0, 1, 2, 3].map(i => cfv('column', i, 0)), cfv('wall', 0, 0), cfv('wall', 2, 0), CFD.T17.map(r => r[1])], [[[150, 200, 250, 300, 400, 450], [150, 150, 150, 225, 275, 300], [120, 120, 150, 200, 225, 275], [150, 190, 200, 225, 275, 300]], [75, 75, 100, 100, 150, 180], [65, 65, 75, 75, 100, 125], [[10, 10, 15, 15, 25], [10, 10, 10, 10, 15], [10, 10, 15, 20, 25]]]);
+check('every row is non-decreasing from 0.5 to 4 hours (covers, widths, depths, dimensions)', Object.values(CFD.E).every(E => E[2].every(V => V[2].every(p => p[1].every((x, i) => i === 0 || x >= p[1][i - 1])))), true);
+w.showCalc('concretefire'); w.calcResult('concretefire');
+check('opens on the reinforced beam (A, plain concrete) at 2 h: cover 45 mm and width 180 mm are the minimum; two parameters; no check marks before values are entered', [w.eval('calcConcreteFire().rows.map(r => r.need)'), w.eval('calcConcreteFire().rows.map(r => r.ok)'), doc.getElementById('cf_results').textContent.includes('جدول 13')], [[45, 180], [null, null], true]);
+setv(w, 'cf_in0', 40); setv(w, 'cf_in1', 200); w.calcResult('concretefire');
+check('cover 40 mm fails 45 mm; width 200 mm passes 180 mm', w.eval('calcConcreteFire().rows.map(r => r.ok)'), [false, true]);
+setv(w, 'cf_h', 4); w.calcResult('concretefire');
+check('at 4 h the cover rises to 65 mm (above 40 mm: the extra mesh of 17/2/5 is mentioned) and the width to 280 mm', [w.eval('calcConcreteFire().rows.map(r => r.need)'), w.eval('calcConcreteFire().mesh'), doc.getElementById('cf_results').textContent.includes('0.5 kg')], [[65, 280], true, true]);
+setv(w, 'cf_h', 2); setv(w, 'cf_tb', 300); setv(w, 'cf_tbw', 150); w.calcResult('concretefire');
+check('T beam: b 300 and bw 150 (bw at least b / 3): the cover is multiplied by the root of 2 = 1.414 (45 mm becomes 63.6 mm); the width is not multiplied', [Math.round(w.eval('calcConcreteFire().factor') * 1000) / 1000, Math.round(w.eval('calcConcreteFire().rows[0].need') * 10) / 10, w.eval('calcConcreteFire().rows[1].need')], [1.414, 63.6, 180]);
+setv(w, 'cf_tbw', 90); w.calcResult('concretefire');
+check('T beam with bw below b / 3 (90 < 100): the table does not apply and the warning shows', [w.eval('calcConcreteFire().tThin'), doc.getElementById('cf_results').textContent.includes('حماية إضافية')], [true, true]);
+setv(w, 'cf_tb', ''); setv(w, 'cf_tbw', '');
+const cfs = (id, x) => { const e = doc.getElementById(id); e.value = String(x); e.dispatchEvent(new w.Event('change', { bubbles: true })); };
+cfs('cf_el', 'slabPC');
+check('switching to the prestressed slab rebuilds the variants (6) and the fields; solid slab at 2 h: cover 40 and depth 125', [doc.getElementById('cf_var').options.length, doc.getElementById('cf_params').querySelectorAll('input').length, w.eval('calcConcreteFire().rows.map(r => r.need)')], [6, 2, [40, 125]]);
+cfs('cf_var', 4);
+check('prestressed slab, T beams (E): four fields; at 2 h bottom and side cover 65, web 150, flange 125; the slab soffit table (Table 17) shows', [doc.getElementById('cf_params').querySelectorAll('input').length, w.eval('calcConcreteFire().rows.map(r => r.need)'), doc.getElementById('cf_results').textContent.includes('جدول 17')], [4, [65, 65, 150, 125], true]);
+cfs('cf_el', 'column'); cfs('cf_h', 3);
+check('column A (no extra protection) at 3 h: 400 mm; variant D (additional steel) 275 mm', [w.eval('calcConcreteFire().rows[0].need'), (cfs('cf_var', 3), w.eval('calcConcreteFire().rows[0].need'))], [400, 275]);
+cfs('cf_el', 'wall'); cfs('cf_h', 1);
+check('wall A at 1 h: 75 mm; the wall fields (steel ratio and cover) appear', [w.eval('calcConcreteFire().rows[0].need'), !!doc.getElementById('cf_wr') && !!doc.getElementById('cf_wc')], [75, true]);
+setv(w, 'cf_wr', 0.5); setv(w, 'cf_in0', 100); setv(w, 'cf_wc', 20); w.calcResult('concretefire');
+check('ratio 0.5 %: plain wall, 150 mm needed and 100 mm fails; the cover limit for 1 h is 15 mm (20 passes); at 2 h the plain wall needs 200 mm and the cover 25 mm (20 fails)', [w.eval('calcConcreteFire().walls.plainThick'), w.eval('calcConcreteFire().walls.plainOk'), w.eval('calcConcreteFire().walls.covOk'), (cfs('cf_h', 2), w.eval('calcConcreteFire().walls.plainThick')), w.eval('calcConcreteFire().walls.covOk')], [150, false, true, 200, false]);
+cfs('cf_h', 4); setv(w, 'cf_wr', 0.5); w.calcResult('concretefire');
+check('4 h: the plain wall thickness is not printed (null, no check) and the result still shows', [w.eval('calcConcreteFire().walls.plainThick'), w.eval('calcConcreteFire().walls.plainOk'), doc.getElementById('cf_results').textContent.includes('غير مطبوعة')], [null, null, true]);
+w = boot('intl'); w.showCalc('concretefire');
+check('the calculator is available with every code (chapter 17 data) and opens with its results', !!w.document.getElementById('cf_results') && w.document.getElementById('cf_results').textContent.includes('جدول 13'), true);
 
 // the other codes are unchanged
 w = boot('sa');
