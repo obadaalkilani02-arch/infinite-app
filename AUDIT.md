@@ -639,3 +639,16 @@ NEW calculator (81st, HVAC 18, card after the condensation one): the services si
 The tool has three NC classes (25, 35, 45): the class is chosen from the upper end of the NC range of the space (up to 25 -> 25, up to 35 -> 35, above -> 45).
 
 🔴 Uncertain: the code prints ranges, not one value; the upper end of the NC range decides the class, so a space with NC 35 - 50 (large offices) is checked as 45 and a range above 45 (equipment rooms, NC up to 60) is flagged as beyond the highest class of the tool. The garages row has no NC curve (the class is not changed) and row 13 (PNC 60 - 75) is not offered. Table 21 (NR curves per octave band for the same environments), the sound insulation tables (2 - 19) and the exposure limits (Table 23) were not used.
+
+
+## National codes, part 29: Jordanian code of requirements for building for the disabled, 6/7/2 (lifts) in the lift planning
+
+First use of the disabled-access code (PDF "كودةمتطلبات البناء الخاص بالمعوقين", pages 119 - 122 of the PDF); the rest of that code (ramps, doors, toilets, parking, signage) is architectural and is not part of this MEP application. `liftplan` (Jordan only, passenger lifts): the chosen standard car of the lifts code is checked against the accessibility minima and the other rules are listed (`joLiftAccess`, block "access for the disabled" in `liftDimsHTML`).
+
+| Source | Used in | Notes |
+|---|---|---|
+| 6/7/2 (A) 4 | checks | car at least 1.1 m wide and 1.4 m deep; very large wheelchairs (severe disabilities) 1.8 x 1.8 m |
+| 6/7/2 (A) 5 | checks | clear door width at least 0.8 m (1.0 m preferred) |
+| 6/7/2 (A) 3, 4, 5, 6 | note | lobby at least 1.5 x 1.5 m (1.8 m deep on ground floors and busy places); handrails at 1.0 m above the floor and 0.04 m from the wall; door closing speed 0.3 m/s (residential, for the disabled) or 0.5 m/s, photocells, open at least 6 s; controls at most 1.6 m (average 1.4 m), for wheelchair users 1.3 m (average 1.05 m), 0.6 m from the car door; touch panels 0.03 m and buttons 0.015 m; hydraulic lifts for exact levelling; lift dimensions per the lifts code except the five-passenger lift |
+
+🔴 Uncertain: the rectangular handrail section is printed "0.75 x 0.10 m" (unreasonable, perhaps in centimetres) and is not quoted; "handrails at 1.0 m" is as printed (a common value is 0.9 m); the sentence about the five-passenger lift is read as "the dimensions follow the lifts code except for the five-passenger lift". The checks use the table values of the lifts code (Cw, Cd, Ew), not the doors of other standards.

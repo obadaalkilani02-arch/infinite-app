@@ -1114,6 +1114,18 @@ check('the results quote Table 20 with the NC, PNC and dB(A) bands; equipment ro
 w = boot('intl'); w.renderCalc('ductsizing');
 check('other codes: no Table 20 list', !!w.document.getElementById('dt_jo_sp'), false);
 
+// ---------- Jordan: requirements of building for the disabled, 6/7/2 (lifts) in the lift planning ----------
+w = boot('jo'); doc = w.document;
+const la = (cw, cd, ew) => w.eval('joLiftAccess({Cw:' + cw + ',Cd:' + cd + ',Ew:' + ew + '})');
+check('6/7/2: a car of at least 1100 x 1400 mm and a door of at least 800 mm pass; 1000 wide, 1300 deep and 700 doors fail; 1800 x 1800 serves the very large wheelchairs', [[1100, 1400, 800], [1000, 1300, 700], [1100, 1300, 800], [1800, 1800, 1000]].map(x => { const r = la(...x); return [r.cwOk, r.cdOk, r.ewOk, r.big]; }), [[true, true, true, false], [false, false, false, false], [true, false, true, false], [true, true, true, true]]);
+w.renderCalc('liftplan'); w.calcResult('liftplan');
+const lpd = w.eval('calcLiftPlan().dims.row');
+check('the lift planning of a Jordan project shows the disabled-access block for the chosen car (1600 x 1400 mm, door 1100 mm: all three pass)', [doc.getElementById('lp_results').textContent.includes('الوصول للمعوقين'), lpd.Cw >= 1100 && lpd.Cd >= 1400 && lpd.Ew >= 800], [true, true]);
+setv(w, 'lp_dt', 't14'); w.lpDimFill('type'); w.calcResult('liftplan');
+check('goods lifts (Tables 14 and 15) do not get the passenger accessibility block', doc.getElementById('lp_results').textContent.includes('الوصول للمعوقين'), false);
+w = boot('intl'); w.renderCalc('liftplan'); w.calcResult('liftplan');
+check('other codes: no accessibility block', (w.document.getElementById('lp_results') ? w.document.getElementById('lp_results').textContent : '').includes('الوصول للمعوقين'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
