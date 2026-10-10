@@ -744,7 +744,7 @@ setv(w, 'sp_dw', 3); w.calcResult('septic');
 const spText = doc.getElementById('sp_results').textContent;
 check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
 w = boot('intl'); w.renderCalc('septic');
-check('the septic calculator is available with every code and the plumbing screen counts 24 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('24 حاسبة متاحة')], [true, true]);
+check('the septic calculator is available with every code and the plumbing screen counts 25 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('25 حاسبة متاحة')], [true, true]);
 
 // ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
@@ -1498,6 +1498,32 @@ check('Fe = sum T / L: 2 h at 95 dB (4 h) + 1 h at 100 dB (2 h) = 0.5 + 0.5 = 1.
 check('... a level above 115 dB is not permitted at all; levels below 90 dB add nothing', [ssRun({ss_nl2: 120, ss_nt2: 0.1}).noiseBad, ssRun({ss_nl2: 120, ss_nt2: 0.1}).noiseOk, ssRun({ss_nl2: 80, ss_nt2: 8}).fe], [true, false, 1]);
 check('the notes quote the printed numbers (25 and 35 workers, 300 m2, 30 m, 0.02 m3, 12 V, 2 m, 140 dB, 0.5 kN)', ['4 مرافق للمئة الأولى', '300 m²', '30 m', '0.02 m³', '12 V', '2 m', '140 dB', '0.5 kN'].every(x => (ssRun({ss_n: 150}), doc.getElementById('ss_results').textContent.includes(x))), true);
 check('the plumbing card exists and the calculator opens with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('sitesafety'); x.calcResult('sitesafety'); return x.document.getElementById('ss_results').textContent.length > 500; }), [true, true, true]);
+
+// ---------- part 46: Jordanian code of building requirements for the disabled, 2/5 - 2/7, new calculator `accessreq` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('accessreq');
+const acIds = w.eval('JO_AC.map(r => r[0])');
+const acRun = o => { acIds.forEach(id => setv(w, 'ac_' + id, '')); setv(w, 'ac_lx', ''); setv(w, 'ac_lp', 0); const d = Object.assign({ac_u: 'w', ac_arr: 'a', ac_door: 'out'}, o || {}); Object.entries(d).forEach(([k, x]) => setv(w, k, x)); w.calcResult('accessreq'); return w.eval('calcAccess()'); };
+const acSt = id => doc.getElementById('ac_st_' + id).textContent.replace(/\s+/g, ' ').trim();
+const acRq = id => doc.getElementById('ac_rq_' + id).textContent.trim();
+let ac = acRun();
+check('accessibility: 77 rows in 8 groups, nothing checked when nothing is entered', [acIds.length, w.eval('JO_AC_GROUPS.length'), ac.checked, ac.fail], [77, 8, 0, 0]);
+check('WC seat height: wheelchair 0.46 - 0.50 m (0.475 passes, 0.45 fails); crutches 0.42 - 0.45 (0.445 passes, 0.46 fails)', [[{ac_wc8: 0.475}], [{ac_wc8: 0.45}], [{ac_u: 'c', ac_wc8: 0.445}], [{ac_u: 'c', ac_wc8: 0.46}]].map(a => (acRun(a[0]), acSt('wc8').includes('✔'))), [true, false, true, false]);
+check('cubicle depth for crutch users: 1.5 m with an outward door, 1.7 m inward; door to WC 1.5 m for wheelchairs and 0.80 m otherwise', [acRq('wc2'), (acRun({ac_door: 'in'}), acRq('wc2')), acRq('wc3'), (acRun({ac_u: 'c'}), acRq('wc3'))], ['≥ 1.5 m', '≥ 1.7 m', '≥ 1.5 m', '≥ 0.8 m']);
+check('wheelchair cubicle arrangements: 1.5 x 2.0, 1.5 x 1.7, 1.6 x 1.5, 1.5 x 1.8, 2.1 x 2.1 m', Object.keys({a: 1, b: 1, c: 1, d: 1, e: 1}).map(k => (acRun({ac_arr: k}), acRq('wc4') + ' ' + acRq('wc5'))), ['≥ 1.5 m ≥ 2 m', '≥ 1.5 m ≥ 1.7 m', '≥ 1.6 m ≥ 1.5 m', '≥ 1.5 m ≥ 1.8 m', '≥ 2.1 m ≥ 2.1 m']);
+check('basin rim: wheelchair 0.67 - 0.82 m, crutches near 0.9 m (0.9 passes, 1.0 fails); knee clearance 0.8 front / 0.7 back', [(acRun({ac_bas1: 0.75}), acSt('bas1').includes('✔')), (acRun({ac_bas1: 0.9}), acSt('bas1').includes('✔')), (acRun({ac_u: 'c', ac_bas1: 0.9}), acSt('bas1').includes('✔')), (acRun({ac_u: 'c', ac_bas1: 1}), acSt('bas1').includes('✔')), acRq('bas2'), acRq('bas3')], [true, false, true, false, '≥ 0.8 m', '≥ 0.7 m']);
+check('support rails: tube 0.030 - 0.045 m, 0.040 - 0.065 m from the wall, 150 kg load, 15 degrees at most, hoist eyes 140 kg', [['rl1', 0.04, true], ['rl1', 0.05, false], ['rl2', 0.05, true], ['rl2', 0.07, false], ['rl3', 150, true], ['rl3', 140, false], ['rl4', 15, true], ['rl4', 16, false], ['rl10', 140, true], ['rl10', 100, false]].map(a => (acRun({['ac_' + a[0]]: a[1]}), acSt(a[0]).includes('✔') === a[2])), Array(10).fill(true));
+check('bath 1.6 x 0.7 m (1.7 x 0.76 preferred), depth 0.35 - 0.40; shower 1.20 x 1.20 for wheelchairs, 0.9 for others; combined WC and shower 1.9 x 1.7', [['bt1', 1.6, true], ['bt1', 1.5, false], ['bt2', 0.7, true], ['bt3', 0.4, true], ['bt3', 0.5, false], ['sh1', 1.2, true], ['sh2', 1.1, false], ['sh3', 0.9, true], ['sh9', 1.9, true], ['sh10', 1.6, false]].map(a => (acRun({['ac_' + a[0]]: a[1]}), acSt(a[0]).includes('✔') === a[2])), Array(10).fill(true));
+check('electrical: switches near 1.00 m, 0.10 - 0.70 m from the door frame, 0.4 m from a corner; pull cord 1.2 m (wheelchair) or 1.5 m (others); sockets at least 0.5 m; boards 1.2 / 1.5 m', [['el1', 1, true], ['el1', 1.2, false], ['el2', 0.1, true], ['el2', 0.8, false], ['el3', 0.4, true], ['el3', 0.3, false], ['el4', 1.2, true], ['el4', 1.3, false], ['el8', 0.5, true], ['el8', 0.4, false], ['el10', 1.2, true], ['el10', 1.4, false]].map(a => (acRun({['ac_' + a[0]]: a[1]}), acSt(a[0]).includes('✔') === a[2])), Array(12).fill(true));
+check('... for other users the pull cord and the boards go up to 1.5 m', [(acRun({ac_u: 'c', ac_el4: 1.5}), acSt('el4').includes('✔')), (acRun({ac_u: 'c', ac_el10: 1.5}), acSt('el10').includes('✔')), (acRun({ac_u: 'c', ac_el10: 1.6}), acSt('el10').includes('✔'))], [true, true, false]);
+check('phone: shelf 0.75 m, 0.72 m free below, receiver 1.0 m, coin slot 0.9 m at most, booth 0.9 x 1.2 m', [['el13', 0.75, true], ['el14', 0.72, true], ['el14', 0.7, false], ['el15', 1, true], ['el16', 0.9, true], ['el16', 1, false], ['el11', 0.9, true], ['el12', 1.1, false]].map(a => (acRun({['ac_' + a[0]]: a[1]}), acSt(a[0]).includes('✔') === a[2])), Array(8).fill(true));
+check('heating: 22 C living and dining, 17 C bedrooms and kitchens, 21 C at 0.2 m, floor surface at most 24 C, ceiling heating at most 2.4 m, controls at least 0.60 m', [['ht1', 22, true], ['ht1', 20, false], ['ht2', 17, true], ['ht3', 21, true], ['ht4', 24, true], ['ht4', 25, false], ['ht5', 2.4, true], ['ht6', 0.6, true], ['ht6', 0.5, false]].map(a => (acRun({['ac_' + a[0]]: a[1]}), acSt(a[0]).includes('✔') === a[2])), Array(9).fill(true));
+check('windows: sill 0.60 m at most, protection 0.85 m at least, controls 1.35 m at most', [['wn1', 0.6, true], ['wn1', 0.7, false], ['wn2', 0.85, true], ['wn3', 1.35, true], ['wn3', 1.5, false]].map(a => (acRun({['ac_' + a[0]]: a[1]}), acSt(a[0]).includes('✔') === a[2])), Array(5).fill(true));
+check('illuminance, 2/6/5 B: 110 / 160 / 160 / 215 / 110 / 110 lux, supplementary 750 / 325 / 325 / 160', w.eval('JO_AC_LUX.map(r => r[1])'), [110, 160, 160, 215, 110, 110, 750, 325, 325, 160]);
+check('... a kitchen at 200 lux fails and at 215 passes; the sewing place needs 750', [(acRun({ac_lp: 3, ac_lx: 200}).lux.ok), (acRun({ac_lp: 3, ac_lx: 215}).lux.ok), (acRun({ac_lp: 6, ac_lx: 700}).lux.ok)], [false, true, false]);
+ac = acRun({ac_wc8: 0.475, ac_el1: 1, ac_el3: 0.3, ac_lp: 4, ac_lx: 120});
+check('the summary counts the entered rows: 4 checked (3 rows and the illuminance), 1 failing; the results box is drawn', [ac.checked, ac.fail, doc.getElementById('ac_results').textContent.includes('ملخص الفحص')], [4, 1, true]);
+check('the notes quote the printed numbers (140 kg, 0.5 m, 22, 17, 750, 325, 215, 1234)', ['140 kg', '0.5 m', '750', '325', '215', '1234'].every(x => doc.getElementById('ac_results').textContent.includes(x)), true);
+check('the calculator opens with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('accessreq'); x.calcResult('accessreq'); return x.document.getElementById('ac_results').textContent.length > 300; }), [true, true, true]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
