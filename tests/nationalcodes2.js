@@ -1750,6 +1750,32 @@ check('Figure 4 ladders: 60 degrees F 1.45 m, riser 260, tread 155; 75 degrees F
 w.renderCalc('spacestair'); setv(w, 'sx_row', 'af'); setv(w, 'sx_amt', 600); setv(w, 'sx_sprk', '1'); setv(w, 'sx_pers', 150); setv(w, 'sx_td', 70); w.calcResult('spacestair');
 check('the exits result shows 14 and 10 units, flags the 70 m travel distance and the two-exit rule and states the 0.300 m unit conflict with the fire code', ['14', '10', '⚠ لا يحقق', '0.300 m', '0.55 m'].every(x => doc.getElementById('sx_results').textContent.includes(x)), true);
 check('the three calculators open with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); return ['spacereq', 'spacehome', 'spacestair'].every(t => { x.renderCalc(t); return x.document.getElementById({spacereq: 'sr_results', spacehome: 'sh_results', spacestair: 'sx_results'}[t]).textContent.length > 100; }); }), [true, true, true]);
+// ---------- part 60: Jordanian acoustics code, `roomacoustics` (annexes A - D, Tables 17 - 23) ----------
+w = boot('jo'); doc = w.document;
+const rac = o => w.eval('joRaCalc(' + JSON.stringify(Object.assign({V: 0, surf: [], x: 0, tt: 't1', full: '0', bands: [], ne: 'n1', exp: [], sd: 0, m: 0, f: 0, m1: 0, m2: 0, d: 0, h: 0, E: 0, rho: 0, nu: 0.2}, o)) + ')');
+const nrPrinted = {0: [55.4, 35.5, 22, 12, 4.8, 0, -3.5, -6.1, -8], 50: [89.4, 75, 65.5, 58.5, 53.5, 50, 47.2, 45.2, 43.5], 80: [109.9, 98.7, 91.6, 86.4, 82.7, 80, 77.7, 75.9, 74.4]};
+check('Table 21 rows built from the ISO coefficients match the printed rows to 0.1 dB: NR 0 (55.4 .. -8.0), NR 50 (89.4 75.0 65.5 58.5 53.5 50 47.2 45.2 43.5 from 31.5 to 8000 Hz) and NR 80 (109.9 98.7 91.6 86.4 82.7 80 77.7 75.9 74.4)', [0, 50, 80].map(n => w.eval('JO_RA_NR.map(b => b[1] + b[2] * ' + n + ')').every((x, i) => Math.abs(x - nrPrinted[n][i]) <= 0.11)), [true, true, true]);
+let ra = rac({V: 200, surf: [[60, 0.05], [60, 0.7], [140, 0.1], [12, 0.15]], x: 5});
+check('reverberation: A = 3 + 42 + 14 + 1.8 + 5 = 65.8 sabin, Sabine 0.163 x 200 / 65.8 = 0.50 s, Eyring 0.43 s; 0.50 s lies in the recording-room range 0.4 - 0.6', [+ra.A.toFixed(1), +ra.sabine.toFixed(2), +ra.eyring.toFixed(2), ra.tOk, ra.target.lo, ra.target.hi], [65.8, 0.5, 0.43, true, 0.4, 0.6]);
+ra = rac({V: 200, surf: [[60, 0.05], [60, 0.7], [140, 0.1], [12, 0.15]], x: 5, tt: 't15'});
+check('a symphonic hall target (1.6 - 2.2 s) is missed by 0.50 s and needs 14.8 - 20.4 sabin... (0.163 V / T): 14.8 to 20.4', [ra.tOk, +ra.aReq[0].toFixed(1), +ra.aReq[1].toFixed(1)], [false, 14.8, 20.4]);
+ra = rac({V: 200, surf: [[60, 0.05], [60, 0.7], [140, 0.1], [12, 0.15]], x: 5, tt: 's5', full: '1'});
+check('Table 17 has 16 rows with lowest < highest, Table 18: classroom 1.25 empty and 0.75 occupied, meeting hall 1.5 - 2.5 empty and 1.0 - 1.25 occupied, pools 1.5 and no occupied value', [w.eval('JO_RA_T17.length'), w.eval('JO_RA_T17.every(r => r[3] < r[4])'), w.eval('JO_RA_T18.find(r => r[0] === "s5").slice(2, 4).join("|")'), w.eval('JO_RA_T18.find(r => r[0] === "s1").slice(2, 4).join("|")'), w.eval('JO_RA_T18.find(r => r[0] === "s3")[3]'), ra.target.lo, ra.target.hi], [16, true, '1.25,1.25|0.75,0.75', '1.5,2.5|1,1.25', null, 0.75, 0.75]);
+const nrSpec = n => w.eval('JO_RA_NR.map(b => b[1] + b[2] * ' + n + ')');
+ra = rac({bands: nrSpec(40), ne: 'n6'});
+check('a spectrum on the NR 40 curve gives NR 40 (curve 40); against the 25 - 35 range of cinemas and hospitals it fails, and against workshops 60 - 70 it passes', [+ra.nr.toFixed(2), ra.nrCurve, ra.nrOk, rac({bands: nrSpec(40), ne: 'n1'}).nrOk], [40, 40, false, true]);
+const bands = nrSpec(30).map((x, i) => i === 3 ? x + 12 : x);
+ra = rac({bands});
+check('one band 12 dB above the NR 30 curve sets the rating: the 250 Hz band (a 12, b 0.93) gives NR 42.9 -> curve 43', [ra.nrBand, +ra.nr.toFixed(1), ra.nrCurve], [250, 42.9, 43]);
+ra = rac({bands: [null, 60, 60, 60, 60, 60, 60, 60, 60]});
+check('dB(A) from eight equal 60 dB octave bands with the Table F/1 corrections (-26.2, -16.1, -8.6, -3.2, 0, +1.2, +1.0, -1.1) is 67.0', +ra.dba.toFixed(1), 67);
+check('occupational exposure (Table 23): 95 dB(A) for 2 h (4 h permitted) + 100 dB(A) for 1 h (2 h) = 1.0 passes, 100 dB(A) for 3 h gives 1.5 and fails, a level above 115 fails, below 90 dB(A) counts nothing; 91 dB(A) uses the 92 dB(A) row (6 h)', [rac({exp: [[95, 2], [100, 1]]}).F, rac({exp: [[95, 2], [100, 1]]}).fOk, rac({exp: [[100, 3]]}).F, rac({exp: [[100, 3]]}).fOk, rac({exp: [[120, 0.1]]}).fOk, rac({exp: [[85, 8]]}).F, +rac({exp: [[91, 3]]}).F.toFixed(2)], [1, true, 1.5, false, false, 0, 0.5]);
+check('speech interference (Table 19): 1.1 m uses the 1.25 m row, 53 / 59 / 65 / 71 dB; 0.15 m is 71 / 77 / 83 / 89; beyond 7.3 m the last row', [rac({sd: 1.1}).sil.slice(1).join(' '), rac({sd: 0.15}).sil.slice(1).join(' '), rac({sd: 9}).sil[0]], ['53 59 65 71', '71 77 83 89', 7.3]);
+ra = rac({m: 250, f: 500, m1: 10, m2: 10, d: 0.05, h: 0.2, E: 25e9, rho: 2400, nu: 0.2});
+check('mass law Dn = 20 log (500 x 250) - 48 = 53.9 dB, STC = 20 log 250 + 10 = 58.0, doubling the mass adds 6 dB; double leaf 10 + 10 kg/m2 with a 50 mm cavity resonates at 119.6 Hz; 200 mm concrete (E 25 GPa, rho 2400, nu 0.2) has cw 3402 m/s and fc 99 Hz', [+ra.mass.toFixed(1), +ra.stc.toFixed(1), +(rac({m: 500, f: 500}).mass - ra.mass).toFixed(1), +ra.fres.toFixed(1), Math.round(ra.cw), Math.round(ra.fc)], [53.9, 58, 6, 119.6, 3402, 99]);
+w.renderCalc('roomacoustics'); w.calcResult('roomacoustics');
+check('the results box carries the 0.50 s reverberation time, the 0.4 - 0.6 s target and the wall figures; other codes open it too', [doc.getElementById('ra_results').textContent.includes('0.50'), doc.getElementById('ra_results').textContent.includes('0.40 – 0.60'), doc.getElementById('ra_results').textContent.includes('53.9')], [true, true, true]);
+check('roomacoustics opens with the other codes', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('roomacoustics'); return x.document.getElementById('ra_results').textContent.length > 200; }), [true, true, true]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
