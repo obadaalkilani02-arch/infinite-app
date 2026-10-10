@@ -840,3 +840,23 @@ A results block after the clip spacing (`joBend`, `joBendHTML`), using the same 
 A note in the Jordanian `cablesizing` results: the rated current of the overcurrent protective device of a lighting circuit is at most 6 A for the bayonet lampholders B15 and the Edison screw E14, and at most 16 A for B22, E27 and E40, except where the lampholders and their wiring are enclosed in an earthed metal sheath or a non-combustible insulating material or a separate means of overcurrent protection is provided. Page 135 of the code; the values of Table 7 stand one row above their labels in the print and were paired by the row positions (B15 6, B22 16, E14 6, E27 16, E40 16, as in the usual practice for these lampholders).
 
 🔴 Uncertain: the pairing of the values with the lampholder types follows the layout of the page, not a printed grid. Not done: Table 6 (ratings of plugs and sockets: a classification, not a calculation) and the other 4/4 rules.
+
+
+## National codes, part 41: Jordanian electrical installations code 2/2/1 and Tables 1 and 2 (assumed current demand and coincidence factors) in the maximum demand
+
+`maxdemand` (the method "IET H2", which is the same table): in the Jordan reference the method is named after the Jordanian Table 2 and the form and results carry the Jordanian notes. Two Jordan-only categories are added (`MD_CATS_JO`, `mdCats()`): motors (not lifts) and sockets and points of use in the main rooms. Pages 33 - 38 of the code, read from the rendered pages (the percentages are in the images).
+
+| Table 2 row | Dwelling | Small shops, offices | Small hotels |
+|---|---|---|---|
+| 1 lighting | 66 % of the total demand | 90 % | 75 % |
+| 2 heating and power | 100 % of the first 10 A + 50 % of the rest | largest + 75 % of the rest | largest + 80 % of the next + 60 % of the rest |
+| 3 cooking | first 10 A + 30 % of the rest + 5 A with a socket in the control unit | largest + 80 % + 60 % | largest + 80 % + 60 % |
+| 4 motors (not lifts) | blank | largest + 80 % of the next + 60 % of the rest | largest + 50 % of the rest |
+| 5 instantaneous water heaters | largest + next + 25 % of the rest | the same | the same |
+| 6 - 8 thermostatic heaters, floor warming, thermal storage | 100 % | | |
+| 9 final circuits | largest + 40 % of each other | largest + 50 % | largest + 50 % |
+| 10 sockets and other fixed equipment | largest point + 40 % of each other | largest + 75 % | largest + 75 % of the other points of the main rooms + 40 % of the rest |
+
+Table 1 (assumed current of a point of use): sockets rated up to 2 A 0.5 A at least, others their rating; lighting the equivalent current of the load with at least 100 W per lampholder; discharge lighting the rated watts x 1.8 volt-amperes when exact data are missing (power factor 0.85 with the control gear and the harmonics); clocks, shavers, bell transformers and loads up to 5 VA neglected; a domestic cooker first 10 A + 30 % of the rest + 5 A for a socket in the control unit; other fixed equipment its rating.
+
+🔴 Uncertain: the dwelling column of the motor row is blank in the print (no diversity is applied); the printed columns of row 9 are partly cut (40 % read for dwellings and 50 % for the other two, as in the same table of the IET guidance which this table equals); which sockets belong to the "main rooms" is the designer's decision. Not done: the circuit arrangements (Appendix, ring and radial circuits), the voltage drop check of 2/2/1 (a) and the other points of chapter 2.

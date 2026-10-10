@@ -1377,6 +1377,24 @@ check('the Jordanian cable sizing quotes Table 7: 6 A for B15 and E14, 16 A for 
 w = boot('sa'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
 check('other codes: no lampholder note', w.document.getElementById('cs_results').textContent.includes('جدول 7'), false);
 
+// ---------- Jordan: electrical installations code 2/2/1 and Tables 1 and 2 (coincidence factors) in the maximum demand ----------
+w = boot('jo'); doc = w.document;
+const mdd = (c, p, u, cs) => w.eval('mdDemand(' + JSON.stringify(c) + ', ' + JSON.stringify(p) + ', ' + JSON.stringify(u) + ', ' + !!cs + ')');
+const rnd = x => Math.round(x * 1000) / 1000;
+check('Table 2 rows 1, 2, 3 and 5: lighting 66 / 90 / 75 % of 20 A; heating of a dwelling 10 + 0.5 x 10 = 15 A, of a shop 12 + 0.75 x 8 = 18 A, of a small hotel 12 + 0.8 x 5 + 0.6 x 3 = 17.8 A; cooking 10 + 0.3 x 10 + 5 = 18 A; instantaneous heaters 8 + 8 + 0.25 x 8 = 18 A', [rnd(mdd('light', 'dom', [20])), rnd(mdd('light', 'shop', [20])), rnd(mdd('light', 'hotel', [20])), rnd(mdd('heat', 'dom', [10, 10])), rnd(mdd('heat', 'shop', [12, 5, 3])), rnd(mdd('heat', 'hotel', [12, 5, 3])), rnd(mdd('cook', 'dom', [20], true)), rnd(mdd('whi', 'shop', [8, 8, 8]))], [13.2, 18, 15, 15, 12 + 0.75 * 8, 12 + 0.8 * 5 + 0.6 * 3, 18, 18]);
+check('Table 2 row 4 (motors, not lift motors): shop 100 % of the largest + 80 % of the next + 60 % of the rest (10 + 4.8 + 3.6 = 18.4 A for 10, 6, 4, 2); small hotel 100 % + 50 % of the rest (10 + 6 = 16 A); a dwelling has no printed value (no diversity: 22 A)', [rnd(mdd('motor', 'shop', [10, 6, 4, 2])), rnd(mdd('motor', 'hotel', [10, 6, 4, 2])), rnd(mdd('motor', 'dom', [10, 6, 4, 2]))], [18.4, 16, 22]);
+w.renderCalc('maxdemand');
+const mdrows = (list) => { doc.getElementById('md-rows').innerHTML = ''; list.forEach(x => doc.getElementById('md-rows').insertAdjacentHTML('beforeend', w.eval('mdRowHTML(' + JSON.stringify(x[0]) + ', ' + JSON.stringify(x[1]) + ', ' + x[2] + ', ' + x[3] + ', "")'))); w.calcResult('maxdemand'); return w.eval('calcMaxDemand()'); };
+check('the Jordanian form offers the motors and main-room sockets categories and names Tables 1 and 2; the method is the default', [!!doc.querySelector('.md-cat option[value=motor]'), !!doc.querySelector('.md-cat option[value=sockm]'), doc.getElementById('md_mode').value, doc.getElementById('calc-body').textContent.includes('الجدولان 1 و2')], [true, true, 'iet', true]);
+setv(w, 'md_prem', 'hotel');
+let md1 = mdrows([['مآخذ الغرف الرئيسية', 'sockm', 3, 13], ['مآخذ أخرى', 'sock', 2, 13]]);
+check('small hotel: three main-room sockets and two other 13 A points: 13 + 2 x 13 x 0.75 + 2 x 13 x 0.40 = 42.9 A (the other codes take 75 % for all)', [rnd(md1.dem), md1.cats.length, md1.cats[0].n], [42.9, 1, 5]);
+setv(w, 'md_prem', 'shop'); md1 = mdrows([['مآخذ', 'sockm', 2, 10], ['مآخذ أخرى', 'sock', 2, 10], ['محرك', 'motor', 3, 5]]);
+check('shop: the main-room flag does not matter (13 + ... 10 + 3 x 7.5 = 32.5 A for sockets; motors 5 + 0.8 x 5 + 0.6 x 5 = 12 A); total 44.5 A', [rnd(md1.dem), md1.cats.map(c => c.cat)], [44.5, ['sock', 'motor']]);
+check('the results note of the Jordanian method quotes Table 1 (100 W per lampholder, 1.8 x the lamp wattage, 0.5 A for sockets up to 2 A) and Table 2', [doc.getElementById('md_mode').value, doc.getElementById('cf_results') === null, (w.calcResult('maxdemand'), (doc.getElementById('md_results') || doc.getElementById('calc-body')).textContent.includes('100 W لكل ماسك مصباح'))], ['iet', true, true]);
+w = boot('intl'); w.renderCalc('maxdemand');
+check('other codes: no motors or main-room category and the IET note stays', [!!w.document.querySelector('.md-cat option[value=motor]'), !!w.document.querySelector('.md-cat option[value=sockm]'), (w.calcResult('maxdemand'), (w.document.getElementById('md_results') || w.document.getElementById('calc-body')).textContent.includes('A Practical Guide'))], [false, false, true]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
