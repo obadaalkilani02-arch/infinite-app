@@ -757,3 +757,20 @@ Rules applied: 17/2/4 and 17/3/5 (no bar cover below half the table value or the
 The five worked examples of 4/6/2 E (six 2.5 mm2 cables in 2.5 m: 16 mm; 8 m with two bends, 6 x 1.5 + 5 x 2.5: 282, 25 mm; 4 m with three bends, 12 x 1 mm2: 25 mm; trunking 40 x 2.5 + 10 x 4 + 5 x 6 = 674.5: 75 x 25; cables of 6.2 / 7.3 / 11.0 mm in trunking: 3052 mm2, 75 x 50) are reproduced by the tests.
 
 🔴 Uncertain: Table 67 has eight odd digits (printed 477 for 177 at 1 m and two bends with 16 mm, 486 for 463, 285 for 286, 273 for 278, 383 for 388, 353 for 358, 338 for 333 and 404 for 401); they are corrected by the pattern of the table (equal cells for equal L x 2^bends) and the model reproduces the other 192 of the 200 printed cells; a length between two printed lengths takes the larger one; the code does not combine the unit system and the 45 % rule (the larger section of the two is shown); Table 68 has no 1 mm2 solid cable. Not done: the cable-use guidance (Tables 62 - 63), the clip spacing of 4/7 (Table 70 and after), the trench factors (13 - 15) and the cable types other than PVC single-core.
+
+
+## National codes, part 36: Jordanian electrical installations code 4/7/1 and Table 70 (clip spacing of cables) in the cable sizing
+
+`cablesizing` (reference "Jordanian code" only): two fields (cable kind, overall diameter) and a results block `joClipHTML` (`JO_CLIP`, `JO_CLIP_CARAVAN`, `JO_CLIP_KINDS`, `joClip`). Table 70 (page 221 of the code) was read from the rendered page: maximum distance between clips of cables in accessible positions, horizontal / vertical (mm).
+
+| Overall diameter d (mm) | Non-armoured (PVC, rubber or lead sheath) | Armoured | Mineral insulated (copper or lead sheath) |
+|---|---|---|---|
+| d up to 9 | 250 / 400 | - | 600 / 800 |
+| over 9 up to 15 | 300 / 400 | 350 / 450 | 900 / 1200 |
+| over 15 up to 20 | 350 / 450 | 400 / 550 | 1500 / 2000 |
+| over 20 up to 40 | 400 / 550 | 450 / 600 | - |
+| caravans (non-armoured, all sizes) | 150 horizontal / 250 vertical | | |
+
+Rules in the note: horizontal values for runs inclined more than 30 degrees from the vertical, vertical values for 30 degrees or less; the overall diameter of a flat cable is its major axis; above 40 mm and for single-core cables of 300 mm2 or more the manufacturer's instructions apply; cables on wheeled trolleys 250 / 400 (4/7/1 B 1); joists spaced 350 - 400 mm need no extra fixing (B 2); 4/7/1 A: non-armoured cables in conduit without extra fixing in vertical runs up to 5 m (A 1), any cable in trunking without a middle support up to 5 m (A 2), vertical runs supported at the top with 3 m for lead-sheathed and 5 m for rubber or PVC sheathed cables (A 7).
+
+🔴 Uncertain: the caravan column prints values only in the 15 - 20 mm row with the label "all sizes" below it (read as valid for every diameter); the clause letters (A 1, A 2, A 7, B 1, B 2) follow the order of the printed letters. Not done: the cable fixing in conduits and the support rules for trunking and ladders, the clip spacing for other cable families, the minimum bending radii (Table 5).

@@ -1298,6 +1298,21 @@ check('trunking with both kinds of cable shows both sizes and the note that the 
 w = boot('intl'); w.renderCalc('conduitfill'); w.calcResult('conduitfill');
 check('other codes: the NEC conduit fill stays (no unit-system fields)', [!!w.document.getElementById('cj_mode'), !!w.document.getElementById('cf-rows'), w.document.getElementById('cf_results').textContent.includes('حجم المجرى')], [false, true, true]);
 
+// ---------- Jordan: electrical installations code 4/7/1 Table 70 (maximum distance between cable clips) in the cable sizing ----------
+w = boot('jo'); doc = w.document;
+const CLP = w.eval('JSON.parse(JSON.stringify({C: JO_CLIP, CV: JO_CLIP_CARAVAN, K: JO_CLIP_KINDS}))');
+check('Table 70: non-armoured 250 / 400, 300 / 400, 350 / 450, 400 / 550 (horizontal / vertical) for 9 / 15 / 20 / 40 mm; armoured none, 350 / 450, 400 / 550, 450 / 600; mineral insulated 600 / 800, 900 / 1200, 1500 / 2000, none; caravans 150 / 250; four cable kinds', [CLP.C.non.map(r => r.slice(1)), CLP.C.arm.map(r => r.slice(1)), CLP.C.mi.map(r => r.slice(1)), CLP.CV, CLP.K.length], [[[250, 400], [300, 400], [350, 450], [400, 550]], [[null, null], [350, 450], [400, 550], [450, 600]], [[600, 800], [900, 1200], [1500, 2000], [null, null]], [150, 250], 4]);
+const jclip = (k, d) => w.eval('joClip(' + JSON.stringify(k) + ', ' + d + ')');
+check('non-armoured: 9 mm 250 / 400 (the limit belongs to the band), 9.5 mm 300 / 400, 16 mm 350 / 450, 20 mm 350 / 450, 21 mm 400 / 550, 40 mm 400 / 550, 41 mm beyond the table', [[9, 9.5, 16, 20, 21, 40].map(d => [jclip('non', d).h, jclip('non', d).v]), jclip('non', 41).beyond], [[[250, 400], [300, 400], [350, 450], [350, 450], [400, 550], [400, 550]], true]);
+check('armoured cables of 9 mm and mineral insulated cables over 20 mm have no printed value; armoured 12 mm 350 / 450; mineral insulated 20 mm 1500 / 2000; caravans 150 / 250 at any size; no diameter gives nothing', [jclip('arm', 9).na, jclip('mi', 25).na, [jclip('arm', 12).h, jclip('arm', 12).v], [jclip('mi', 20).h, jclip('mi', 20).v], [jclip('car', 50).h, jclip('car', 50).v], jclip('non', 0)], [true, true, [350, 450], [1500, 2000], [150, 250], null]);
+w.renderCalc('cablesizing'); w.calcResult('cablesizing');
+let clt = doc.getElementById('cs_results').textContent;
+check('Jordanian cable sizing shows the clip block: default non-armoured 16 mm: 350 mm horizontal and 450 mm vertical, the 30 degree rule and the 5 m / 3 m vertical runs of 4/7/1 A', [clt.includes('جدول 70'), clt.includes('350'), clt.includes('450'), clt.includes('30°'), clt.includes('4/7/1 A 7')], [true, true, true, true, true]);
+setv(w, 'cs_clip_kind', 'mi'); setv(w, 'cs_clip_d', 18); w.calcResult('cablesizing');
+check('mineral insulated 18 mm: 1500 horizontal and 2000 vertical; 45 mm shows the manufacturer message', [doc.getElementById('cs_results').textContent.includes('2000'), (setv(w, 'cs_clip_d', 45), w.calcResult('cablesizing'), doc.getElementById('cs_results').textContent.includes('تعليمات الصانع'))], [true, true]);
+w = boot('intl'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
+check('other codes: no clip block', w.document.getElementById('cs_results').textContent.includes('جدول 70'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
