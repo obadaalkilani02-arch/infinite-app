@@ -1579,6 +1579,22 @@ check('waste containers one per 5000 m2 and litter baskets one per 250 m2, round
   const t = doc.getElementById('sf_results').textContent.replace(/\s+/g, ' ');
   check('the park block quotes Table 5, the 6000 m2 rules, the 5000 and 250 m2 rates and the 200 m basket spacing', ['الجدول 5', '6000', '5000', '250', '200 m', '8/2/12'].every(x => t.includes(x)), true);
 }
+
+// ---------- part 50: Jordanian general safety code in construction projects 4/10 (boilers) in `heatexpansion` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
+const bsSet = o => { Object.entries(Object.assign({hx_bs_kind: 'steam', hx_bs_pr: '', hx_bs_pv: '', hx_bs_pt: '', hx_bs_pc: '', hx_bs_pp: '', hx_bs_pk: '', hx_bs_ph: ''}, o || {})).forEach(([k, x]) => setv(w, k, x)); w.calcResult('heatexpansion'); return doc.getElementById('hx_bs_res').textContent.replace(/\s+/g, ' '); };
+check('steam boiler: the safety valve may open at most 20 % above the rated pressure (12 on 10 bar passes, 12.1 fails)', [bsSet({hx_bs_pr: 10, hx_bs_pv: 12}).includes('⚠'), bsSet({hx_bs_pr: 10, hx_bs_pv: 12.1}).includes('⚠')], [false, true]);
+check('steam boiler: the high-limit pressure cut-out is at most 50 % of the test pressure (7.5 on 15 bar passes, 7.6 fails)', [bsSet({hx_bs_pt: 15, hx_bs_pc: 7.5}).includes('⚠'), bsSet({hx_bs_pt: 15, hx_bs_pc: 7.6}).includes('⚠')], [false, true]);
+check('steam boiler: steam pipes withstand five times and valves twice the operating pressure (10 bar: 50 / 20 pass, 49 / 19 fail)', [bsSet({hx_bs_pr: 10, hx_bs_pp: 50}).includes('⚠'), bsSet({hx_bs_pr: 10, hx_bs_pp: 49}).includes('⚠'), bsSet({hx_bs_pr: 10, hx_bs_pk: 20}).includes('⚠'), bsSet({hx_bs_pr: 10, hx_bs_pk: 19}).includes('⚠')], [false, true, false, true]);
+check('steam boiler: feed water pH between 7 and 9', [6.9, 7, 9, 9.1].map(p => bsSet({hx_bs_ph: p}).includes('⚠')), [true, false, false, true]);
+check('hot-water boiler: only the safety valve is checked, it must not open below the operating pressure; the steam checks are skipped', [bsSet({hx_bs_kind: 'hot', hx_bs_pr: 3, hx_bs_pv: 3.5}).includes('⚠'), bsSet({hx_bs_kind: 'hot', hx_bs_pr: 3, hx_bs_pv: 2.9}).includes('⚠'), bsSet({hx_bs_kind: 'hot', hx_bs_pr: 3, hx_bs_pp: 1, hx_bs_ph: 3}).includes('⚠')], [false, true, false]);
+{
+  const t = bsSet({hx_bs_kind: 'steam'});
+  check('the steam note quotes the 20 %, 50 %, pH 7 - 9, five times and twice rules and the blank numbers are flagged', ['20%', '50%', '7 إلى 9', 'خمسة أضعاف', 'ضعف', 'بقيت فراغات'].every(x => t.includes(x)), true);
+  const h = bsSet({hx_bs_kind: 'hot'});
+  check('the hot-water note has the two thermal cut-outs and the fire valve; no steam text', [h.includes('قاطعان حراريان'), h.includes('صمام حريق'), h.includes('خمسة أضعاف')], [true, true, false]);
+}
+check('other codes carry no boiler safety panel', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('heatexpansion'); return !!x.document.getElementById('hx_bs_kind'); }), [false, false, false]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

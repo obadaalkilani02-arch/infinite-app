@@ -991,3 +991,17 @@ Source: PDF pages 22, 26, 41 - 42, 81 - 85 of the city beauty code, read from th
 | 8/2/12 B, C and 2/1/3 D | one waste container per 5000 m2 and one litter basket per 250 m2 in gardens; litter baskets at most 200 m apart in congested streets |
 
 🔴 Uncertain: Table 5 prints "additional unit / 10 000 m2" above 20 000 m2 (read as one per 10 000 m2 or part of it, the larger value); where two rows share a boundary (6000, 10000) the larger row is used; the "not less than 50 lux and preferably not more than the street" sentence is a 50 lux minimum with a warning only. Not done: tree and planting rules, pavement structure, seats, play equipment, gardening staff (8/2/5, 8/2/7, 8/1, 8/3) which are landscape items.
+
+## National codes, part 50: Jordanian general safety code in construction projects 4/10 (boilers), Jordan-only panel in `heatexpansion`
+
+Source: PDF pages 97 - 99 of the general safety code (pages 110 - 112 of the book), read from the rendered pages (the HTML print drops several numbers). Fields hx_bs_kind, hx_bs_pr, hx_bs_pv, hx_bs_pt, hx_bs_pc, hx_bs_pp, hx_bs_pk, hx_bs_ph; results hx_bs_res (`joBoilerSafetyHTML`, `joBoilerSafetyUpdate`, called first in `calcHeatExpansion`).
+
+| Rule | Value |
+|---|---|
+| 4/10/3 B steam safety valves | open if the steam pressure exceeds the rated one by more than 20 % at most (set pressure at most 1.2 x rated) |
+| 4/10/3 C high-pressure cut-outs | three cut-outs (upper limit, operating pressure, first stage); the upper-limit cut-out is the safety cut-out and at most 50 % of the boiler test pressure |
+| 4/10/3 E feed water | pH between 7 and 9, no bicarbonate scale, blow-down of suspended matter |
+| 4/10/3 F, H | valves, fittings and cut-offs work at twice the operating pressure at least; steam lines of seamless drawn pipes withstanding five times the operating pressure at least |
+| 4/10/2, 4/10/1 | qualitative lists of the hot-water boiler (two thermal cut-outs, safety valve, fire valve, burner controls) and of the boiler room (air, lighting, space, drain, base, doors, fire equipment, fuel room wall) |
+
+🔴 Uncertain: the printed numbers are missing in the code text itself (blank spaces) for the chimney height above the highest point of the building, the fuel-room separating wall thickness, the fire-valve temperature, the CO2 range and the discharge opening height of the safety valve; they are not checked and refer to the Mechanical Services Code (Part 1, volume 24, not in the library). The 50 % rule is applied to steam boilers only (it is printed in the steam boilers paragraph). Welding gas and electric equipment (4/1), compressed-air and electric tools (5/3) were read: their numbers (hose test pressure, acetylene regulator limit) are blank in the printed text, so nothing was added.
