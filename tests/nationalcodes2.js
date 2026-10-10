@@ -744,7 +744,7 @@ setv(w, 'sp_dw', 3); w.calcResult('septic');
 const spText = doc.getElementById('sp_results').textContent;
 check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
 w = boot('intl'); w.renderCalc('septic');
-check('the septic calculator is available with every code and the plumbing screen counts 25 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('25 حاسبة متاحة')], [true, true]);
+check('the septic calculator is available with every code and the plumbing screen counts 26 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('26 حاسبة متاحة')], [true, true]);
 
 // ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
@@ -1595,6 +1595,32 @@ check('hot-water boiler: only the safety valve is checked, it must not open belo
   check('the hot-water note has the two thermal cut-outs and the fire valve; no steam text', [h.includes('قاطعان حراريان'), h.includes('صمام حريق'), h.includes('خمسة أضعاف')], [true, true, false]);
 }
 check('other codes carry no boiler safety panel', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('heatexpansion'); return !!x.document.getElementById('hx_bs_kind'); }), [false, false, false]);
+
+// ---------- part 51: Jordanian water supply code 3/4 (Tables 4 - 6, Figures 3 - 6), new calculator `watersupplyjo` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('watersupplyjo');
+const wjFlow = (u, c) => +w.eval('joWqFlow(' + u + ', ' + c + ')').q.toFixed(2);
+check('Figure 3 b: 10 units 1.77 / 0.43 L/s, 100 units 4.23 / 2.72, 250 units 6.40 / 4.76 (curve 1 / curve 2)', [wjFlow(10, 1), wjFlow(10, 2), wjFlow(100, 1), wjFlow(100, 2), wjFlow(250, 1), wjFlow(250, 2)], [1.77, 0.43, 4.23, 2.72, 6.4, 4.76]);
+check('Figure 3 a: 500 units 8.78 / 7.82 L/s, 1000 units 12.95 (the curves meet), 2000 units 20.71, 3000 units 27.54; linear in between (750: 10.98 / 10.45)', [wjFlow(500, 1), wjFlow(500, 2), wjFlow(1000, 1), wjFlow(1000, 2), wjFlow(2000, 2), wjFlow(3000, 1), wjFlow(750, 1), wjFlow(750, 2)], [8.78, 7.82, 12.95, 12.95, 20.71, 27.54, 10.98, 10.45]);
+check('flow rises with the units on both curves and curve 1 never gives less than curve 2', (() => { let ok = true, p1 = 0, p2 = 0; for (let u = 10; u <= 3000; u += 10) { const a = w.eval('joWqFlow(' + u + ', 1)').q, b = w.eval('joWqFlow(' + u + ', 2)').q; if (a < p1 - 1e-9 || b < p2 - 1e-9 || a < b - 1e-9) ok = false; p1 = a; p2 = b; } return ok; })(), true);
+check('below 10 units the value at 10 is kept and flagged; above 3000 the last point is kept and flagged', [JSON.stringify(w.eval('joWqFlow(5, 2)')), JSON.stringify(w.eval('joWqFlow(4000, 1)'))], ['{"q":0.43,"below":true,"beyond":false}', '{"q":27.54,"below":false,"beyond":true}']);
+check('Table 4 (private / public units): bath 2 / 4, basin 1 / 2, WC tank 3 / 5, WC flush valve 6 / 10, urinal tank 3 / 5, bidet 1 / 2, garden tap 2 / 4, wall urinal - / 5', w.eval('JSON.stringify(JO_WS4.filter(r => ["bath","basin","wctank","wcvalve","urtank","bidet","garden","urhang"].includes(r[0])).map(r => [r[0], r[2], r[3]]))'), '[["bath",2,4],["basin",1,2],["urhang",0,5],["urtank",3,5],["wctank",3,5],["wcvalve",6,10],["bidet",1,2],["garden",2,4]]');
+check('Table 5 by pipe size (private / public): 10 mm 1 / 2, 15 mm 2 / 4, 20 mm 3 / 6, 25 mm 6 / 10', w.eval('JSON.stringify(JO_WS5)'), '[[10,1,2],[15,2,4],[20,3,6],[25,6,10]]');
+check('Table 6 equivalent lengths: 25 mm elbow 0.9, globe valve 7.6; 100 mm tee 6.4, gate valve 0.8; interpolated for 90 mm (elbow 3.65)', [w.eval('joWsEqLen(25, {e90: 1})'), w.eval('joWsEqLen(25, {globe: 1})'), w.eval('joWsEqLen(100, {tee: 1})'), w.eval('joWsEqLen(100, {gate: 1})'), +w.eval('joWsEqLen(90, {e90: 1})').toFixed(2), w.eval('joWsEqLen(200, {e90: 1})')], [0.9, 7.6, 6.4, 0.8, 3.65, 6.1]);
+const wjIds = ['bath', 'dental', 'fount', 'caravan', 'laundry', 'basin', 'spray', 'shower', 'barsink', 'sink', 'dentsink', 'urped', 'urcont', 'urhang', 'urtank', 'wctank', 'wcvalve', 'bidet', 'garden'];
+const wjSet = o => { Object.entries(Object.assign({wj_use: 'private', wj_curve: 'auto', wj_qc: 0, wj_pw: 3, wj_h: 10, wj_pr: 0.2, wj_pm: 0, wj_mat: 'copper', wj_len: 30}, Object.fromEntries(wjIds.map(k => ['wj_n_' + k, 0])), Object.fromEntries([10, 15, 20, 25].map(k => ['wj_o' + k, 0])), Object.fromEntries(['e90', 'e45', 'tee', 'cpl', 'gate', 'globe', 'angle'].map(k => ['wj_f_' + k, 0])), o || {})).forEach(([k, x]) => setv(w, k, x)); w.calcResult('watersupplyjo'); return w.eval('calcWaterJo()'); };
+let wjr = wjSet({wj_n_bath: 10, wj_n_basin: 10, wj_n_wctank: 10, wj_n_sink: 10});
+check('10 flats: units = 10 x (2 + 1 + 3 + 2) = 80 private; auto curve 2; flow at 80 units is between the 75 and 100 unit points of curve 2', [wjr.U, wjr.curve, +wjr.fl.q.toFixed(3)], [80, 2, +(2.25 + (2.72 - 2.25) * 5 / 25).toFixed(3)]);
+check('public use doubles the units (4 + 2 + 5 + 4 = 15 per set) and a flush-valve WC selects curve 1 automatically', [wjSet({wj_use: 'public', wj_n_bath: 10, wj_n_basin: 10, wj_n_wctank: 10, wj_n_sink: 10}).U, wjSet({wj_n_wcvalve: 5}).curve, wjSet({wj_n_wcvalve: 5, wj_curve: '2'}).curve], [150, 1, 2]);
+check('other fixtures by the supply pipe (Table 5): 3 x 15 mm + 2 x 25 mm = 3 x 2 + 2 x 6 = 18 private units', wjSet({wj_o15: 3, wj_o25: 2}).U, 18);
+wjr = wjSet({wj_n_bath: 10, wj_n_basin: 10, wj_n_wctank: 10, wj_n_sink: 10, wj_pw: 4, wj_h: 12, wj_pr: 0.2, wj_pm: 0.2, wj_len: 40, wj_f_e90: 6, wj_f_gate: 2});
+check('allowable loss P_L = 4 - (0.098 x 12 + 0.2 + 0.2) = 2.424 bar and the chosen pipe satisfies it while the next smaller one does not', [+wjr.PL.toFixed(3), wjr.pick && wjr.pick.loss <= wjr.PL, wjr.cand.filter(c => c.size < wjr.pick.size).every(c => !c.ok)], [2.424, true, true]);
+check('friction line: 25 mm copper at twice the flow of 100 Pa/m (0.421 L/s) loses 100 x 2^1.752 = 336.8 Pa/m', +(100 * Math.pow(0.421 / 0.2105, 1.752)).toFixed(1), 336.8);
+check('bigger flow needs a bigger pipe and a longer run does not allow a smaller one', [wjSet({wj_n_bath: 40, wj_n_basin: 40, wj_n_wctank: 40}).pick.size >= wjSet({wj_n_bath: 5, wj_n_basin: 5, wj_n_wctank: 5}).pick.size, wjSet({wj_n_bath: 10, wj_n_basin: 10, wj_n_wctank: 10, wj_len: 200}).pick.size >= wjSet({wj_n_bath: 10, wj_n_basin: 10, wj_n_wctank: 10, wj_len: 20}).pick.size], [true, true]);
+check('no pressure left for friction (static head 30 m on 3 bar) gives no pipe and the warning', [wjSet({wj_n_bath: 10, wj_h: 30}).pick === null, doc.getElementById('wj_results').textContent.includes('مضخة رفع')], [true, true]);
+check('residual pressure below 0.20 bar is flagged', (wjSet({wj_n_bath: 10, wj_pr: 0.1}), doc.getElementById('wj_results').textContent.includes('0.20 bar الذي يشترطه')), true);
+check('pipe data: copper 14 sizes (with 90 mm), steel 19 sizes (150 mm: 25.2621 L/s at 100 Pa/m), plastic 11 sizes (no 125 mm)', [w.eval('JO_WSP.copper[1].length'), w.eval('JO_WSP.copper[1].some(r => r[0] === 90)'), w.eval('JO_WSP.steel[1].length'), w.eval('JO_WSP.steel[1].find(r => r[0] === 150)[1]'), w.eval('JO_WSP.plastic[1].length'), w.eval('JO_WSP.plastic[1].some(r => r[0] === 125)')], [14, true, 19, 25.2621, 11, false]);
+check('chart lines grow with the size on all three materials (flow at 100 Pa/m increases) and the exponents lie between 1.6 and 2.0', ['copper', 'steel', 'plastic'].map(m => { const a = w.eval('JO_WSP.' + m + '[1]'); return a.every((r, i) => (i === 0 || r[1] > a[i - 1][1]) && r[2] > 1.6 && r[2] < 2.0); }), [true, true, true]);
+check('empty form shows the instruction and the screen opens with the other codes', [(wjSet({}), doc.getElementById('wj_results').textContent.includes('أدخل أعداد القطع')), ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('watersupplyjo'); return !!x.document.getElementById('wj_results'); }).every(Boolean)], [true, true]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

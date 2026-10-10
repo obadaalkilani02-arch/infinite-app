@@ -1005,3 +1005,20 @@ Source: PDF pages 97 - 99 of the general safety code (pages 110 - 112 of the boo
 | 4/10/2, 4/10/1 | qualitative lists of the hot-water boiler (two thermal cut-outs, safety valve, fire valve, burner controls) and of the boiler room (air, lighting, space, drain, base, doors, fire equipment, fuel room wall) |
 
 🔴 Uncertain: the printed numbers are missing in the code text itself (blank spaces) for the chimney height above the highest point of the building, the fuel-room separating wall thickness, the fire-valve temperature, the CO2 range and the discharge opening height of the safety valve; they are not checked and refer to the Mechanical Services Code (Part 1, volume 24, not in the library). The 50 % rule is applied to steam boilers only (it is printed in the steam boilers paragraph). Welding gas and electric equipment (4/1), compressed-air and electric tools (5/3) were read: their numbers (hose test pressure, acetylene regulator limit) are blank in the printed text, so nothing was added.
+
+## National codes, part 51: Jordanian water supply code 3/4, design flow and pipe sizes, NEW calculator `watersupplyjo` (WSJ-01, plumbing, 86 calculators)
+
+Source: PDF pages 35 - 42 of the water supply code. Table 4 (page 36 image), Table 5, Table 6 (page 41 image) were read from the page images; Figures 3a, 3b, 4, 5, 6 are raster images stored upside down in the PDF (extracted with `dumpimgs.mjs`, flipped with sharp) and were digitised.
+
+Digitising method (so that it can be reproduced): the grid lines of each chart were detected from the pixel rows and columns and fitted to the printed log scales (x: pressure loss 3000 - 50 Pa/m, y: flow in L/s; residuals about 1 px, i.e. about 2 % on a log axis); the diameter lines were found with a Hough search for long dark lines in the expected slope range and refined by least squares on the ink pixels. Each size is stored as a straight line `loss = 100 (Q / Q100)^n` (Pa/m, L/s). A check with the Colebrook-White equation gives internal diameters close to the nominal sizes and roughness 0.0015 - 0.003 mm for the plastic chart and 0.03 - 0.1 mm for the steel chart (errors below 3 %). Figures 3a and 3b: the curves were traced column by column and smoothed with cubic fits in log space (rms about 0.03 L/s for 3b, 0.1 L/s for 3a).
+
+| Item | Value |
+|---|---|
+| Table 4 units (private / public) | bath 2/4, dental unit -/1, drinking fountain 1/2, caravans 6/6, laundry tray 2/4, basin 1/2, automatic sprinkler 1/1, shower 2/4, bar sink 1/2, sink or dishwasher 2/4, dental clinic sink -/10, pedestal urinal -/10, continuous urinal -/5, wall urinal -/5, tank urinal 3/5, tank WC 3/5, flush-valve WC 6/10, bidet 1/2, garden tap 2/4 |
+| Table 5 (other fixtures by pipe) | 10 mm 1/2, 15 mm 2/4, 20 mm 3/6, 25 mm 6/10 |
+| Figure 3b / 3a (units: curve 1 / curve 2 in L/s) | 10: 1.77/0.43; 50: 3.12/1.71; 100: 4.23/2.72; 250: 6.40/4.76; 500: 8.78/7.82; 1000: 12.95; 2000: 20.71; 3000: 27.54 (the curves meet near 900) |
+| Table 6 | equivalent lengths of elbow 90, elbow 45, tee, coupling, gate, globe and angle valves for 15 - 150 mm |
+| 3/4/4 | P_L = P_w - (P_s + P_r [+ P_Lm]); P_s = 9.8 x 10^3 N/m2 per metre (0.098 bar/m); total length = developed length + equivalent lengths |
+| Pipe lines | copper (Figure 4) 10 - 150 mm, steel (Figure 5) 15 - 600 mm, plastic (Figure 6) 15 - 200 mm |
+
+🔴 Uncertain: the chart lines and curves carry the digitising error (about 0.15 L/s on the curves, about 5 % on the loss); Figure 3b stops at 10 units and Figure 3a at 3000 units (the end values are kept and flagged); in the copper figure every size up to 40 mm has three lines (probably three tube types) and the line with the highest loss is used (the sizes 10, 12, 16 and 90 mm are the labels printed on the chart); the 15 mm tee "9.0" of Table 6 was read 0.9; Table 6 stops at 150 mm; the code gives no velocity limit; fixtures that Table 2 does not list were left without a minimum flow. Not done: Table 2 minimum flows as a separate check, Appendix B examples.
