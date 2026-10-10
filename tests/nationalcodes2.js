@@ -1126,6 +1126,22 @@ check('goods lifts (Tables 14 and 15) do not get the passenger accessibility blo
 w = boot('intl'); w.renderCalc('liftplan'); w.calcResult('liftplan');
 check('other codes: no accessibility block', (w.document.getElementById('lp_results') ? w.document.getElementById('lp_results').textContent : '').includes('الوصول للمعوقين'), false);
 
+// ---------- Jordan: mechanical ventilation code Table 13 (loss coefficients F of the duct fittings) in the duct sizing ----------
+w = boot('jo'); doc = w.document;
+const FT = w.eval('JSON.parse(JSON.stringify(JO_FIT))');
+const fF = (i, ar) => w.eval('joFitF(' + i + ', ' + (ar == null ? 0.5 : ar) + ')');
+check('Table 13: 13 fittings; 90-degree sharp elbow 1.5, rounded 0.5, wide bend (R = 2D) 0.1; 45-degree 0.5, 0.2, 0.05; flow from a duct into a room 1.0; gradual contraction 0', [FT.length, [0, 1, 2, 3, 4, 5].map(i => fF(i)), fF(9), fF(10)], [13, [1.5, 0.5, 0.1, 0.5, 0.2, 0.05], 1.0, 0]);
+check('expansions by the area ratio A1/A2: gradual up to 8 degrees 0.15 [1 - A1/A2]^2 (0.0375 at 0.5), gradual above 8 degrees and sudden [1 - A1/A2]^2 (0.25 at 0.5; 0.81 at 0.1; 0 at 1); the ranges 0 - 0.35 take the upper value', [fF(6), fF(7), fF(8), fF(8, 0.1), fF(8, 1), fF(11), fF(12)].map(x => Math.round(x * 1e6) / 1e6), [0.0375, 0.25, 0.25, 0.81, 0, 0.35, 0.35]);
+const fl = w.eval('joFitLoss(0, 0.5, 5, 3)');
+check('loss = F x 0.5 x 1.2 x v^2: a sharp 90-degree elbow at 5 m/s 22.5 Pa, three of them 67.5 Pa; the ranges are flagged', [fl.dp, fl.total, fl.range, w.eval('joFitLoss(11, 0.5, 5, 1).range')], [22.5, 67.5, false, true]);
+w.renderCalc('ductsizing'); setv(w, 'dt_jo_fit', 0); setv(w, 'dt_jo_fn', 2); w.calcResult('ductsizing');
+const vf = w.eval('calcDuctSizing().vFit');
+check('duct sizing: choosing a fitting shows its loss at the calculated velocity (F 1.5 x 0.6 x v2 per fitting) and the rules of 5/3/5 - 5/3/7', [doc.getElementById('dt_results').textContent.includes('جدول 13'), doc.getElementById('dt_results').textContent.includes((1.5 * 0.6 * vf * vf).toFixed(1)), doc.getElementById('dt_results').textContent.includes('5/3/7')], [true, true, true]);
+setv(w, 'dt_jo_fit', ''); w.calcResult('ductsizing');
+check('no fitting chosen: no Table 13 block', doc.getElementById('dt_results').textContent.includes('جدول 13'), false);
+w = boot('intl'); w.renderCalc('ductsizing');
+check('other codes: no fitting fields', !!w.document.getElementById('dt_jo_fit'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

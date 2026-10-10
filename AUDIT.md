@@ -652,3 +652,22 @@ First use of the disabled-access code (PDF "كودةمتطلبات البناء 
 | 6/7/2 (A) 3, 4, 5, 6 | note | lobby at least 1.5 x 1.5 m (1.8 m deep on ground floors and busy places); handrails at 1.0 m above the floor and 0.04 m from the wall; door closing speed 0.3 m/s (residential, for the disabled) or 0.5 m/s, photocells, open at least 6 s; controls at most 1.6 m (average 1.4 m), for wheelchair users 1.3 m (average 1.05 m), 0.6 m from the car door; touch panels 0.03 m and buttons 0.015 m; hydraulic lifts for exact levelling; lift dimensions per the lifts code except the five-passenger lift |
 
 🔴 Uncertain: the rectangular handrail section is printed "0.75 x 0.10 m" (unreasonable, perhaps in centimetres) and is not quoted; "handrails at 1.0 m" is as printed (a common value is 0.9 m); the sentence about the five-passenger lift is read as "the dimensions follow the lifts code except for the five-passenger lift". The checks use the table values of the lifts code (Cw, Cd, Ew), not the doors of other standards.
+
+
+## National codes, part 30: Jordanian mechanical ventilation code, Table 13 and 5/3/5 - 5/3/7 (loss coefficients of duct fittings) in the duct sizing
+
+`ductsizing` (Jordan only): a fitting of Table 13 (field dt_jo_fit, count dt_jo_fn, area ratio dt_jo_ar) gives its pressure loss at the velocity of the sized duct, Pa and in.wg (`JO_FIT`, `joFitF`, `joFitLoss`, `joFitHTML`). Table 13 is a figure table in the PDF (page 91 - 93 of the code, drawings of the fittings with a column F): read from the rendered pages.
+
+| Fitting | F |
+|---|---|
+| 90 degree elbow, sharp / rounded / wide (R = 2D) | 1.5 / 0.5 / 0.1 |
+| 45 degree elbow, sharp / rounded / wide (R = 2D) | 0.5 / 0.2 / 0.05 |
+| gradual expansion, angle up to 8 degrees | 0.15 [1 - A1/A2]^2 |
+| gradual expansion above 8 degrees; sudden expansion | [1 - A1/A2]^2 |
+| flow from a duct into a room | 1.0 |
+| gradual contraction; sudden contraction; flow from a room into a duct | 0; 0 - 0.35; 0 - 0.35 |
+| branching (row 13) | no coefficient printed (refers to rows 7, 6 and 10) |
+
+Pressure loss = F x 0.5 x 1.2 x v^2 (5/3/3: air at 15 C, 60 % RH, 760 mm Hg). The notes list 5/3/5 (static regain about two thirds of the change in velocity pressure), 5/3/6 (site-formed fittings of lined brick + 20 %, lined cement + 10 %) and 5/3/7 (slopes of transitions 1 : 7 or 16 degrees, contraction 3 degrees on four sides or 5 on two, branch angle about 30 degrees, bend radius at least 1.5 duct diameters).
+
+🔴 Uncertain: the ranges 0 - 0.35 of the sudden contraction and of the flow from a room into a duct are printed without a condition (the upper value is used and flagged); the branching row has no value; the density is the 1.2 kg/m3 of the rest of the tool, not the 15 C air (1.22) of 5/3/3. Not done in this code: the rectangular elbow with turning vanes (5/3/7 D, the number of vanes by the radius and the duct size), the dynamic losses of fans and equipment, and Table 3 / 11 (preferred duct dimensions, gypsum ducts).
