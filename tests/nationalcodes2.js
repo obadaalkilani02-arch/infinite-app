@@ -1165,6 +1165,40 @@ check('above ground: four installation methods (2/8/1 C), no bituminous coat lin
 w = boot('intl'); w.renderCalc('fueltank'); w.calcResult('fueltank');
 check('other codes: no Jordanian fields or block; the Syrian clauses stay', [!!w.document.getElementById('ft_jo_sel'), w.document.getElementById('ft_results').textContent.includes('2/8/1'), w.document.getElementById('ft_results').textContent.includes('§7/35'), w.eval('calcFuelTank().jo')], [false, false, true, null]);
 
+// ---------- Jordan: central heating code Table 3 and 3/3/2 (natural-draft chimneys of light-oil boilers) in the chimney check ----------
+w = boot('jo'); doc = w.document;
+const CH = w.eval('JSON.parse(JSON.stringify({H: JO_CHIM_H, T: JO_CHIM}))');
+const chRow = kw => CH.T.find(r => r[0] === kw)[1];
+check('Table 3: 8 heights (6 to 40 m) and 32 rows from 25 to 2900 kW, each row with 2 to 5 printed values', [CH.H, CH.T.length, CH.T[0][0], CH.T[CH.T.length - 1][0], CH.T.every(r => r[1].length === 8 && r[1].filter(x => x != null).length >= 2 && r[1].filter(x => x != null).length <= 5)], [[6, 8, 10, 12, 15, 20, 30, 40], 32, 25, 2900, true]);
+check('Table 3 values: 25 kW 125 at 6 / 8 / 10 m; 90 kW at 20 m 440; 175 kW at 8 m 810; 400 kW at 30 m 1360; 700 kW at 15 m 2490; 930 kW at 40 m 2540; 1630 kW at 30 m 4336; 2900 kW at 30 / 40 m 7270 / 6920', [chRow(25).slice(0, 3), chRow(90)[5], chRow(175)[1], chRow(400)[6], chRow(700)[4], chRow(930)[7], chRow(1630)[6], chRow(2900).slice(6)], [[125, 125, 125], 440, 810, 1360, 2490, 2540, 4336, [7270, 6920]]);
+check('the area falls as the chimney gets taller in every row, and rises with the capacity in every column', [CH.T.every(r => { const a = r[1].filter(x => x != null); return a.every((x, i) => i === 0 || x <= a[i - 1] || r[0] === 25); }), CH.H.every((h, c) => { const col = CH.T.map(r => r[1][c]).filter(x => x != null); return col.every((x, i) => i === 0 || x >= col[i - 1]); })], [true, true]);
+const jc = (kw, H, fan) => w.eval('joChimney(' + kw + ', ' + H + ', ' + !!fan + ')');
+const c1 = jc(115, 12), c2 = jc(115, 13), c3 = jc(115, 25), c4 = jc(930, 12), c5 = jc(3000, 20), c6 = jc(100, 12), c7 = jc(95, 12), c8 = jc(115, 12, true);
+check('115 kW at 12 m: 545 cm2 exact; at 13 m the 12 m column (545, step); at 25 m above the printed 20 m: 520 cm2 flagged high; 930 kW at 12 m: below the printed 20 m (no area); 3000 kW: beyond the table', [[c1.status, c1.area], [c2.status, c2.area, c2.hCol], [c3.status, c3.area, c3.hCol], c4.status, c5.status], [['exact', 545], ['step', 545, 12], ['high', 520, 20], 'low', 'beyond']);
+check('the row printed 1.5 is read as 100 kW (505 at 12 m, flagged); 95 kW takes the next row (100) and says so; a fan takes 50 %: 272.5 cm2 and a 18.6 cm equivalent diameter', [[c6.area, c6.guess], [c7.row, c7.nextRow, c7.area], [c8.areaFin, Math.round(c8.dEq)]], [[505, true], [100, true, 505], [272.5, 186]]);
+w.renderCalc('chimney'); w.calcResult('chimney');
+let chr = doc.getElementById('ch_results').textContent;
+check('Jordan form: Table 3 sizing and Jordan clauses; no Syrian clause numbers; default 300 mm round chimney (707 cm2) at 12 m for 115 kW passes (545)', [chr.includes('جدول 3'), chr.includes('3/3/2'), chr.includes('§7/39'), chr.includes('الكود السوري'), w.eval('calcChimney().checks[0].ok')], [true, true, false, false, true]);
+setv(w, 'ch_d', 200); w.calcResult('chimney');
+check('a 200 mm chimney (314 cm2) is below 545 cm2: the table check fails', [w.eval('calcChimney().checks[0].ok'), w.eval('calcChimney().fails')], [false, 1]);
+setv(w, 'ch_d', 300); setv(w, 'ch_shape', 'rect'); setv(w, 'ch_d', 500); setv(w, 'ch_b', 200); w.calcResult('chimney');
+check('rectangular 500 x 200: side ratio 2.5 fails the 2 : 1 limit; 400 x 200 passes', [w.eval('calcChimney().checks[1].ok'), (setv(w, 'ch_d', 400), w.eval('calcChimney().checks[1].ok'))], [false, true]);
+setv(w, 'ch_shape', 'round'); setv(w, 'ch_d', 300);
+setv(w, 'ch_lconn', 3.5); check('connector 3.5 m on a 12 m chimney exceeds 25 % (3 m); a fan removes the limit', [w.eval('calcChimney().checks[2].ok'), (setv(w, 'ch_jo_fan', 'fan'), w.eval('calcChimney().checks[2].ok'))], [false, null]);
+setv(w, 'ch_jo_fan', 'nat'); setv(w, 'ch_lconn', 3);
+setv(w, 'ch_jo_slv', 20); check('sleeve at 20 degrees fails the 30 degree limit', w.eval('calcChimney().checks[3].ok'), false); setv(w, 'ch_jo_slv', 30);
+setv(w, 'ch_tconn', 2); check('connector plate 2 mm fails the 3 mm limit', w.eval('calcChimney().checks[4].ok'), false); setv(w, 'ch_tconn', 3);
+setv(w, 'ch_jo_pl', 4); check('steel chimney 300 mm: plate 4 mm fails (6 mm from 0.3 m); a 250 mm chimney needs 5 mm and 4 mm fails; 5 mm passes', [w.eval('calcChimney().checks[5].ok'), (setv(w, 'ch_d', 250), w.eval('calcChimney().checks[5].ok')), (setv(w, 'ch_jo_pl', 5), w.eval('calcChimney().checks[5].ok'))], [false, false, true]);
+setv(w, 'ch_d', 300); setv(w, 'ch_jo_pl', 0);
+setv(w, 'ch_type', 'brick'); setv(w, 'ch_wool', 20); check('brick chimney: rock wool 20 mm fails 25 mm; 25 mm passes', [w.eval('calcChimney().checks[6].ok'), (setv(w, 'ch_wool', 25), w.eval('calcChimney().checks[6].ok'))], [false, true]);
+setv(w, 'ch_type', 'steel');
+setv(w, 'ch_jo_draft', 1); check('draft 1 mm water gauge is below 1.27; 2 mm without a stabilizer fails, with one passes', [w.eval('calcChimney().checks[7].ok'), (setv(w, 'ch_jo_draft', 2), w.eval('calcChimney().checks[8].ok')), (setv(w, 'ch_stab', 'yes'), w.eval('calcChimney().checks[8].ok'))], [false, false, true]);
+setv(w, 'ch_jo_draft', 0); setv(w, 'ch_jo_vent', 1000); check('boiler room vent 1000 cm2 is below twice the 707 cm2 chimney (1414); 1500 passes', [w.eval('calcChimney().checks[9].ok'), (setv(w, 'ch_jo_vent', 1500), w.eval('calcChimney().checks[9].ok'))], [false, true]);
+setv(w, 'ch_jo_kw', 3000); w.calcResult('chimney');
+check('3000 kW: the result warns that it is beyond the table and the table check is not evaluated', [doc.getElementById('ch_results').textContent.includes('أكبر من أكبر سطر'), w.eval('calcChimney().checks[0].ok')], [true, null]);
+w = boot('intl'); w.renderCalc('chimney'); w.calcResult('chimney');
+check('other codes: the Syrian chimney check and fields stay (no Table 3 fields)', [!!w.document.getElementById('ch_jo_kw'), w.document.getElementById('ch_results').textContent.includes('الكود السوري'), w.eval('calcChimney().jo === undefined')], [false, true, true]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

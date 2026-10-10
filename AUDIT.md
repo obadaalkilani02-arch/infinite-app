@@ -690,3 +690,20 @@ Pressure loss = F x 0.5 x 1.2 x v^2 (5/3/3: air at 15 C, 60 % RH, 760 mm Hg). Th
 Results: minimum main tank (21 days x 24 hours x burner L/h), daily tank capacity and the number of daily tanks (daily capacity / 900 L, rounded up), the bund, the room volume below the threshold, and the threshold height for a given floor area. The Syrian clause numbers (7/35, 7/36) and the Syrian checklists are not shown in Jordan; the consumption relations and the fuel values stay from the Syrian code and are labelled so.
 
 🔴 Uncertain: the maximum consumption is not defined by a number (the full burner load for 24 hours a day is taken, as in the daily tank rule; the average-season figures remain as information); the bund is printed "ten percent" of the tank capacity, less than the tank itself although its purpose is to collect all that leaks or overflows, while the fire code asks 110 % of the stored fuel for the whole room (both are shown, the printed 10 % is not changed); the number of daily tanks is derived from 0.9 m3 per tank; the second clause lettered "و" of 2/8/1 is written J in the references (the code letters two clauses "و").
+
+
+## National codes, part 32: Jordanian central heating code Table 3 and 3/3/2, 3/2/2 (natural-draft chimneys) in the chimney check
+
+`chimney` (Jordan only, `renderChimneyJo`, `calcChimneyJo`, `joChimney`, `joChimneyNoteHTML`; the Syrian check stays for the other codes). Table 3 (page 51 of the code) is a figure-like table: the capacity column and the height columns were read from the rendered page; the row alignment of the lower block (930 - 2900 kW) was checked against the text positions.
+
+| Item | Value |
+|---|---|
+| Table 3 | suitable area of a natural-draft chimney of light-oil boilers (cm2) by the boiler capacity connected to the chimney (25 - 2900 kW, 32 rows) and the chimney height (6, 8, 10, 12, 15, 20, 30, 40 m; 2 to 5 printed heights per row). E.g. 115 kW: 580 / 560 / 545 / 535 / 520 at 8 / 10 / 12 / 15 / 20 m; 930 kW: 2990 / 2660 / 2540 at 20 / 30 / 40 m |
+| Table 3 conditions | CO2 10 %; flue gas velocity 2 - 4 m/s; not very short with a large area, not very long and narrow; 50 % of the areas with fans; the height is of secondary importance compared with the draft |
+| 3/3/2 A 2, A 3, A 5 | rectangular side ratio at most 2 : 1; horizontal connector at most 25 % of the vertical chimney (except with mechanical draw); sleeve at least 30 degrees |
+| 3/3/2 A 9, B 2, B 3, D | brick chimney: 50 mm still-air gap or rock wool at least 25 mm; draft at least 1.27 mm water at the start; draft stabilizer where the draft exceeds 1.27 mm; boiler room opening at least twice the chimney area |
+| 3/2/2 A, B | steel chimney pipes: plate 5 mm below 0.3 m diameter, 6 mm above; cleaning openings of at least 50 % of the pipe section and 7500 mm2; connector plate at least 3 mm |
+
+Lookup: the first row of at least the boiler capacity; between two printed heights the lower height (larger area) is used; above the last printed height of the row the last value is used with a warning; below the first printed height or above 2900 kW no area is given.
+
+🔴 Uncertain: the row printed "1.5" between 90 and 115 kW is read as 100 kW; the value 4336 (30 m, 1630 kW) is printed as it is; the 1.27 mm of water is printed both for the draft at the start and for fitting the stabilizer; the 5 / 6 mm plate rule is printed thicker than the 3 mm of the connector and is applied to the larger side of a rectangular section; "not very short with a large area" has no number. Not done: the draft calculation (the chimney effect), the 0.3 m diameter test on equivalent diameters, Table 3 for other fuels (the code prints light oil only).
