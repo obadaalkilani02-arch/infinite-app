@@ -1395,6 +1395,36 @@ check('the results note of the Jordanian method quotes Table 1 (100 W per lampho
 w = boot('intl'); w.renderCalc('maxdemand');
 check('other codes: no motors or main-room category and the IET note stays', [!!w.document.querySelector('.md-cat option[value=motor]'), !!w.document.querySelector('.md-cat option[value=sockm]'), (w.calcResult('maxdemand'), (w.document.getElementById('md_results') || w.document.getElementById('calc-body')).textContent.includes('A Practical Guide'))], [false, false, true]);
 
+
+// ---------- part 42: Jordanian interior lighting code Table 3 (daylight factor and limiting glare index) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('lightingcalc');
+const dl = (i, o) => { doc.getElementById('lt_jo_dl').value = String(i); ['avg', 'min', 'gi'].forEach(k => { doc.getElementById('lt_jo_dl_' + k).value = o && o[k] != null ? String(o[k]) : ''; }); doc.getElementById('lt_jo_dl_roof').value = o && o.roof ? '1' : '0'; w.calcResult('lightingcalc'); return doc.getElementById('lt_jo_dl_res').textContent.replace(/\s+/g, ' '); };
+check('Jordan lighting, Table 3: 31 rows of the table are listed', w.eval('JO_DL.length'), 31);
+check('... general office: average 5 %, minimum 2 %, glare index 23 at the desk', (t => ['5.0', '2.0', '23', 'سطح المكتب'].every(s => t.includes(s)))(dl(1)), true);
+check('... entrance halls 2 / 0.6 / 24, school assembly halls 1 / 0.3 / 21, sports halls 5 / 3.5 / 21', [0, 3, 8].map(i => w.eval('JO_DL[' + i + '].slice(1, 3).concat(JO_DL[' + i + '][4])').join('/')), ['2/0.6/24', '1/0.3/21', '5/3.5/21']);
+check('... pools 5 / 2 / 23 with the glare note, pool surroundings 1 / 0.5, worship hall 5 / 1 / 21, drawing offices 5 / 2.5 / 21', [10, 11, 12, 13].map(i => w.eval('JO_DL[' + i + '].slice(1, 5).join("/")')), ['5/2/سطح ماء البركة/23', '1/0.5/مستوى العمل/23', '5/1/الأرضية/21', '5/2.5/سطح الطاولة/21']);
+check('... libraries: reading rooms 5 / 1.5 / 23, shelves have no average (null) and 1.5 on the vertical plane', [14, 15].map(i => w.eval('JO_DL[' + i + '].slice(1, 5).join("/")')), ['5/1.5/سطح الطاولة/23', '/1.5/المستوى الرأسي/23']);
+check('... banks 5 / 2 / 23 and 2 / 0.6 / 24; hospitals reception 2 / 0.6 / 24, wards 5 / 1 / 21, pharmacies 5 / 3 / 21 (printed 21 - 23)', [16, 17, 18, 19, 20].map(i => w.eval('JO_DL[' + i + '].filter((x, j) => j > 0 && j !== 3 && j < 5).join("/")')), ['5/2/23', '2/0.6/24', '2/0.6/24', '5/1/21', '5/3/21']);
+check('... surgery: waiting 2 / 0.6 / 24, operating rooms 5 / 2.5 / 21, laboratories 5 / 2 / 22; manual exchanges - / 2 / 20; auditoria 1 / 0.6 / 24', [21, 22, 23, 24, 25].map(i => w.eval('JO_DL[' + i + '].filter((x, j) => j > 0 && j !== 3 && j < 5).join("/")')), ['2/0.6/24', '5/2.5/21', '5/2/22', '/2/20', '1/0.6/24']);
+check('... corridors and stairs 2 / 0.6 with no glare index; airport reception and customs 2 / 0.6 / 24; circulation areas 2 / 0.6 with none', [26, 27, 28, 29, 30].map(i => w.eval('JO_DL[' + i + '].filter((x, j) => j > 0 && j !== 3 && j < 5).join("/")')), ['2/0.6/', '2/0.6/', '2/0.6/24', '2/0.6/24', '2/0.6/']);
+{
+  const t1 = dl(1, {avg: 4, min: 2.5, gi: 22});
+  check('office with average 4 %, minimum 2.5 %, glare 22: the average fails, the minimum and glare pass', [t1.includes('4.0% مقابل 5.0%: ⚠ لا يحقق'), t1.includes('2.5% مقابل 2.0%: ✔ يحقق'), t1.includes('22 مقابل 23 كحد أقصى: ✔ يحقق')], [true, true, true]);
+  const t2 = dl(1, {gi: 25});
+  check('glare index 25 against 23 fails', t2.includes('25 مقابل 23 كحد أقصى: ⚠ لا يحقق'), true);
+  const t3 = dl(0, {avg: 0.8});
+  check('a daylight factor below 1 % asks for supplementary electric lighting', t3.includes('أقل من 1%') && t3.includes('إضاءة كهربائية مكملة'), true);
+  const t4 = dl(1, {avg: 4, roof: true});
+  check('roof lighting: a daylight factor of 4 % is below 5 % and needs the supplementary system', t4.includes('عن 5% (4/1/2 C): ⚠ لا يحقق') && t4.includes('يلزم نظام إنارة كهربائية مكمل'), true);
+  const t5 = dl(1, {avg: 6, roof: true});
+  check('roof lighting: 6 % passes', t5.includes('عن 5% (4/1/2 C): ✔ يحقق'), true);
+  const t6 = dl(15, {min: 1.5});
+  check('shelves have no average: only the minimum is checked, a dash is shown for the average', [t6.includes('1.5% مقابل 1.5%: ✔ يحقق'), t6.includes('–'), t6.includes('إنارة كهربائية إضافية')], [true, true, true]);
+  const t7 = dl(26);
+  check('corridors: no glare index is defined', t7.includes('لم يُحدد للمرفق'), true);
+  check('pharmacy note flags the printed range 21 - 23', dl(20).includes('21 – 23') && dl(20).includes('🔴'), true);
+}
+check('the other codes carry no daylight panel', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('lightingcalc'); return !!x.document.getElementById('lt_jo_dl'); }), [false, false, false]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
