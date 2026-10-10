@@ -1060,3 +1060,16 @@ Source: PDF page 37 (book page 37), read from the rendered page: pump or dischar
 ## National codes, part 55: Jordanian mechanical ventilation code 5/3/13, 5/3/15, 5/3/16 and Table 15, note at the top of `diffuserselection`
 
 Source: PDF pages 89, 93 and 94 (book pages 99, 104, 105), read from the rendered pages. Occupied-zone design basis: two points at 1.5 m height and at least 0.6 m from a cold wall or local heater within +-1.5 C of the design temperature; at most 3 C between a floor point and the point 1.5 m above; air speed between breathing line and floor 7 - 12 m/min; return grilles sized for at most 0.2 m/s in the space; hot supply air at most 50 C. Table 15 maximum speeds (m/s, heating / cooling): long sitting 0.2 / 0.1, short sitting 0.3 / 0.15, light work 0.35 / 0.2, heavy work in a warm room 0.45 / 0.3. Table 16 (outlet speeds by acceptable sound level) was already in the calculator (part 23). Text only, the calculation is unchanged. 🔴 The printed heading of Table 15 says "through the air grilles" although the values are occupied-zone speeds; they are quoted as printed.
+
+## National codes, part 56: Jordanian natural ventilation code 2/1/6 and Tables 2 and 3, combustion air and moisture panel in `natvent`
+
+Source: PDF pages 21 - 25 (book pages 17 - 21), read from the rendered pages. Fields nv_cb_f, nv_cb_kw, nv_cb_v, nv_cb_t, nv_cb_pr, nv_cb_pw; results nv_cb_res (`JO_CB`, `joCombHTML`, `joCombCalc`, `joCombUpdate`, called first in `calcNatVent`).
+
+| Rule | Value |
+|---|---|
+| Table 3 (free combustion, no flue) | air in L/s per kW: natural gas 5.4, LPG 6.6, kerosene 6.8 (CO2 below 0.5 %); kerosene 1.8 and 9.8 (SO2 below 5 and 1 ppm) |
+| 2/1/6 B | primary and secondary air of domestic unflued appliances 0.8 - 1.1 L/s per kW of output |
+| 2/1/6 C | CO2 below 0.5 % during the run of intermittent appliances; natural and manufactured gas produce 0.027 L/s of CO2 per kW |
+| Table 2 | moisture: adults at rest 0.04 and working 0.05 kg/h per person; unflued natural gas 0.16, kerosene 0.10, LPG 0.13 kg/h per kW; cooking 3.0, bathing and washing-up 1.0, laundry 0.5, clothes drying 5.0 kg/day |
+
+The room is treated as well mixed: C(t) = (P / Q) (1 - exp(-Q t / V)) with P = rate x 0.005 x kW; the minimum Q for the entered run is found by bisection. 🔴 Uncertain: the CO2 production of LPG and kerosene is not printed (taken from the 0.5 % basis of Table 3: 0.033 and 0.034 L/s per kW); Figure 2 (ventilation against surface condensation, four-quadrant chart) and the Appendix A equations 6 and 7 were not transcribed (the balance above reproduces Table 3: 0.027 / 0.005 = 5.4).

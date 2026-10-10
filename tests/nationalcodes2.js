@@ -1660,6 +1660,17 @@ check('other codes do not show the Jordanian sewage note', doc.getElementById('c
 // ---------- part 55: Jordanian mechanical ventilation code 5/3/13, 5/3/15, 5/3/16 and Table 15 as a note under `diffuserselection` ----------
 w = boot('jo'); doc = w.document; w.renderCalc('diffuserselection'); w.calcResult('diffuserselection');
 check('Jordan diffuser note: +-1.5 C at 1.5 m and 0.6 m from a cold wall, 3 C floor to 1.5 m, 7 - 12 m/min, return grilles 0.2 m/s, warm air 50 C, Table 15 0.2 / 0.1 ... 0.45 / 0.3', ['5/3/13', '±1.5°C', '0.6 m', '3°C كحد أعلى', '7 إلى 12 m/min', '0.2 m/s', '50°C', '0.35 / 0.2', '0.45 / 0.3', '0.3 / 0.15'].every(s => doc.getElementById('calc-body').textContent.includes(s)), true);
+
+// ---------- part 56: Jordanian natural ventilation code 2/1/6 and Tables 2 and 3 (combustion air, CO2 build-up, moisture) in `natvent` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('natvent');
+const cbSet = o => { Object.entries(Object.assign({nv_cb_f: 'gas', nv_cb_kw: 10, nv_cb_v: 30, nv_cb_t: 30, nv_cb_pr: 0, nv_cb_pw: 0}, o || {})).forEach(([k, x]) => setv(w, k, x)); w.calcResult('natvent'); return w.eval('joCombCalc()'); };
+check('Table 3 (L/s per kW): natural gas 5.4, LPG 6.6, kerosene 6.8 (CO2 below 0.5 %), kerosene 1.8 and 9.8 (SO2 below 5 and 1 ppm)', w.eval('JSON.stringify(JO_CB.map(r => [r[0], r[2]]))'), '[["gas",5.4],["lpg",6.6],["kero",6.8],["kero5",1.8],["kero1",9.8]]');
+let cb = cbSet();
+check('10 kW natural gas: 54 L/s of air, 0.8 - 1.1 L/s per kW of output (8 - 11), 0.27 L/s of CO2 (5.4 x 0.005 x 10)', [cb.q, cb.prim.map(x => +x.toFixed(1)), +cb.prod.toFixed(3)], [54, [8, 11], 0.27]);
+check('closed room of 30 m3 for 30 min: CO2 reaches 1.62 % (above 0.5 %); the longest run is 9.26 min', [+cb.c0.toFixed(2), +cb.tMax.toFixed(2)], [1.62, 9.26]);
+check('the ventilation found for 30 min keeps the CO2 at 0.5 % (well-mixed balance) and a short run needs none', [+(cb.prod / cb.Qreq * (1 - Math.exp(-cb.Qreq * 1800 / 30000)) * 100).toFixed(2), cbSet({nv_cb_t: 5}).Qreq], [0.5, 0]);
+check('kerosene gives 0.034 L/s of CO2 per kW; moisture = persons x 0.04 / 0.05 + kW x 0.16 / 0.13 / 0.10 (2 resting + 1 working + 10 kW gas = 1.73 kg/h)', [+cbSet({nv_cb_f: 'kero', nv_cb_kw: 1}).prod.toFixed(3), +cbSet({nv_cb_pr: 2, nv_cb_pw: 1}).moist.toFixed(2), +cbSet({nv_cb_f: 'lpg', nv_cb_kw: 10}).moist.toFixed(2), +cbSet({nv_cb_f: 'kero', nv_cb_kw: 10}).moist.toFixed(2)], [0.034, 1.73, 1.3, 1]);
+cbSet(); { const t = doc.getElementById('nv_cb_res').textContent; check('the results quote Tables 2 and 3 (5.4, 0.027 L/s, 0.16, 5.0) and flag the CO2 limit', ['5.4', '0.027', '0.16', '5.0 kg', '⚠ يتجاوز 0.5%'].every(x => t.includes(x)), true); }
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
