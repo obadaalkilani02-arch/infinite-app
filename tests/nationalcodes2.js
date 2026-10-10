@@ -1329,6 +1329,35 @@ check('nothing chosen (no cables): the table is shown without a highlighted row 
 w = boot('intl'); w.renderCalc('conduitfill'); w.calcResult('conduitfill');
 check('other codes: no support block', w.document.getElementById('cf_results').textContent.includes('جدول 71'), false);
 
+// ---------- Jordan: electrical installations code 4/5/5, Tables 12 - 15 (cables in enclosed trenches, methods L, M, N) in the cable sizing ----------
+w = boot('jo'); doc = w.document;
+const TR = w.eval('JSON.parse(JSON.stringify({T: JO_TRENCH, F: JO_TRENCH_FIX}))');
+const trs = ['4', '6', '10', '16', '25', '35', '50', '70', '95', '120', '150', '185', '240', '300', '400', '500', '630'];
+check('Tables 13 - 15: 17 conductor sizes from 4 to 630 mm2; four columns for L and three for M and N', [['L', 'M', 'N'].map(m => Object.keys(TR.T[m].rows).length), ['L', 'M', 'N'].map(m => TR.T[m].cols.length), Object.keys(TR.T.L.rows)], [[17, 17, 17], [4, 3, 3], trs]);
+check('Table 13 (L): 4 mm2 0.93 / 0.90 / 0.87 / 0.82; 150 mm2 0.84 / 0.78 / 0.74 / 0.67; 630 mm2 0.77 / 0.71 / 0.65 / 0.56; Table 14 (M): 4 mm2 0.86 / 0.83 / 0.76; 95 mm2 0.75 / 0.70 / 0.63; 630 mm2 0.63 / 0.57 / 0.49; Table 15 (N): 4 mm2 0.81 / 0.74 / 0.69; 240 mm2 0.61 / 0.53 / 0.48; 630 mm2 0.54 / 0.47 / 0.41', [TR.T.L.rows[4], TR.T.L.rows[150], TR.T.L.rows[630], TR.T.M.rows[4], TR.T.M.rows[95], TR.T.M.rows[630], TR.T.N.rows[4], TR.T.N.rows[240], TR.T.N.rows[630]], [[0.93, 0.9, 0.87, 0.82], [0.84, 0.78, 0.74, 0.67], [0.77, 0.71, 0.65, 0.56], [0.86, 0.83, 0.76], [0.75, 0.7, 0.63], [0.63, 0.57, 0.49], [0.81, 0.74, 0.69], [0.61, 0.53, 0.48], [0.54, 0.47, 0.41]]);
+check('the factors never rise with the conductor size, and never rise from the column with the fewest cables to the one with the most (after the three replaced cells)', [['L', 'M', 'N'].every(m => trs.every((s, i) => i === 0 || TR.T[m].rows[s].every((x, c) => x <= TR.T[m].rows[trs[i - 1]][c] + 1e-9))), ['L', 'M', 'N'].every(m => trs.every(s => TR.T[m].rows[s].every((x, c) => c === 0 || x <= TR.T[m].rows[s][c - 1] + 1e-9)))], [true, true]);
+check('three cells were replaced: L 300 mm2 column 2 (blank, 0.73), N 300 mm2 column 1 (printed 0.69, 0.57 used) and column 3 (printed 0.64, 0.44 used)', [TR.F.length, TR.F.map(x => [x[0], x[1], x[2], x[4]]), TR.T.L.rows[300][1], TR.T.N.rows[300][0], TR.T.N.rows[300][2]], [3, [['L', 300, 1, 0.73], ['N', 300, 0, 0.57], ['N', 300, 2, 0.44]], 0.73, 0.57, 0.44]);
+const jtf = (m, c, s) => w.eval('joTrenchFactor(' + JSON.stringify(m) + ', ' + c + ', ' + s + ')');
+check('sizes below 4 mm2 use the 4 mm2 row; a size between two rows takes the larger row (380 mm2 aluminium -> 400); the column is limited to the printed columns', [jtf('L', 0, 2.5), jtf('L', 0, 1), jtf('L', 0, 380), jtf('M', 2, 600), jtf('N', 9, 4), jtf('X', 0, 4)], [0.93, 0.93, 0.8, 0.49, 0.69, 1]);
+w.renderCalc('cablesizing');
+const csj = (o) => { Object.entries(o).forEach(([k, x]) => setv(w, k, x)); w.calcResult('cablesizing'); return w.eval('calcCableSizing()'); };
+const base = { cs_std: 'jo', cs_jo: 'cu_xlpea_air', cs_mode: 'amp', cs_load: 200, cs_len: 1, cs_amb: 30, cs_phase: 3, cs_volt: 400, cs_ngroup: 1, cs_par: 1 };
+w.eval("csToggle('std')");
+let ct0 = csj({ ...base, cs_jo_trench: 'no' });
+check('XLPE armoured multi-core cable in air (K), 200 A three-phase at 30 C: 70 mm2 (247 A) without a trench', [ct0.size, ct0.kG], ['70 mm²', 1]);
+setv(w, 'cs_jo_trench', 'L'); w.eval('csJoTrench()');
+let ct1 = csj({ cs_jo_tcol: 3 });
+check('in a method L trench with six single-core / four two-core / three multi-core cables the factor 0.72 at 70 mm2 (178 A) is not enough: 95 mm2 with 0.70 (213 A); the factor shown is the chosen one', [ct1.size, ct1.kG, Math.round(ct1.allowed)], ['95 mm²', 0.7, 213]);
+ct1 = csj({ cs_jo_tcol: 0 });
+check('in the same trench with a single cable (column 1: 0.87 at 70 mm2 -> 215 A) the 70 mm2 cable is enough again', [ct1.size, ct1.kG], ['70 mm²', 0.87]);
+setv(w, 'cs_jo_trench', 'N'); w.eval('csJoTrench()'); ct1 = csj({ cs_jo_tcol: 2 });
+check('method N column 3 (twelve three-core cables) lowers the factor to 0.57 at 70 mm2, 0.55 at 95 mm2 and 0.53 at 120 mm2 (186 A): the 150 mm2 cable (0.51 x 408 = 208 A) is chosen', [ct1.size, ct1.kG, Math.round(ct1.allowed)], ['150 mm²', 0.51, 208]);
+check('the result notes name the trench table and the 4 mm2 rule; the arrangement list follows the method (3 columns for N, 4 for L)', [doc.getElementById('cs_results').textContent.includes('الجدول 15'), doc.getElementById('cs_jo_tcol').options.length, (setv(w, 'cs_jo_trench', 'L'), w.eval('csJoTrench()'), doc.getElementById('cs_jo_tcol').options.length)], [true, 3, 4]);
+setv(w, 'cs_jo', 'cu_xlpea_clip'); w.eval("csToggle('std')"); ct1 = csj({});
+check('a family clipped direct (not in air) ignores the trench option (the trench fields are hidden)', [ct1.kG, doc.querySelector('.cs-jotr').style.display], [1, 'none']);
+w = boot('intl'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
+check('other codes: the trench option does not change the NEC result (no trench note)', w.document.getElementById('cs_results').textContent.includes('الخندق المغلق'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

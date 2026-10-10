@@ -798,3 +798,18 @@ A block under the unit-system results (`JO_SUP_CND`, `JO_SUP_TRK`, `joSupportHTM
 The figures assume that the conduit or trunking is not exposed to other mechanical stresses; they do not apply to trunking that carries lighting fittings or where reinforcing couplers are used; flexible conduit needs supports within 300 mm of a bend or fitting.
 
 🔴 Uncertain: the vertical flexible value over 40 mm is printed "0.100" (read 1.00); the distance from a bend is printed 3000 mm in the note of Table 72 (probably 300 mm as in Table 71, so it is not quoted for trunking); the first band of Table 72 starts at 300 mm2 (no value below). Not done: the support of cables in trunking and of the other raceways (ladders, tray) and the rules of 7/2/1 to 7/2/3.
+
+
+## National codes, part 38: Jordanian electrical installations code 4/5/5, Tables 12 - 15 (cables in enclosed trenches, methods L, M, N) in the cable sizing
+
+`cablesizing` (reference "Jordanian code", only for the families in air J and K): fields `cs_jo_trench` (none / L / M / N) and `cs_jo_tcol` (the arrangement of the cables, filled by `csJoTrench`); `JO_TRENCH`, `JO_TRENCH_FIX`, `joTrenchFactor`. The factor of the table replaces the "no grouping" of the spaced cables in air and is taken per conductor size inside the selection loop (the factor falls with the size, so a larger cable may be needed). Pages 143 - 148 of the code, headers read from the rendered pages.
+
+| Table | Method (Table 12) | Columns (cables laid in the trench) | Range of factors |
+|---|---|---|---|
+| 13 | L: trench 450 x 300 mm, cover 100 mm; single-core cables touching in trefoil or spaced one diameter apart, multi-core cables 50 mm apart | 1: two single-core cables or one cable of one core or of three or four cores; 2: three single-core or two double-core; 3: four single-core or two three- or four-core; 4: six single-core or four double-core or three three- or four-core | 4 mm2: 0.93 / 0.90 / 0.87 / 0.82; 630 mm2: 0.77 / 0.71 / 0.65 / 0.56 |
+| 14 | M: trench 450 mm wide, cover 100 mm, flat groups of two or three cables, 50 mm between groups | 1: six single-core or four double-core or three three- or four-core; 2: eight single-core or four three- or four-core; 3: twelve single-core or eight double-core or six three- or four-core | 4 mm2: 0.86 / 0.83 / 0.76; 630 mm2: 0.63 / 0.57 / 0.49 |
+| 15 | N: trench 600 x 760 mm, cover 100 mm, groups of two or three cables 50 mm apart | 1: twelve single-core or eight double-core or six three- or four-core; 2: eighteen single-core or twelve double-core or nine three- or four-core; 3: twenty-four single-core or sixteen double-core or twelve three- or four-core | 4 mm2: 0.81 / 0.74 / 0.69; 630 mm2: 0.54 / 0.47 / 0.41 |
+
+Rules: the factors apply to the ratings of methods J and K (Table 11); a conductor below 4 mm2 takes the 4 mm2 row; a size between two printed rows takes the larger row (the smaller factor).
+
+🔴 Uncertain: three cells (Table 13, 300 mm2, column 2 blank; Table 15, 300 mm2, columns 1 and 3 printed 0.69 and 0.64, which break the series: 0.61 / 0.57 and 0.48 / 0.44) were replaced by the factor of the lower neighbouring row (0.73, 0.57, 0.44); the column headers of Tables 13 - 15 are read from the images (the third word group of Table 15 column 2 reads "six or twelve double-core" in the text layer and was read as twelve). Not done: the other cable families in trenches (the codes prints only these three methods) and the cable-use guidance of Tables 62 - 63.
