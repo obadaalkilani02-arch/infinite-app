@@ -1776,6 +1776,32 @@ check('mass law Dn = 20 log (500 x 250) - 48 = 53.9 dB, STC = 20 log 250 + 10 = 
 w.renderCalc('roomacoustics'); w.calcResult('roomacoustics');
 check('the results box carries the 0.50 s reverberation time, the 0.4 - 0.6 s target and the wall figures; other codes open it too', [doc.getElementById('ra_results').textContent.includes('0.50'), doc.getElementById('ra_results').textContent.includes('0.40 – 0.60'), doc.getElementById('ra_results').textContent.includes('53.9')], [true, true, true]);
 check('roomacoustics opens with the other codes', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('roomacoustics'); return x.document.getElementById('ra_results').textContent.length > 200; }), [true, true, true]);
+// ---------- part 61: Jordanian natural lighting code, `natlight` (lumen method, Tables 3 - 5, 10, 14 and Figs 24, 29, 30) ----------
+w = boot('jo'); doc = w.document;
+const nlc = o => w.eval('joNlCalc(' + JSON.stringify(Object.assign({L: 9.1, W: 6.1, H: 3.7, rw: 30, sky: 'ovc', alt: 30, ev: 0, eh: 0, A: 6, tf: 0.9, env: 'off', per: 0, x: 1, gon: '0', rho: 25, th: 90, tg: 0}, o)) + ')');
+let nl = nlc({});
+check('Fig 24: 30 deg sun altitude gives E_h 10550 and E_v 3800 lux; at 32.5 deg the values are interpolated between the 30 and 35 deg rows, and 80 deg is clamped to the 70 deg row', [nl.Ev, nl.Eh, w.eval('Math.round(joNlOvercast(32.5).ev)'), w.eval('joNlOvercast(80).ev'), w.eval('joNlOvercast(80).clamped')], [3800, 10550, 4125, 11000, true]);
+check('a tabulated room reproduces the printed numbers: 6.1 x 9.1 m, ceiling 3.7 m, walls 30 %, overcast: C 0.0173 at the maximum point, 0.0087 middle, 0.0043 minimum, K = 0.111 (Table 3)', [nl.pts[0].C, nl.pts[1].C, nl.pts[2].C, nl.pts[0].K], [0.0173, 0.0087, 0.0043, 0.111]);
+check('E = E_v x A x C x K x LLF x TF x 10.76: 3800 x 6 x 0.0173 x 0.111 x 0.83 x 0.9 x 10.76 = 352 lux at the maximum point', Math.round(nl.pts[0].e), 352);
+check('overcast: the middle and minimum points fall to 177 and 87 lux (uniformity 0.25)', [Math.round(nl.pts[1].e), Math.round(nl.pts[2].e), +nl.uni.toFixed(2)], [177, 87, 0.25]);
+nl = nlc({L: 12.2, W: 6.1, H: 4.3, rw: 70});
+check('12.2 x 6.1 m room, ceiling 4.3 m, walls 70 %: C 0.0143, K 0.0991 for the maximum point', [nl.pts[0].C, nl.pts[0].K], [0.0143, 0.0991]);
+nl = nlc({L: 7.6, W: 7.6, H: 3.35, rw: 50});
+check('interpolation: 7.6 m and 7.6 m, 3.35 m, 50 % lies between the printed neighbours (C max between 0.0140 and 0.0270, K max between 0.0950 and 0.1300)', [nl.pts[0].C > 0.0140 && nl.pts[0].C < 0.027, nl.pts[0].K > 0.095 && nl.pts[0].K < 0.13], [true, true]);
+nl = nlc({L: 20, W: 3, H: 5, rw: 90});
+check('dimensions outside the tables take the nearest printed row and raise the flags (length, width, height and reflectance)', [nl.clamp.join(), nl.pts[0].C], ['true,true,true,true', 0.0143]);
+nl = nlc({sky: 'clr', ev: 8000});
+check('clear sky uses Table 4: C 0.0123 for 6.1 x 9.1 m at 30 % and K 0.111; E_v 8000 gives 8000 x 6 x 0.0123 x 0.111 x 0.83 x 0.9 x 10.76 = 527 lux; without E_v the sky part is zero', [nl.pts[0].C, Math.round(nl.pts[0].e), nlc({sky: 'clr'}).pts[0].e], [0.0123, 527, 0]);
+nl = nlc({gon: '1', rho: 40, th: 45});
+check('ground light: E_h x 0.40 x 45 / 90 = 10550 x 0.2 = 2110 lux on the window, entering with the uniform-ground Table 5 (C 0.0088, K 0.111 at the max point)', [Math.round(nl.evG), nl.pts[0].Cg, nl.pts[0].Kg, Math.round(nl.pts[0].eGnd)], [2110, 0.0088, 0.111, Math.round(2110 * 6 * 0.83 * 0.9 * 10.76 * 0.0088 * 0.111)]);
+check('LLF (Table 10): office 0.83 / 0.82 / 0.73 and factory 0.71 / 0.69 / 0.55 for the average, 3 and 6 months; the glass types give TF 0.90, 0.62 and 0.69', [0, 1, 2].map(p => nlc({per: p}).llf).join(), '0.83,0.82,0.73');
+check('factory LLF and grey glass TF are taken into the factor (A x LLF x TF x F x 10.76)', [nlc({env: 'fac', per: 2}).llf, w.eval('JO_NL_GL[1][2]'), +nlc({x: 0.5}).k.toFixed(2)], [0.55, 0.62, +(6 * 0.83 * 0.9 * 0.5 * 10.76).toFixed(2)]);
+nl = nlc({tg: 300, A: 6});
+check('target 300 lux: the maximum point 352 lux passes, the middle and minimum fail, and the area to reach 300 lux at the minimum point is 6 x 300 / 88 = 20.5 m2', [nl.pts[0].ok, nl.pts[1].ok, nl.pts[2].ok, +nl.pts[2].aReq.toFixed(1)], [true, false, false, +(6 * 300 / nl.pts[2].e).toFixed(1)]);
+check('Table 14 offers 18 surfaces (vegetation 25 %, concrete 40 %), Table 5 fixes the three printed misprints as 0.0071, 0.0112 and 0.0137', [w.eval('JO_NL_T14.length'), w.eval('JO_NL_T14.find(x => x[0] === "veg")[2]'), w.eval('JO_NL_T14.find(x => x[0] === "concrete")[2]'), w.eval('JO_NL_C.gnd[0][0][0]'), w.eval('JO_NL_C.gnd[0][0][4]'), w.eval('JO_NL_C.gnd[0][2][5]')], [18, 25, 40, 0.0071, 0.0112, 0.0137]);
+w.renderCalc('natlight'); w.calcResult('natlight');
+check('the results box carries the 3800 lux, the three points and the formula; other codes open it too', [doc.getElementById('nl_results').textContent.includes('3800'), doc.getElementById('nl_results').textContent.includes('10.76'), doc.getElementById('nl_results').querySelectorAll('tbody tr').length], [true, true, 3]);
+check('natlight opens with the other codes', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('natlight'); return x.document.getElementById('nl_results').textContent.length > 200; }), [true, true, true]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
