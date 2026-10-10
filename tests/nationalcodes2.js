@@ -744,7 +744,7 @@ setv(w, 'sp_dw', 3); w.calcResult('septic');
 const spText = doc.getElementById('sp_results').textContent;
 check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
 w = boot('intl'); w.renderCalc('septic');
-check('the septic calculator is available with every code and the plumbing screen counts 22 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('22 حاسبة متاحة')], [true, true]);
+check('the septic calculator is available with every code and the plumbing screen counts 23 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('23 حاسبة متاحة')], [true, true]);
 
 // ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
@@ -1425,6 +1425,42 @@ check('... corridors and stairs 2 / 0.6 with no glare index; airport reception a
   check('pharmacy note flags the printed range 21 - 23', dl(20).includes('21 – 23') && dl(20).includes('🔴'), true);
 }
 check('the other codes carry no daylight panel', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('lightingcalc'); return !!x.document.getElementById('lt_jo_dl'); }), [false, false, false]);
+
+// ---------- part 43: Jordanian solid waste code, new calculator `wastechute` (chutes, hoppers, storage rooms, containers, bulky waste, incinerators) ----------
+w = boot('jo'); doc = w.document; w.renderCalc('wastechute');
+const wsDef = {ws_type: 'high', ws_h: 36, ws_fl: 12, ws_np: 0, ws_cd: 450, ws_sh: '0', ws_cd2: 450, ws_vd: 150, ws_roof: 'par', ws_vh: 400, ws_ang: 90, ws_gs: 3, ws_dd: 20, ws_dsp: 40, ws_hh: 250, ws_hw: 350, ws_hz: 750, ws_hs: 300, ws_hm: 'steel', ws_ht: 2, ws_um: 'mild', ws_ud: 2.6, ws_up: 1.6, ws_ct: 'std', ws_rh: 2.4, ws_fz: 2.4, ws_cl: 100, ws_rim: 150, ws_fth: 100, ws_dr: 100, ws_wf: 1, ws_df: 0.5, ws_sg: 20, ws_cr: 15, ws_cs: 'cyl', ws_cv: 1, ws_cm: 'steel', ws_cb: 3, ws_cw: 1.5, ws_ba: 10, ws_bh: 2.3, ws_id: 0, ws_ipc: 0, ws_iex: 0};
+const wsRun = o => { Object.entries(Object.assign({}, wsDef, o || {})).forEach(([k, x]) => setv(w, k, x)); const r = w.eval('calcWasteChute()'); w.calcResult('wastechute'); return r; };
+const wsRow = (r, label) => r.rows.find(x => x.label.startsWith(label));
+const wsFails = r => r.rows.filter(x => x.ok === false).map(x => x.label.split(' (')[0]);
+let wr = wsRun();
+check('waste, defaults at the printed limits: no row fails and the results are drawn', [wr.fails, wr.warns, doc.getElementById('ws_results').textContent.includes('أدنى قطر داخلي للمسقط')], [0, 0, true]);
+check('chute diameter: 450 mm above four floors or from 30 m, 400 mm below', [[36, 12], [20, 6], [29, 4], [30, 4], [10, 3]].map(a => { const c = w.eval('joWsChuteMin(' + a[1] + ', ' + a[0] + ')'); return c.strict + '/' + c.lenient; }), ['450/450', '450/400', '400/400', '450/450', '400/400']);
+wr = wsRun({ws_h: 20, ws_fl: 6, ws_cd: 400});
+check('... 400 mm in a six-floor building of 20 m meets only the lower reading (warning, not a failure)', [wsRow(wr, 'القطر الداخلي للمسقط').ok, wr.warns, wr.fails], ['warn', 1, 0]);
+check('... 350 mm fails', wsRun({ws_cd: 350}).rows[0].ok, false);
+check('vent pipe: 150 mm minimum, otherwise 10 % of the chute diameter (shared vent 10 % of the sum of the two)', [wsRun({ws_cd: 450}).ventMin, wsRun({ws_cd: 1800}).ventMin, wsRun({ws_sh: '1', ws_cd: 450, ws_cd2: 1200}).ventMin, wsRun({ws_sh: '1', ws_cd: 450, ws_cd2: 450}).ventMin], [150, 180, 165, 150]);
+check('... a 140 mm vent fails, a 165 mm vent passes for the shared 450 + 1200 case', [wsFails(wsRun({ws_vd: 140})).includes('قطر أنبوبة التهوية'), wsFails(wsRun({ws_sh: '1', ws_cd: 450, ws_cd2: 1200, ws_vd: 165})).includes('قطر أنبوبة التهوية')], [true, false]);
+check('vent top: 400 mm above the parapet or a roof tank, 2.5 m on a roof used for recreation', [wsRun({ws_roof: 'tank'}).ventH, wsRun({ws_roof: 'rec'}).ventH, wsFails(wsRun({ws_roof: 'rec', ws_vh: 400})).includes('ارتفاع نهاية أنبوبة التهوية'), wsFails(wsRun({ws_roof: 'rec', ws_vh: 2500})).length], [400, 2500, true, 0]);
+check('chute inclination at least 60 degrees: 55 fails, 60 passes', [wsFails(wsRun({ws_ang: 55})).length, wsFails(wsRun({ws_ang: 60})).length], [1, 0]);
+wr = wsRun({ws_fl: 12});
+check('cleaning gates every three floors at most: 12 floors need 4, spacing 4 fails', [wsRow(wr, 'المسافة بين بوابات التنظيف').note.includes('4 على الأقل'), wsFails(wsRun({ws_gs: 4})).length], [true, 1]);
+check('distance to the farthest dwelling 20 m (21 fails); chute spacing 40 m only for low buildings', [wsFails(wsRun({ws_dd: 21})).length, wsFails(wsRun({ws_type: 'low', ws_dsp: 41, ws_fl: 3, ws_h: 9, ws_cd: 400})).includes('المسافة الأفقية بين المساقط المتتالية'), wsRun({ws_type: 'high', ws_dsp: 99}).rows.some(x => x.label.startsWith('المسافة الأفقية بين المساقط'))], [1, true, false]);
+check('hopper: inlet 250 x 350 mm, opening at most 750 mm above the floor, 300 mm waterproof surround', [{ws_hh: 260}, {ws_hw: 360}, {ws_hz: 800}, {ws_hs: 250}].map(o => wsFails(wsRun(o))[0]), ['ارتفاع فتحة مدخل القادوس', 'عرض فتحة مدخل القادوس', 'ارتفاع الطرف السفلي لفتحة القادوس عن الأرضية', 'عرض التشطيب غير المنفذ للماء حول الفتحة']);
+check('Table 1 (frame): wrought steel 2, cast iron 8, cast aluminium 4 mm', [['steel', 1.9, 2], ['castiron', 7.9, 8], ['castalu', 3.9, 4]].map(a => [wsFails(wsRun({ws_hm: a[0], ws_ht: a[1]})).length, wsFails(wsRun({ws_hm: a[0], ws_ht: a[2]})).length].join('/')), ['1/0', '1/0', '1/0']);
+check('Table 2 (receiving unit door / side and bottom plates): mild steel 2.6 / 1.6, cast iron and cast aluminium 6.4 / 4, wrought aluminium 3.3 / 2', [['mild', 2.6, 1.6], ['castiron', 6.4, 4], ['castalu', 6.4, 4], ['wroughtalu', 3.3, 2]].map(a => { const ok = wsFails(wsRun({ws_um: a[0], ws_ud: a[1], ws_up: a[2]})).length, bad1 = wsFails(wsRun({ws_um: a[0], ws_ud: a[1] - 0.1, ws_up: a[2]})).length, bad2 = wsFails(wsRun({ws_um: a[0], ws_ud: a[1], ws_up: a[2] - 0.1})).length; return [ok, bad1, bad2].join('/'); }), ['0/1/1', '0/1/1', '0/1/1', '0/1/1']);
+check('storage room: height and floor-to-chute-end 2 m (3 m for large containers); chute end 25 mm below the ceiling; 225 mm to the container rim', [[{ws_rh: 1.9}], [{ws_fz: 1.9}], [{ws_ct: 'big', ws_rh: 2.4}], [{ws_ct: 'big', ws_fz: 2.9, ws_rh: 3.2}], [{ws_cl: 20}], [{ws_rim: 230}]].map(a => wsFails(wsRun(a[0])).length), [1, 1, 2, 1, 1, 1]);
+check('... floor 100 mm, drain 100 mm, walls 1 hour, door half an hour, shutter gap 20 mm, carrying distance 15 m', [{ws_fth: 90}, {ws_dr: 75}, {ws_wf: 0.5}, {ws_df: 0.25}, {ws_sg: 25}, {ws_cr: 16}].map(o => wsFails(wsRun(o)).length), [1, 1, 1, 1, 1, 1]);
+check('containers: cylindrical 1.0 m3, flat-sided 0.75 m3, steel base 3 / sides 1.5 mm, aluminium 6.5 / 3 mm', [[{ws_cv: 0.9}], [{ws_cs: 'flat', ws_cv: 0.75}], [{ws_cs: 'flat', ws_cv: 0.7}], [{ws_cm: 'alu', ws_cb: 6.5, ws_cw: 3}], [{ws_cm: 'alu', ws_cb: 3, ws_cw: 1.5}], [{ws_cb: 2.9}], [{ws_cw: 1.4}]].map(a => wsFails(wsRun(a[0])).length), [1, 0, 1, 0, 2, 1, 1]);
+wr = wsRun({ws_np: 500});
+check('bulky waste: 0.3 m3 per person on at least 2.3 m: 500 persons need 150 m3 = 65.2 m2; the 10 m2 entered fails', [wr.bulkVol, +wr.bulkArea.toFixed(1), wsFails(wr)], [150, 65.2, ['مساحة منطقة النفايات الضخمة']]);
+check('... 20 persons give 6 m3 but the 10 m2 minimum governs; 100 persons on a 3 m height need 10 m2', [wsRun({ws_np: 20}).bulkArea, +wsRun({ws_np: 100, ws_bh: 3}).bulkArea.toFixed(2), wsFails(wsRun({ws_bh: 2.2})).length], [10, 10, 1]);
+check('incinerator: capacity 1.5 x the daily volume, standard sizes 0.5 / 1 / 1.5 / 2 / 2.5 / 3 m3', [0.1, 0.3, 1, 1.4, 2, 2.5].map(x => { const i = wsRun({ws_id: x}).inc; return i.model; }), [0.5, 0.5, 1.5, 2.5, 3, null]);
+wr = wsRun({ws_id: 2.5});
+check('... above 3 m3 two units or a special design; explosion relief 0.1 m2 per 3 m3 of the primary chamber', [wr.inc.units, +wsRun({ws_id: 2}).inc.relief.toFixed(3), +wsRun({ws_id: 1, ws_ipc: 6}).inc.relief.toFixed(2)], [2, 0.1, 0.2]);
+check('... relief 0.09 m2 for a 3 m3 chamber fails, 0.1 passes; a 0.2 m3 chamber is below the 0.25 m3 minimum', [wsFails(wsRun({ws_id: 2, ws_iex: 0.09})).length, wsFails(wsRun({ws_id: 2, ws_iex: 0.1})).length, wsFails(wsRun({ws_id: 0.1, ws_ipc: 0.2})).length], [1, 0, 1]);
+check('the system text follows the building type (low-rise: 40 m between chutes; high-rise: chutes; hotel: sorting)', [['low', '40 m'], ['high', 'تُستعمل المساقط'], ['hotel', 'فرز']].map(a => { wsRun({ws_type: a[0]}); return doc.getElementById('ws_results').textContent.includes(a[1]); }), [true, true, true]);
+check('the notes quote the printed numbers (0.25 m3, 1200, 1750, 1.2 m, 0.9 m, 225, 15 m, 0.3 m3 per person)', ['0.25 m³', '1200', '1750', '1.2 m', '0.9 m', '15 m', '0.3 m³ لكل شخص'].every(s => doc.getElementById('ws_results').textContent.includes(s)), true);
+check('the plumbing card exists and the calculator opens with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('wastechute'); x.calcResult('wastechute'); return x.document.getElementById('ws_results').textContent.length > 500; }), [true, true, true]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

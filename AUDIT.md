@@ -870,3 +870,24 @@ Source: code 4/1/1 - 4/1/2 and Table 3 (pages 51 - 58 of the PDF, read from the 
 Rules built in: all spaces with a daylight factor below 1 % need supplementary electric lighting (table footnote); roof-lit workplaces must not go below 5 % (4/1/2 C), otherwise a supplementary electric system lifts the illuminance to the recommended value; the glare index calculated by the IES method (Technical Report No. 4) must not exceed the table value (4/1/2 D). The calculator compares the entered average, minimum and glare index with the table.
 
 🔴 Uncertain: pharmacy glare index printed 21 - 23 (the smaller, stricter value 21 is used); the measuring place "اللوحة" of the stairs row is read as printed (probably the landing); 4/1/2 C says "the minimum limit of the daylight factor" without saying average or minimum, so the entered average is checked (the minimum if no average is entered). Not done: the IES daylight-factor calculation itself (natural lighting code, 19 lumen-method tables), Table 4 notes on lamp colour appearance.
+
+## National codes, part 43: Jordanian solid waste code (كودة النفايات): new calculator `wastechute` (WST-01, plumbing)
+
+Source: the whole code (chapters 2 - 4, pages 12 - 46 of the PDF, read from the rendered pages because the text layer loses the digits). A new plumbing calculator (`renderWasteChute`, `calcWasteChute`, `wasteChuteResultsHTML`; fields ws_*) that gives the minimum values and checks the entered dimensions against the printed limits (`JO_WS_*` tables). The code has no waste generation rates and no container counts (the competent authority decides them), so none are invented.
+
+| Item | Printed limit |
+|---|---|
+| chute internal diameter (2/4/5 B, 2/4/6 A) | 450 mm for high buildings, 400 mm for buildings lower than 30 m (and never below 400 mm) |
+| vent pipe (2/4/6 B) | the larger of 150 mm and 10 % of the chute diameter; two adjacent chutes with one vent: 10 % of the sum of the two diameters |
+| vent end (2/4/4 E) | 400 mm above the parapet or above a roof water tank; 2.5 m on a roof used for recreation; pipe slope not less than 45 degrees |
+| chute extension / elbow (2/4/6 B 3, 2/4/5 B) | inclination not less than 60 degrees, section of the inclined part not less than the vertical part; flap of a bifurcated extension not thinner than 5 mm |
+| cleaning gates (2/4/3), distances (2/3/2 B, 2/4/1 A) | gates at most three floors apart; chute to the farthest dwelling 20 m; successive chutes of low blocks 40 m |
+| hopper (2/5) | inlet opening at most 250 mm high x 350 mm wide; lower edge of the opening at most 750 mm above the floor; waterproof surround 300 mm; shutter gap 20 mm |
+| Table 1 frame thickness | wrought steel 2.00, cast iron 8.00, cast aluminium 4.00 mm |
+| Table 2 receiving unit (door / side and bottom plates) | mild steel 2.60 / 1.60, cast iron 6.40 / 4.00, cast aluminium 6.40 / 4.00, wrought aluminium 3.30 / 2.00 mm |
+| storage room (2/6) | height and floor-to-chute-end distance 2 m (3 m for large containers); chute end at least 25 mm below the ceiling and at most 225 mm above the container rim; floor 100 mm; drain 100 mm; walls 1 hour, door half an hour; carrying distance 15 m (4/4) |
+| bulky waste (4/1) | separate ground-floor zone at least 10 m2 x 2.3 m, i.e. 0.3 m3 per person |
+| containers (4/2) | cylindrical 1.0 m3, flat-sided 0.75 m3; steel base 3 / sides 1.5 mm, aluminium 6.5 / 3 mm |
+| incinerator (chapter 3) | combustion chamber 0.25 m3 at least; capacity 1.5 x the daily volume, standard sizes 0.5 / 1 / 1.5 / 2 / 2.5 / 3 m3; explosion relief 0.1 m2 per 3 m3 of the primary chamber; 1200 C design, 1750 C firebrick; clearances 1.2 m (0.6 m with plates) at the feed door, 0.9 m sides, 1.2 m front; chimney 0.9 m above the roof or 0.6 m above the highest part within 3 m |
+
+🔴 Uncertain: 2/4/5 B (450 mm high buildings) and 2/4/6 A (400 mm) overlap for a building of more than four floors under 30 m: 450 mm is the governing value and 400 mm is shown as a partial pass; the number of cleaning gates is taken as one per three floors; the reduced feed-door clearance is printed 0.3 mm (read as printed); 0.3 m3 per person with the 10 m2 and 2.3 m minimum is the reading of "i.e. 0.3 m3 per person"; the primary chamber volume is taken equal to the standard incinerator capacity when not entered. Not done: figures 1 - 16 (typical details), the technical terms and the unit-conversion tables.
