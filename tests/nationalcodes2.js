@@ -1142,6 +1142,29 @@ check('no fitting chosen: no Table 13 block', doc.getElementById('dt_results').t
 w = boot('intl'); w.renderCalc('ductsizing');
 check('other codes: no fitting fields', !!w.document.getElementById('dt_jo_fit'), false);
 
+// ---------- Jordan: central heating code 2/8/1 and fire protection code 7/4/7 (fuel tanks and the fuel room) in the fuel tank calculator ----------
+w = boot('jo'); doc = w.document;
+check('constants: 21 days, 24 hours, 0.9 m3, bund 10 %, room + 10 %, vent 32 mm, bituminous coat 3 mm', w.eval('JO_FUEL'), {days: 21, dayH: 24, dayMaxL: 900, bundPct: 10, roomPct: 10, ventMm: 32, coatMm: 3});
+w.renderCalc('fueltank'); w.calcResult('fueltank');
+const fu1 = w.eval('calcFuelTank()').jo;
+check('default boiler (130 kW, 11.6 kWh/kg, 0.85, 0.85 kg/L): 15.51 L/h, daily tank 372.3 L (24 h), main tank 7818 L (21 days), one daily tank', [fu1.lph, fu1.dayL, fu1.mainMin, fu1.nDaily].map(x => Math.round(x * 10) / 10), [15.5, 372.3, 7817.7, 1]);
+check('bund 10 % of the main tank 781.8 L; room volume below the threshold (1 + 10 %) x 7817.7 = 8599.5 L', [fu1.bund, fu1.roomVol].map(x => Math.round(x * 10) / 10), [781.8, 8599.5]);
+const ftx1 = doc.getElementById('ft_results').textContent;
+check('results quote 2/8/1, 7/4/7, the 0.9 m3 limit, the 32 mm vent pipe and carry no Syrian clause numbers', [ftx1.includes('2/8/1'), ftx1.includes('7/4/7'), ftx1.includes('0.9 m'), ftx1.includes('32 mm'), ftx1.includes('§7/35'), ftx1.includes('§7/36')], [true, true, true, true, false, false]);
+const jfu = (rho, kgh, sel, both, area) => w.eval('joFuel({rho: ' + rho + ', burnerKgH: ' + kgh + '}, ' + sel + ', ' + both + ', ' + area + ')');
+check('daily tank limit 0.9 m3: exactly 900 L is one tank, 902 L is two tanks of 451 L; 2864 L is four tanks of 716 L', [jfu(1, 37.5, null, false, 0).nDaily, jfu(1, 37.6, null, false, 0).nDaily, Math.round(jfu(1, 37.6, null, false, 0).perDaily), jfu(1, 119.32, null, false, 0).nDaily, Math.round(jfu(1, 119.32, null, false, 0).perDaily)], [1, 2, 451, 4, 716]);
+const fu2 = jfu(0.85, 13.1844, 10000, true, 10);
+check('a chosen 10000 L tank with the daily tank in the room: bund 1000 L; stored 10372 L; room volume 11409 L; threshold at least 1141 mm for 10 m2', [fu2.bund, fu2.stored, fu2.roomVol, fu2.sill * 1000].map(x => Math.round(x)), [1000, 10372, 11409, 1141]);
+check('a chosen tank smaller than 21 days is flagged; the minimum or a bigger tank is not; no boiler gives no division error', [jfu(0.85, 13.1844, 5000, false, 0).short, jfu(0.85, 13.1844, 9000, false, 0).short, jfu(0.85, 0, null, false, 0).nDaily], [true, false, 1]);
+setv(w, 'ft_jo_sel', 5000); w.calcResult('fueltank');
+check('the form: a 5000 L tank shows the warning and the 500 L bund', [doc.getElementById('ft_results').textContent.includes('أقل من أدنى سعة'), doc.getElementById('ft_results').textContent.includes('500')], [true, true]);
+setv(w, 'ft_jo_sel', ''); setv(w, 'ft_kind', 'buried'); w.calcResult('fueltank');
+check('buried tank lists the 3 mm bituminous coat and the three cases where burying is forbidden; above ground lists the four installation methods', [doc.getElementById('ft_results').textContent.includes('3 mm'), doc.getElementById('ft_results').textContent.includes('حامضية')], [true, true]);
+setv(w, 'ft_kind', 'unburied'); w.calcResult('fueltank');
+check('above ground: four installation methods (2/8/1 C), no bituminous coat line', [doc.getElementById('ft_results').textContent.includes('أربع طرق'), doc.getElementById('ft_results').textContent.includes('حامضية')], [true, false]);
+w = boot('intl'); w.renderCalc('fueltank'); w.calcResult('fueltank');
+check('other codes: no Jordanian fields or block; the Syrian clauses stay', [!!w.document.getElementById('ft_jo_sel'), w.document.getElementById('ft_results').textContent.includes('2/8/1'), w.document.getElementById('ft_results').textContent.includes('§7/35'), w.eval('calcFuelTank().jo')], [false, false, true, null]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

@@ -671,3 +671,22 @@ First use of the disabled-access code (PDF "كودةمتطلبات البناء 
 Pressure loss = F x 0.5 x 1.2 x v^2 (5/3/3: air at 15 C, 60 % RH, 760 mm Hg). The notes list 5/3/5 (static regain about two thirds of the change in velocity pressure), 5/3/6 (site-formed fittings of lined brick + 20 %, lined cement + 10 %) and 5/3/7 (slopes of transitions 1 : 7 or 16 degrees, contraction 3 degrees on four sides or 5 on two, branch angle about 30 degrees, bend radius at least 1.5 duct diameters).
 
 🔴 Uncertain: the ranges 0 - 0.35 of the sudden contraction and of the flow from a room into a duct are printed without a condition (the upper value is used and flagged); the branching row has no value; the density is the 1.2 kg/m3 of the rest of the tool, not the 15 C air (1.22) of 5/3/3. Not done in this code: the rectangular elbow with turning vanes (5/3/7 D, the number of vanes by the radius and the duct size), the dynamic losses of fans and equipment, and Table 3 / 11 (preferred duct dimensions, gypsum ducts).
+
+
+## National codes, part 31: Jordanian central heating code 2/8/1 and fire protection code 7/4/7 (fuel tanks and the fuel room) in the fuel tank calculator
+
+`fueltank` (Jordan only): a block under the results (`JO_FUEL`, `joFuel`, `joFuelFormHTML`, `joFuelHTML`; optional fields ft_jo_sel, ft_jo_in, ft_jo_area). Pages read from the PDFs (the digits are missing in the text extractions): central heating code pages 39 - 43, fire protection code page 183.
+
+| Rule | Value |
+|---|---|
+| Main tank, 2/8/1 B | capacity for 21 days at the maximum fuel consumption; level indicator |
+| Daily tank, 2/8/1 M 1 and 2 | capacity for the boiler at the maximum load for 24 hours and at most 0.9 m3; above that more than one daily tank; one burner is not connected to more than one daily tank; two or more daily tanks are not connected to each other |
+| Daily tank vent pipe, 2/8/1 M 7 | rises above the height of the main tank, diameter at least 32 mm |
+| Bund under the tank, 2/8/1 H | leak-proof, floor and walls without a roof, capacity 10 % of the tank capacity |
+| Buried tank, 2/8/1 K | plates as in BS 799; bituminous coat at least 3 mm or a rust-resistant paint; no direct burying where water sources may be polluted, where the water table is above the tank bottom, or in acidic soil |
+| Fuel room, fire code 7/4/7 A | floor lower than the door threshold (or any other opening) so that the volume of the room below the threshold equals the maximum stored fuel + 10 % |
+| Fuel room, 7/4/2, 7/4/3 B, 2/8/1 F | walls, floor and ceiling 2 hours; doors from outside 1 hour; the door at least half the wall resistance, opening outwards, openable from inside without a key |
+
+Results: minimum main tank (21 days x 24 hours x burner L/h), daily tank capacity and the number of daily tanks (daily capacity / 900 L, rounded up), the bund, the room volume below the threshold, and the threshold height for a given floor area. The Syrian clause numbers (7/35, 7/36) and the Syrian checklists are not shown in Jordan; the consumption relations and the fuel values stay from the Syrian code and are labelled so.
+
+🔴 Uncertain: the maximum consumption is not defined by a number (the full burner load for 24 hours a day is taken, as in the daily tank rule; the average-season figures remain as information); the bund is printed "ten percent" of the tank capacity, less than the tank itself although its purpose is to collect all that leaks or overflows, while the fire code asks 110 % of the stored fuel for the whole room (both are shown, the printed 10 % is not changed); the number of daily tanks is derived from 0.9 m3 per tank; the second clause lettered "و" of 2/8/1 is written J in the references (the code letters two clauses "و").
