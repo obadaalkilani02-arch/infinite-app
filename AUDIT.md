@@ -963,3 +963,16 @@ Source: PDF pages 58 - 68 of the water supply code, read from the rendered pages
 Also read (already in the app): Table 18 (supports, same as the central heating Table 12), 6/1/1 (buried depth 500 mm, expansion joints at most every 10 m).
 
 🔴 Uncertain: Table 11 is printed with the low-hazard limits smaller than the ordinary or high ones (opposite of the usual expectation; used as printed); Table 14 gives only 65 - 90 mm, so the other sizes follow Table 13; the formula Q = 3.72 C A^0.5 is printed for "the unit area of 5/6/1" without more context.
+
+## National codes, part 48: Jordanian fire protection code 8/2/4, assembly seating and aisles, in `exitparts`
+
+Source: PDF pages 191 - 192 of the fire protection code (chapter 8, assembly occupancies), read from the rendered pages. A new component kind `seat` in `exitparts` (fields ep_ssk, ep_sdist, ep_sbet, ep_sone, ep_sbl, ep_sbp, ep_srow, ep_sperp, ep_spar, ep_srl, ep_srp, ep_asn, ep_asd, ep_aw, ep_al, ep_awe, ep_aoth, ep_aend, ep_asl).
+
+| Rule | Value |
+|---|---|
+| 8/2/4 B 1 - 3 fixed seats | clear distance 300 mm between the seat back and the seat behind (seated position, horizontal); at most 14 seats between two aisles; at most 7 seats reached from one aisle only |
+| 8/2/4 B 4 benches | 0.75 m of bench per person (no arm rests) |
+| 8/2/4 B 5 tiers | no back supports inside buildings; rows 0.55 - 0.75 m apart; at most 100 seats between perpendicular aisles; at most 11 rows between parallel aisles; 0.45 m per person |
+| 8/2/4 C aisles | width at least 0.75 m serving 60 seats or fewer; above 60 seats 0.9 m (seats on one side) or 1.1 m (both sides); widens 25 mm per metre of length toward the exit; an aisle ending at a cross aisle, foyer or exit: the largest aisle + 50 % of the total width of the other aisles; dead ends at most 6 m; slope not steeper than 1 : 8 (stairs of class A otherwise) |
+
+🔴 Uncertain: the aisle width bands for 60 seats are read from the page (0.75 m up to 60 seats; 0.9 and 1.1 m above); the "50 %" rule is applied to the sum of the widths of the other aisles entered by the user. Not done in this chapter: 8/2/6 and later (stage, projection rooms), the occupant load tables already in `egress`.
