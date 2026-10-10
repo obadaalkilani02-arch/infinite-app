@@ -738,3 +738,22 @@ Rules applied: 17/2/4 and 17/3/5 (no bar cover below half the table value or the
 | Flat oval spiral (41, minor x major) | 150 x 550 to 790 (4), 200 x 520 to 1000 (7), 250 x 570 to 970 (6), 300 x 620 to 940 (5), 350 x 670 to 990 (5), 400 x 640 to 960 (5), 450 x 690 to 930 (4), 500 x 660 to 980 (5), steps of 80 mm |
 
 🔴 Uncertain: the table is a list without any rule for choosing between shapes; the rectangle choice here is by the smallest area (the designer may prefer a flatter section for the ceiling space); the ASHRAE equal-friction formula is the one the tool already uses for rectangular ducts, not a formula of the code. Not done: Table 11 (gypsum ducts: the digits of the wall thickness and the reinforcement length are lost in the print), tables 14 and 19 - 22 (bitmaps).
+
+
+## National codes, part 35: Jordanian electrical installations code 4/6 (Tables 64 - 69): the unit system for conduits and trunking in `conduitfill`
+
+`conduitfill` (Jordan only; the NEC conduit fill stays for the other codes): `JO_CU`, `JO_CND_SIZES`, `JO_CND_SHORT`, `JO_CND_EFF`, `JO_TRK`, `joCndFactors`, `renderConduitFillJo`, `calcConduitFillJo`, `conduitFillJoResultsHTML`. For PVC single-core cables: each cable has a factor; the sum is compared with the factor of the conduit (16 / 20 / 25 / 32 mm) or of the trunking; the smallest size that equals the sum or follows it is chosen. Pages 211 - 219 of the code PDF (the table digits are in the text extraction; the layout of Table 67 was read from the text positions and the rendered page).
+
+| Table | Content |
+|---|---|
+| 64 (short straight runs, up to 3 m) | solid 1 / 1.5 / 2.5 mm2 = 22 / 27 / 39; stranded 1.5 / 2.5 / 4 / 6 / 10 = 31 / 43 / 58 / 88 / 146 |
+| 65 | conduit 16 / 20 / 25 / 32 mm = 290 / 460 / 800 / 1400 |
+| 66 (longer runs or with bends) | 1 / 1.5 / 2.5 mm2 = 16 / 22 / 30 (solid or stranded); stranded 4 / 6 / 10 = 43 / 58 / 105 |
+| 67 | conduit factors by length (1 - 10 m) and 0 - 4 bends, in five groups of 16 / 20 / 25 / 32 mm: the factor depends only on L x 2^bends (21 effective lengths from 2 to 40 m): e.g. 8 m: straight 158 / 256 / 463 / 818, one bend 130 / 213 / 388 / 692, two bends 97 / 159 / 292 / 529 |
+| 68 (trunking cables) | solid 1.5 / 2.5 = 7.1 / 10.2; stranded 1.5 / 2.5 / 4 / 6 / 10 = 8.1 / 11.4 / 15.2 / 22.9 / 36.3 |
+| 69 (trunking) | 75x25 738; 50x37.5 767; 100x25 993; 50x50 1037; 75x37.5 1146; 100x37.5 1542; 75x50 1555; 100x50 2091; 75x75 2371; 100x75 3189; 100x100 4252 |
+| 4/6/2 D | other cables and trunking: occupancy factor at most 45 % (the area method: sum of the cable areas / 0.45 against the section of the trunking) |
+
+The five worked examples of 4/6/2 E (six 2.5 mm2 cables in 2.5 m: 16 mm; 8 m with two bends, 6 x 1.5 + 5 x 2.5: 282, 25 mm; 4 m with three bends, 12 x 1 mm2: 25 mm; trunking 40 x 2.5 + 10 x 4 + 5 x 6 = 674.5: 75 x 25; cables of 6.2 / 7.3 / 11.0 mm in trunking: 3052 mm2, 75 x 50) are reproduced by the tests.
+
+🔴 Uncertain: Table 67 has eight odd digits (printed 477 for 177 at 1 m and two bends with 16 mm, 486 for 463, 285 for 286, 273 for 278, 383 for 388, 353 for 358, 338 for 333 and 404 for 401); they are corrected by the pattern of the table (equal cells for equal L x 2^bends) and the model reproduces the other 192 of the 200 printed cells; a length between two printed lengths takes the larger one; the code does not combine the unit system and the 45 % rule (the larger section of the two is shown); Table 68 has no 1 mm2 solid cable. Not done: the cable-use guidance (Tables 62 - 63), the clip spacing of 4/7 (Table 70 and after), the trench factors (13 - 15) and the cable types other than PVC single-core.

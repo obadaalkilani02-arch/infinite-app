@@ -1253,6 +1253,51 @@ check('duct sizing results show the Table 3 block with the preferred round size 
 w = boot('intl'); w.renderCalc('ductsizing'); w.calcResult('ductsizing');
 check('other codes: no preferred-size block', w.document.getElementById('dt_results').textContent.includes('الأبعاد المفضلة'), false);
 
+// ---------- Jordan: electrical installations code 4/6 (Tables 64 - 69): the unit system for conduits and trunking in the conduit fill calculator ----------
+w = boot('jo'); doc = w.document;
+const CU = w.eval('JSON.parse(JSON.stringify({U: JO_CU, S: JO_CND_SIZES, SH: JO_CND_SHORT, E: JO_CND_EFF, T: JO_TRK, L: JO_CND_LEN}))');
+check('Table 64 (short straight runs): solid 1 / 1.5 / 2.5 = 22 / 27 / 39; stranded 1.5 / 2.5 / 4 / 6 / 10 = 31 / 43 / 58 / 88 / 146', CU.U.map(c => c[2]), [22, 27, 39, 31, 43, 58, 88, 146]);
+check('Table 66 (long runs or with bends): 16 / 22 / 30 for 1 / 1.5 / 2.5 (stranded 1.5 and 2.5 as the solid), stranded 4 / 6 / 10 = 43 / 58 / 105', CU.U.map(c => c[3]), [16, 22, 30, 22, 30, 43, 58, 105]);
+check('Table 68 (trunking): solid 1.5 / 2.5 = 7.1 / 10.2 (no 1 mm2); stranded 1.5 / 2.5 / 4 / 6 / 10 = 8.1 / 11.4 / 15.2 / 22.9 / 36.3', CU.U.map(c => c[4]), [null, 7.1, 10.2, 8.1, 11.4, 15.2, 22.9, 36.3]);
+check('Table 65 (conduits, short runs) 16 / 20 / 25 / 32 mm = 290 / 460 / 800 / 1400; Table 69 (11 trunking sizes) from 738 (75 x 25) to 4252 (100 x 100), rising', [CU.S, CU.SH, CU.T.length, CU.T[0], CU.T[10], CU.T.every((t, i) => i === 0 || t[1] > CU.T[i - 1][1])], [[16, 20, 25, 32], [290, 460, 800, 1400], 11, ['75 × 25', 738, 75, 25], ['100 × 100', 4252, 100, 100], true]);
+// Table 67 as printed (conduit factors 16 / 20 / 25 / 32 mm by length and number of bends; digits as in the print)
+const T67 = {1: {4: [130, 213, 388, 692], 3: [158, 256, 463, 818], 2: [477, 286, 514, 900], 1: [188, 303, 543, 947]}, 1.5: {4: [111, 182, 333, 600], 3: [143, 233, 422, 750], 2: [167, 270, 487, 857], 1: [182, 294, 528, 923]},
+  2: {4: [97, 159, 292, 529], 3: [130, 213, 388, 692], 2: [158, 256, 486, 818], 1: [177, 285, 514, 900]}, 2.5: {4: [86, 141, 260, 474], 3: [120, 196, 358, 643], 2: [150, 244, 442, 783], 1: [171, 273, 500, 878]},
+  3: {3: [111, 182, 333, 600], 2: [143, 233, 422, 750], 1: [167, 270, 487, 857]}, 3.5: {3: [103, 169, 311, 563], 2: [136, 222, 401, 720], 1: [162, 263, 475, 837], 0: [179, 290, 521, 911]},
+  4: {3: [97, 159, 292, 529], 2: [130, 213, 383, 692], 1: [158, 256, 463, 818], 0: [177, 286, 514, 900]}, 4.5: {3: [91, 149, 275, 500], 2: [125, 204, 373, 667], 1: [154, 250, 452, 800], 0: [174, 282, 507, 889]},
+  5: {3: [86, 141, 260, 474], 2: [120, 196, 353, 643], 1: [150, 244, 442, 783], 0: [171, 278, 500, 878]}, 6: {2: [111, 182, 338, 600], 1: [143, 233, 422, 750], 0: [167, 270, 487, 857]},
+  7: {2: [103, 169, 311, 563], 1: [136, 222, 404, 720], 0: [162, 263, 475, 837]}, 8: {2: [97, 159, 292, 529], 1: [130, 213, 388, 692], 0: [158, 256, 463, 818]},
+  9: {2: [91, 149, 275, 500], 1: [125, 204, 373, 667], 0: [154, 250, 452, 800]}, 10: {2: [86, 141, 260, 474], 1: [120, 196, 358, 643], 0: [150, 244, 442, 783]}};
+const jcf = (L, b) => w.eval('joCndFactors(' + L + ', ' + b + ')');
+const cdiffs = [];
+Object.keys(T67).forEach(L => Object.keys(T67[L]).forEach(b => { const m = jcf(L, +b).factors; T67[L][b].forEach((x, i) => { if (m[i] !== x) cdiffs.push([+L, +b, CU.S[i], x, m[i]]); }); }));
+check('the effective-length model reproduces all 200 printed cells of Table 67 except eight misprints (477 for 177, 486 for 463, 285 for 286, 273 for 278, 383 for 388, 353 for 358, 338 for 333, 404 for 401)', [Object.keys(T67).reduce((a, L) => a + Object.keys(T67[L]).length * 4, 0), cdiffs.length, cdiffs.map(d => d.slice(3)).sort((a, b) => a[0] - b[0])], [200, 8, [[273, 278], [285, 286], [338, 333], [353, 358], [383, 388], [404, 401], [477, 177], [486, 463]]]);
+check('the cells that must be equal: every pair of printed cells with the same L x 2^bends agrees (after the misprints) and each bend doubles the length', [jcf(1, 3).factors, jcf(2, 2).factors, jcf(4, 1).factors, jcf(8, 0).factors, jcf(1, 3).eff, jcf(4, 1).eff], [[158, 256, 463, 818], [158, 256, 463, 818], [158, 256, 463, 818], [158, 256, 463, 818], 8, 8]);
+check('short straight runs up to 3 m use Table 65 (no bends); 3.2 m rounds to the 3.5 m row; over 10 m and the bend limits (4 bends up to 2.5 m, 3 up to 5 m, 2 up to 10 m) give no value', [jcf(2.5, 0).table, jcf(3.2, 0).Lt, jcf(11, 1).na, jcf(3, 4).na, jcf(2.5, 4).table, jcf(6, 3).na, jcf(5, 3).table, jcf(10, 2).table], [65, 3.5, 'long', 'bends', 67, 'bends', 67, 67]);
+w.renderCalc('conduitfill');
+const cfj = (mode, L, bends, counts, others) => {
+  setv(w, 'cj_mode', mode); setv(w, 'cj_len', L); setv(w, 'cj_bends', bends);
+  for (let i = 0; i < 8; i++) setv(w, 'cj_n' + i, (counts || {})[i] || 0);
+  for (let k = 1; k <= 3; k++) { setv(w, 'cj_od' + k, (others && others[k - 1] ? others[k - 1][0] : 0)); setv(w, 'cj_oq' + k, (others && others[k - 1] ? others[k - 1][1] : 0)); }
+  w.calcResult('conduitfill'); return w.eval('calcConduitFill()');
+};
+let cx = cfj('conduit', 2.5, 0, {2: 6});
+check('example 1: six 2.5 mm2 solid cables in a 2.5 m straight conduit: 6 x 39 = 234, the 16 mm conduit (290)', [cx.total, cx.chosen, cx.path.table], [234, [16, 290], 65]);
+cx = cfj('conduit', 8, 2, {1: 6, 2: 5});
+check('example 2: 8 m with a bend and a double set (two bends), 6 x 1.5 and 5 x 2.5 mm2: 6 x 22 + 5 x 30 = 282, factor 292, the 25 mm conduit', [cx.total, cx.chosen, cx.path.eff], [282, [25, 292], 32]);
+cx = cfj('conduit', 4, 3, {0: 12});
+check('example 3: 4 m with three bends, twelve 1.0 mm2 cables: 12 x 16 = 192, factor 292, the 25 mm conduit', [cx.total, cx.chosen], [192, [25, 292]]);
+cx = cfj('trunk', 3, 0, {2: 40, 5: 10, 6: 5});
+check('example 4: trunking, 40 x 2.5 solid (10.2), 10 x 4 stranded (15.2) and 5 x 6 stranded (22.9): 674.5, the 75 x 25 trunking (738)', [Math.round(cx.total * 10) / 10, cx.chosen], [674.5, ['75 × 25', 738, 75, 25]]);
+cx = cfj('trunk', 3, 0, {}, [[6.2, 18], [7.3, 13], [11, 3]]);
+check('example 5: cables of outside diameter 6.2 x 18, 7.3 x 13 and 11.0 x 3: area 1373 mm2 / 0.45 = 3050 mm2 (3052 in the print), the 75 x 50 trunking', [Math.round(cx.area), Math.round(cx.need / 10) * 10, cx.byArea[0]], [1373, 3050, '75 × 50']);
+cx = cfj('conduit', 2.5, 0, {2: 6});
+check('the form shows the Table 64 / 65 result, no NEC fields; a conduit that is too small is marked, and a 1 mm2 solid cable in trunking has no Table 68 factor', [doc.getElementById('cf_results').textContent.includes('الجدولان 64 و65'), !!doc.getElementById('cf-rows'), cfj('conduit', 3, 0, {7: 20}).chosen, cfj('trunk', 3, 0, {0: 3}).missing.length], [true, false, null, 1]);
+cfj('trunk', 3, 0, {2: 40, 5: 10, 6: 5}, [[6.2, 18]]);
+check('trunking with both kinds of cable shows both sizes and the note that the code does not combine them', [doc.getElementById('cf_results').textContent.includes('لا تجمع الطريقتين'), w.eval('calcConduitFill().byArea !== null')], [true, true]);
+w = boot('intl'); w.renderCalc('conduitfill'); w.calcResult('conduitfill');
+check('other codes: the NEC conduit fill stays (no unit-system fields)', [!!w.document.getElementById('cj_mode'), !!w.document.getElementById('cf-rows'), w.document.getElementById('cf_results').textContent.includes('حجم المجرى')], [false, true, true]);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
