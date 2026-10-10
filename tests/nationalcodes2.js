@@ -1370,6 +1370,13 @@ check('armoured 20 mm: 6 x 20 = 120 mm; a diameter of 5 mm gives 3 x 5 = 15 mm',
 w = boot('intl'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
 check('other codes: no bend block', w.document.getElementById('cs_results').textContent.includes('جدول 5'), false);
 
+// ---------- Jordan: electrical installations code 4/4/1 D 1 and Table 7 (lampholder protection) as a note in the cable sizing ----------
+w = boot('jo'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
+const lh = w.document.getElementById('cs_results').textContent;
+check('the Jordanian cable sizing quotes Table 7: 6 A for B15 and E14, 16 A for B22, E27 and E40, with the exception of enclosed lampholders', [lh.includes('جدول 7'), lh.includes('B15') && lh.includes('E14') && lh.includes('6 A'), lh.includes('B22') && lh.includes('E27') && lh.includes('E40') && lh.includes('16 A'), lh.includes('غير قابلة للاشتعال')], [true, true, true, true]);
+w = boot('sa'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
+check('other codes: no lampholder note', w.document.getElementById('cs_results').textContent.includes('جدول 7'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

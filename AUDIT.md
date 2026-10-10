@@ -833,3 +833,10 @@ A results block after the clip spacing (`joBend`, `joBendHTML`), using the same 
 4/2/7 B 3: the internal radius of a conduit bend equals that of the cables and is at least 2.5 times the outside diameter of the conduit; 4/2/7 B 2: elbows without inspection openings only at the ends of conduits behind a lighting fitting or at an outlet box, or at positions not more than 500 mm from an easily accessible outlet box in a run of at most 10 m between two outlet points, if the other bends of the run total at most one right angle.
 
 🔴 Uncertain: the third row is printed "PVC (solid or shaped copper conductors)" with the word read as "solid"; the paper insulated row is not selectable by the cable-kind list of the clip table (the lead-sheathed value 12 is quoted in the note); "armoured" is taken for every armoured kind. Test heap: `tests/nationalcodes2.js` now needs `node --max-old-space-size=6144` (set in the npm test script).
+
+
+## National codes, part 40: Jordanian electrical installations code 4/4/1 D 1 and Table 7 (protection of lampholders) as a note in the cable sizing
+
+A note in the Jordanian `cablesizing` results: the rated current of the overcurrent protective device of a lighting circuit is at most 6 A for the bayonet lampholders B15 and the Edison screw E14, and at most 16 A for B22, E27 and E40, except where the lampholders and their wiring are enclosed in an earthed metal sheath or a non-combustible insulating material or a separate means of overcurrent protection is provided. Page 135 of the code; the values of Table 7 stand one row above their labels in the print and were paired by the row positions (B15 6, B22 16, E14 6, E27 16, E40 16, as in the usual practice for these lampholders).
+
+🔴 Uncertain: the pairing of the values with the lampholder types follows the layout of the page, not a printed grid. Not done: Table 6 (ratings of plugs and sockets: a classification, not a calculation) and the other 4/4 rules.
