@@ -1683,6 +1683,37 @@ const t4set = (i, lux) => { setv(w, 'lt_jo_t4', i); setv(w, 'lt_jo_t4_lux', lux)
 const iOff = w.eval('JO_T4.findIndex(r => r[1] === "المكاتب — مكاتب عامة")');
 check('the panel shows 500 lux, glare 19 and the desk surface; 499 lux fails and 500 passes', [t4set(iOff, '').includes('500') && t4set(iOff, '').includes('19') && t4set(iOff, '').includes('سطح مكتب العمل'), t4set(iOff, 499).includes('⚠'), t4set(iOff, 500).includes('⚠')], [true, true, false]);
 check('the other codes carry no Table 4 panel', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('lightingcalc'); return !!x.document.getElementById('lt_jo_t4'); }), [false, false, false]);
+// ---------- part 58: architect section, fit-out follow-up (`fitouttrack`) and fit-out bill of quantities (`aptboq`) from the two office sheets ----------
+w = boot('jo'); doc = w.document; w.showCategory('architect');
+const archCards = doc.querySelectorAll('#architect-category .calc-card');
+check('the architect category opens (title, header) and the home card count equals its cards', [doc.getElementById('architect-category').style.display, doc.getElementById('hdrTitle').textContent, +doc.querySelector('#main-home .calc-card[onclick*="architect"] .tag').textContent.match(/\d+/)[0] === archCards.length], ['block', 'المعماري', true]);
+check('the category lists the two tools and cross-lists egress, exit components, concrete fire resistance, U-value, condensation and access', ['fitouttrack', 'aptboq', 'egress', 'exitparts', 'concretefire', 'uvalue', 'condensation', 'accessreq'].map(id => [...archCards].some(c => c.getAttribute('onclick') === "showCalc('" + id + "')")), [true, true, true, true, true, true, true, true]);
+w.renderCalc('fitouttrack');
+const ft0 = w.eval('ftStats()');
+check('the follow-up template has 24 stages and 153 tasks, 0 % done and 153 not started', [w.eval('ftLoad().stages.length'), ft0.n, ft0.done, +ft0.pct.toFixed(1), doc.querySelectorAll('#ft_root tbody tr, #ft_root tr').length > 150], [24, 153, 0, 0, true]);
+const ftSet2 = (si, ti, k, v) => w.eval('ftSet(' + si + ',' + ti + ',' + JSON.stringify(k) + ',' + JSON.stringify(v) + ')');
+ftSet2(0, 0, 's', 2); ftSet2(0, 1, 's', 1); ftSet2(0, 0, 'm', '100'); ftSet2(0, 0, 'w', '25.5'); ftSet2(0, 1, 'x', '10');
+const ft1 = w.eval('ftStats()');
+check('1 done + 1 in progress: 1 / 153 done = 0.65 %, cost 100 + 25.5 + 10 = 135.5, stage 1 holds both', [ft1.done, ft1.run, +ft1.pct.toFixed(2), ft1.cost, ft1.stg[0].done, ft1.stg[0].cost], [1, 1, 0.65, 135.5, 1, 135.5]);
+check('the results box and the stage header show the percentage and the cost', [doc.getElementById('ft_results').textContent.includes('0.7%'), doc.getElementById('ft_results').textContent.includes('135.50'), doc.getElementById('ft_c0_0').textContent, doc.getElementById('ft_sh0').textContent.includes('1 / 8')], [true, true, '125.50', true]);
+ftSet2(1, 0, 'b', '2020-01-01'); ftSet2(1, 1, 'b', '2020-01-01'); ftSet2(1, 1, 's', 2);
+check('a task past its end date and not done is late; a done one is not', [w.eval('ftStats(null, "2026-10-10")').late, w.eval('ftStats(null, "2019-12-31")').late], [1, 0]);
+check('the follow-up survives a reload (localStorage) and the CSV has a header plus one line per task', [(w.eval('ftData = null; ftLoad().stages[0].tasks[0].m')), w.eval('ftCSV()').split('\r\n').length], ['100', 154]);
+w.eval('ftAddTask(0); ftAddStage()');
+check('adding a task and a stage: 9 tasks in stage 1, 25 stages', [w.eval('ftLoad().stages[0].tasks.length'), w.eval('ftLoad().stages.length')], [9, 25]);
+w.eval('ftReset()');
+check('a new follow-up restores the template', [w.eval('ftLoad().stages.length'), w.eval('ftStats().n')], [24, 153]);
+w.renderCalc('aptboq');
+check('the BOQ template has 16 sections, 13 sub-headings and 123 items', [w.eval('abLoad().sections.length'), w.eval('abLoad().sections.reduce((a, s) => a + s.items.filter(i => i.h).length, 0)'), w.eval('abLoad().sections.reduce((a, s) => a + s.items.filter(i => !i.h).length, 0)')], [16, 13, 123]);
+const abSet2 = (si, ii, k, v) => w.eval('abSet(' + si + ',' + ii + ',' + JSON.stringify(k) + ',' + JSON.stringify(v) + ')');
+abSet2(0, 0, 'qc', '10'); abSet2(0, 0, 'pc', '5'); abSet2(0, 0, 'qa', '8'); abSet2(0, 0, 'pa', '6'); abSet2(2, 1, 'qc', '4'); abSet2(2, 1, 'pc', '25'); abSet2(2, 1, 'qa', '4'); abSet2(2, 1, 'pa', '30');
+const ab1 = w.eval('abTotals()');
+check('contract 10 x 5 + 4 x 25 = 150, actual 8 x 6 + 4 x 30 = 168, difference 150 - 168 = -18, actual / contract 112 %', [ab1.tc, ab1.ta, ab1.diff, +ab1.pct.toFixed(1)], [150, 168, -18, 112]);
+check('section 1 totals 50 / 48 and the item row shows 50.00 / 48.00 / 2.00; the results flag the overrun', [ab1.secs[0].c, ab1.secs[0].a, doc.getElementById('ab_c0_0').textContent, doc.getElementById('ab_a0_0').textContent, doc.getElementById('ab_d0_0').textContent, doc.getElementById('ab_results').textContent.includes('يزيد على التعاقدي')], [50, 48, '50.00', '48.00', '2.00', true]);
+check('a sub-heading carries no money; the CSV has one line per row plus the three total lines', [w.eval('abLoad().sections[6].items[0].h'), w.eval('abTotals().secs[6].items[0].c'), w.eval('abCSV()').split('\r\n').length], [1, 0, 1 + 136 + 3]);
+w.eval('abAddItem(0); abAddHead(0); abAddSection()');
+check('adding an item, a heading and a section: 11 rows in section 1 and 17 sections', [w.eval('abLoad().sections[0].items.length'), w.eval('abLoad().sections.length')], [11, 17]);
+check('both tools open with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('fitouttrack'); const a = !!x.document.getElementById('ft_results') && x.document.getElementById('ft_results').textContent.includes('153'); x.renderCalc('aptboq'); return a && !!x.document.getElementById('ab_results'); }), [true, true, true]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
