@@ -1052,3 +1052,7 @@ Source: PDF pages 33 and 69 (book pages 34 and 72), read from the rendered pages
 | 6/1/1 P | water pipes over manholes, septic and collection chambers or soakaway pits only at least 200 mm above the ground; at least 0.5 m from manholes, 1.5 m from septic and collection chambers, 3 m from soakaway pits |
 
 🔴 Uncertain: none of the numbers is doubtful; the design pressure for the test is a user input (the code does not define it further).
+
+## National codes, part 54: Jordanian sanitary drainage code 3/8/2, sewage pumps below the public sewer level, note under `sewage` (JO_NOTES)
+
+Source: PDF page 37 (book page 37), read from the rendered page: pump or discharge pipes of tanks receiving toilet wastes at least 50 mm; non-return valves on the discharge lines; building drain sized for an excess flow of 0.06 L/s in addition to the continuous flow from two sanitary units (🔴 the wording is unclear about what the 0.06 L/s is added to); tanks well ventilated, concrete or metal, emptied automatically by enough pumps with one or more standby pumps. Text only, the calculator is unchanged.
