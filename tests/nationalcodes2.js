@@ -1313,6 +1313,22 @@ check('mineral insulated 18 mm: 1500 horizontal and 2000 vertical; 45 mm shows t
 w = boot('intl'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
 check('other codes: no clip block', w.document.getElementById('cs_results').textContent.includes('جدول 70'), false);
 
+// ---------- Jordan: electrical installations code 7/2/4, Tables 71 and 72 (distance between the supports of conduits and trunking) in the conduit fill ----------
+w = boot('jo'); doc = w.document;
+const SUP = w.eval('JSON.parse(JSON.stringify({C: JO_SUP_CND, T: JO_SUP_TRK}))');
+check('Table 71 (conduits, metres horizontal / vertical): up to 16 mm metal 0.75 / 1.00, insulating 0.75 / 1.00, flexible 0.30 / 0.50; over 16 to 25: 1.75 / 2.00, 1.50 / 1.75, 0.40 / 0.60; over 25 to 40: 2.00 / 2.25, 1.75 / 2.00, 0.60 / 0.80; over 40: 2.25 / 2.50, 2.00 / 2.00, 0.80 / 1.00 (printed 0.100)', SUP.C.map(r => r.slice(1)), [[[0.75, 1], [0.75, 1], [0.3, 0.5]], [[1.75, 2], [1.5, 1.75], [0.4, 0.6]], [[2, 2.25], [1.75, 2], [0.6, 0.8]], [[2.25, 2.5], [2, 2], [0.8, 1]]]);
+check('Table 72 (trunking): over 300 to 700 mm2 metal 0.75 / 1.00, insulating 0.50 / 0.50; to 1500: 1.25 / 1.50, 0.50 / 0.50; to 2500: 1.75 / 2.00, 1.25 / 1.25; to 5000: 3.00 / 3.00, 1.50 / 2.00; over 5000: 3.00 / 3.00, 1.75 / 2.00', SUP.T.map(r => r.slice(1)), [[[0.75, 1], [0.5, 0.5]], [[1.25, 1.5], [0.5, 0.5]], [[1.75, 2], [1.25, 1.25]], [[3, 3], [1.5, 2]], [[3, 3], [1.75, 2]]]);
+check('the spacing never falls with the size (conduits and trunking) and the metal values are not below the insulating ones', [SUP.C.every((r, i) => i === 0 || r.slice(1).every((p, k) => p[0] >= SUP.C[i - 1][k + 1][0] && p[1] >= SUP.C[i - 1][k + 1][1])), SUP.T.every((r, i) => i === 0 || r.slice(1).every((p, k) => p[0] >= SUP.T[i - 1][k + 1][0] && p[1] >= SUP.T[i - 1][k + 1][1])), SUP.T.every(r => r[1][0] >= r[2][0] && r[1][1] >= r[2][1])], [true, true, true]);
+w.renderCalc('conduitfill');
+const cfs2 = (mode, L, bends, counts) => { setv(w, 'cj_mode', mode); setv(w, 'cj_len', L); setv(w, 'cj_bends', bends); for (let i = 0; i < 8; i++) setv(w, 'cj_n' + i, (counts || {})[i] || 0); w.calcResult('conduitfill'); return doc.getElementById('cf_results').textContent; };
+let st = cfs2('conduit', 2.5, 0, {2: 6});
+check('conduit 16 mm (example 1): the Table 71 block shows with the 16 mm row (0.75 / 1.00 metal) and the 300 mm rule for flexible conduit', [st.includes('جدول 71'), st.includes('0.75 / 1.00'), st.includes('300 mm')], [true, true, true]);
+st = cfs2('trunk', 3, 0, {2: 40, 5: 10, 6: 5});
+check('trunking 75 x 25 (1875 mm2, example 4): the Table 72 block shows; 1.75 / 2.00 metal and 1.25 / 1.25 insulating are in the highlighted row', [st.includes('جدول 72'), st.includes('1.75 / 2.00'), st.includes('1.25 / 1.25')], [true, true, true]);
+check('nothing chosen (no cables): the table is shown without a highlighted row and the hint to choose cables', [cfs2('conduit', 2.5, 0, {}).includes('اختر كبالًا')], [true]);
+w = boot('intl'); w.renderCalc('conduitfill'); w.calcResult('conduitfill');
+check('other codes: no support block', w.document.getElementById('cf_results').textContent.includes('جدول 71'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

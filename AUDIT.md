@@ -774,3 +774,27 @@ The five worked examples of 4/6/2 E (six 2.5 mm2 cables in 2.5 m: 16 mm; 8 m wit
 Rules in the note: horizontal values for runs inclined more than 30 degrees from the vertical, vertical values for 30 degrees or less; the overall diameter of a flat cable is its major axis; above 40 mm and for single-core cables of 300 mm2 or more the manufacturer's instructions apply; cables on wheeled trolleys 250 / 400 (4/7/1 B 1); joists spaced 350 - 400 mm need no extra fixing (B 2); 4/7/1 A: non-armoured cables in conduit without extra fixing in vertical runs up to 5 m (A 1), any cable in trunking without a middle support up to 5 m (A 2), vertical runs supported at the top with 3 m for lead-sheathed and 5 m for rubber or PVC sheathed cables (A 7).
 
 🔴 Uncertain: the caravan column prints values only in the 15 - 20 mm row with the label "all sizes" below it (read as valid for every diameter); the clause letters (A 1, A 2, A 7, B 1, B 2) follow the order of the printed letters. Not done: the cable fixing in conduits and the support rules for trunking and ladders, the clip spacing for other cable families, the minimum bending radii (Table 5).
+
+
+## National codes, part 37: Jordanian electrical installations code 7/2/4, Tables 71 and 72 (distance between the supports of conduits and trunking) in the Jordanian `conduitfill`
+
+A block under the unit-system results (`JO_SUP_CND`, `JO_SUP_TRK`, `joSupportHTML`): the table of the chosen kind with the row of the chosen conduit diameter (16 / 20 / 25 / 32 mm) or of the chosen trunking section highlighted. Pages 223 - 224 of the code, read from the rendered pages (the band limits of Table 72 are only in the image).
+
+| Table 71, conduits (m, horizontal / vertical) | rigid metal | rigid insulating | flexible |
+|---|---|---|---|
+| up to 16 mm | 0.75 / 1.00 | 0.75 / 1.00 | 0.30 / 0.50 |
+| over 16 up to 25 | 1.75 / 2.00 | 1.50 / 1.75 | 0.40 / 0.60 |
+| over 25 up to 40 | 2.00 / 2.25 | 1.75 / 2.00 | 0.60 / 0.80 |
+| over 40 | 2.25 / 2.50 | 2.00 / 2.00 | 0.80 / 1.00 (printed "0.100") |
+
+| Table 72, trunking (section mm2) | metal | insulating |
+|---|---|---|
+| over 300 up to 700 | 0.75 / 1.00 | 0.50 / 0.50 |
+| over 700 up to 1500 | 1.25 / 1.50 | 0.50 / 0.50 |
+| over 1500 up to 2500 | 1.75 / 2.00 | 1.25 / 1.25 |
+| over 2500 up to 5000 | 3.00 / 3.00 | 1.50 / 2.00 |
+| over 5000 | 3.00 / 3.00 | 1.75 / 2.00 |
+
+The figures assume that the conduit or trunking is not exposed to other mechanical stresses; they do not apply to trunking that carries lighting fittings or where reinforcing couplers are used; flexible conduit needs supports within 300 mm of a bend or fitting.
+
+🔴 Uncertain: the vertical flexible value over 40 mm is printed "0.100" (read 1.00); the distance from a bend is printed 3000 mm in the note of Table 72 (probably 300 mm as in Table 71, so it is not quoted for trunking); the first band of Table 72 starts at 300 mm2 (no value below). Not done: the support of cables in trunking and of the other raceways (ladders, tray) and the rules of 7/2/1 to 7/2/3.
