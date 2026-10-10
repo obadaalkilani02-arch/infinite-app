@@ -1656,6 +1656,10 @@ w = boot('jo'); doc = w.document; w.renderCalc('sewage'); w.calcResult('sewage')
 check('Jordan sewage note: pump and discharge pipe of toilet tanks at least 50 mm, non-return valves, 0.06 L/s extra flow, a standby pump', ['3/8/2', '50 mm', 'صمامات ردادة', '0.06 L/s', 'مضخة احتياطية'].every(s => doc.getElementById('calc-body').textContent.includes(s)), true);
 w = boot('intl'); doc = w.document; w.renderCalc('sewage'); w.calcResult('sewage');
 check('other codes do not show the Jordanian sewage note', doc.getElementById('calc-body').textContent.includes('الكودة الأردنية للتصريف الصحي — 3/8/2'), false);
+
+// ---------- part 55: Jordanian mechanical ventilation code 5/3/13, 5/3/15, 5/3/16 and Table 15 as a note under `diffuserselection` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('diffuserselection'); w.calcResult('diffuserselection');
+check('Jordan diffuser note: +-1.5 C at 1.5 m and 0.6 m from a cold wall, 3 C floor to 1.5 m, 7 - 12 m/min, return grilles 0.2 m/s, warm air 50 C, Table 15 0.2 / 0.1 ... 0.45 / 0.3', ['5/3/13', '±1.5°C', '0.6 m', '3°C كحد أعلى', '7 إلى 12 m/min', '0.2 m/s', '50°C', '0.35 / 0.2', '0.45 / 0.3', '0.3 / 0.15'].every(s => doc.getElementById('calc-body').textContent.includes(s)), true);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
