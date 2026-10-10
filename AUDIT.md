@@ -945,3 +945,21 @@ Source: PDF pages 78 - 130 read from the rendered pages (the text layer loses th
 | Heating and windows | appliances able to give 22 C living and dining rooms, 17 C bedrooms, kitchens and circulation (at heights up to 1.0 m) and 21 C at 0.2 m; floor surface at most 24 C (21 C for disabled children); ceiling heating up to 2.4 m; controls at least 0.60 m (0.7 preferred); window sill at most 0.60 m on upper floors, protection 0.85 m, controls at most 1.35 m |
 
 🔴 Uncertain: "in the region of" values (basin rim for crutches, bath rim, shower seat) are checked with a tolerance of 0.05 m or 0.02 m; the two sides of the cubicle figures are taken in the order of the printed width and depth; the kitchen socket height of 1.2 m for non-wheelchair users and the 0.5 m rings of 2/5/1 B are quoted only in the notes. The code gives no limit on the number of accessible fixtures here (chapter 3 not transferred).
+
+## National codes, part 47: Jordanian building water supply code chapter 5, pipe scheduling of sprinkler networks (Tables 11 - 16, 5/5/5 - 5/5/7, 5/6/2) in the `sprinkler` calculator
+
+Source: PDF pages 58 - 68 of the water supply code, read from the rendered pages. A Jordan-only panel in `sprinkler` (`JO_SP_TAB`, `JO_SP_DRY`, `JO_SP_WET`, `JO_SP_BRANCH`, `JO_SP_C`, `JO_SP_VALVES`, `joSpSize`, `joSprinkHTML`, `joSprinkUpdate`; fields spk_jo_*): hazard class + pipe material + number of sprinklers fed -> minimum nominal size, the limit of sprinklers per valve group (wet / dry, with or without accelerator), the branch-line limit, the valve group of Table 16 and the water quantity Q. The tool itself still sizes by NFPA 13. The previous note quoted the ordinary and high hazard schedules as "Tables 13 and 14": they are Tables 13 and 15 (Table 14 is the exceptional case); corrected.
+
+| Rule | Value |
+|---|---|
+| Table 12 (low hazard) steel | 2 / 3 / 5 / 10 / 30 / 60 / 100 sprinklers on 25 / 32 / 40 / 50 / 65 / 80 / 90 mm |
+| Table 12 copper | 2 / 3 / 5 / 12 / 40 / 65 / 115 sprinklers on the same sizes |
+| Table 14 (ordinary, spacing above 3.7 m) | steel 15 / 30 / 60 and copper 20 / 35 / 65 sprinklers on 65 / 80 / 90 mm |
+| 5/5/5 A, Table 11 | wet: 500 (low) and 1000 (ordinary, high) sprinklers per valve group; dry with accelerator 250 / 500, without 125 / 250 (low / ordinary or high) |
+| 5/5/6 | branch line at most 8 sprinklers each side of the cross main (low, ordinary), 6 (high); areas without partitions needing over 100 sprinklers: feed main or riser sized for ordinary hazard |
+| Table 16 | wet: main stop + alarm valve; dry: main stop + air valve + compressed-air supply; alternate: main stop + alarm valve + compressed air; pre-action: main stop + pre-action valve + compressed air |
+| 5/6/2 | Q = 3.72 C A^0.5 (L/s, A in m2), C 1.5 wooden, 1.0 ordinary, 0.8 non-combustible, 0.6 fire-resistant |
+
+Also read (already in the app): Table 18 (supports, same as the central heating Table 12), 6/1/1 (buried depth 500 mm, expansion joints at most every 10 m).
+
+🔴 Uncertain: Table 11 is printed with the low-hazard limits smaller than the ordinary or high ones (opposite of the usual expectation; used as printed); Table 14 gives only 65 - 90 mm, so the other sizes follow Table 13; the formula Q = 3.72 C A^0.5 is printed for "the unit area of 5/6/1" without more context.
