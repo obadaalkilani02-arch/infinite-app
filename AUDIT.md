@@ -1039,3 +1039,16 @@ Source: PDF pages 114 - 122 of the mechanical ventilation and air conditioning c
 | 8/3/9, 8/3/10 | springs below 700 cycles/min, rubber pad 700 - 1200, cork above 1200; isolation 85 % at a frequency ratio 3 (99 % and ratio 10 above occupied rooms); fn = sqrt(250 / h) Hz with h in mm; machines above 4 kW on a sunken concrete block |
 
 🔴 Uncertain: the Table 20 bend values 6.56 / 4.92 / 3.28 dB are exactly 2 / 1.5 / 1 dB times 3.28, a feet-to-metre factor that belongs to a length, so they are probably a unit slip (the calculator uses them as printed and offers the corrected ones); Table 20 is valid below 500 Hz and the whole chain is a single-number estimate (no octave bands); the larger side of the duct selects the straight-duct row and the smaller side the bend row. Not done: 8/3/4 fan sound power tables (not in the code), the rest of chapter 8.
+
+## National codes, part 53: Jordanian water supply code 3/3/6 and 6/1/1, pressure test and installation distances in `watersupplyjo`
+
+Source: PDF pages 33 and 69 (book pages 34 and 72), read from the rendered pages. Fields wj_pd, wj_ag, wj_vs, wj_hs, wj_ch, wj_dm, wj_dt, wj_dp.
+
+| Rule | Value |
+|---|---|
+| 6/1/1 U | the network is tested full of water at 1.5 x the design pressure, never below 6 bar, for 24 hours, before it is covered |
+| 3/3/6 C | air gap at least 50 mm above the rim of every fixture except bidets |
+| 3/3/6 D, 6/1/1 S | water pipes in the sewer trench only if no other solution exists: at least 300 mm above the drain in the shared trench, or on a shelf with 300 mm clear horizontal distance |
+| 6/1/1 P | water pipes over manholes, septic and collection chambers or soakaway pits only at least 200 mm above the ground; at least 0.5 m from manholes, 1.5 m from septic and collection chambers, 3 m from soakaway pits |
+
+🔴 Uncertain: none of the numbers is doubtful; the design pressure for the test is a user input (the code does not define it further).

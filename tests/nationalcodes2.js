@@ -1642,6 +1642,14 @@ check('above occupied rooms the ratio is 10 and 99 %: 1450 rpm needs 250 / (24.1
 check('isolator type by speed: springs below 700 rpm, rubber pad 700 - 1200, cork above 1200', [dnSet({dn_rpm: 500}).iso, dnSet({dn_rpm: 1000}).iso, dnSet({dn_rpm: 1450}).iso], ['نوابض', 'مخدة مطاط' + 'ية', 'فلين']);
 check('a machine above 4 kW gets the sunken concrete block note; the lining outside 0.22 - 0.45 m2 and below 25 mm is flagged', [(dnSet({dn_kw: 5}), doc.getElementById('dn_results').textContent.includes('كتلة خرسانية غاطسة')), (dnSet({dn_ll: 3, dn_lt: 20}), doc.getElementById('dn_results').textContent.includes('أقل من 25 mm')), (dnSet({dn_ll: 3, dn_w: 1, dn_h: 1}), doc.getElementById('dn_results').textContent.includes('بين 0.22 و0.45'))], [true, true, true]);
 check('the calculator opens with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('ductnoise'); return !!x.document.getElementById('dn_results'); }).every(Boolean), true);
+
+// ---------- part 53: Jordanian water supply code 3/3/6 and 6/1/1, pressure test and installation distances in `watersupplyjo` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('watersupplyjo');
+const wkSet = o => { Object.entries(Object.assign({wj_n_bath: 10, wj_pd: 4, wj_ag: '', wj_vs: '', wj_hs: '', wj_ch: '', wj_dm: '', wj_dt: '', wj_dp: ''}, o || {})).forEach(([k, x]) => setv(w, k, x)); w.calcResult('watersupplyjo'); return w.eval('calcWaterJo()'); };
+check('test pressure = 1.5 x the design pressure but not less than 6 bar: 4 bar -> 6, 5 bar -> 7.5, 10 bar -> 15', [wkSet({wj_pd: 4}).test, wkSet({wj_pd: 5}).test, wkSet({wj_pd: 10}).test], [6, 7.5, 15]);
+check('nothing is checked until a distance is entered; each entered value is compared with its minimum (50 mm gap, 300 + 300 mm, 200 mm, 0.5 / 1.5 / 3 m)', [wkSet().chk.length, JSON.stringify(wkSet({wj_ag: 50, wj_vs: 300, wj_hs: 300, wj_ch: 200, wj_dm: 0.5, wj_dt: 1.5, wj_dp: 3}).chk.map(c => c[2]))], [0, '[50,300,300,200,0.5,1.5,3]']);
+check('the results flag a gap of 49 mm and a soakaway distance of 2.9 m but pass 50 mm and 3 m', [(wkSet({wj_ag: 49, wj_dp: 2.9}), doc.getElementById('wj_results').textContent.split('⚠ لا يحقق').length - 1), (wkSet({wj_ag: 50, wj_dp: 3}), doc.getElementById('wj_results').textContent.split('⚠ لا يحقق').length - 1)], [2, 0]);
+check('the results quote the 24 hour test and the 6 bar floor', (wkSet({wj_pd: 4}), ['24 ساعة', '6 bar'].every(x => doc.getElementById('wj_results').textContent.includes(x))), true);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

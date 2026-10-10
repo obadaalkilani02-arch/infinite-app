@@ -11509,5 +11509,22 @@
  "مقروءتان من الصفحات المصورة، ولا تعطي الكودة قيم الجدول": "are read from the page images, and the code does not give the values of Table",
  "إلا للترددات الأقل من": "except for frequencies below",
  "، وتطبق تقدير مستوى واحدًا": ", and a single level estimate is applied",
- "لا حسابًا لكل نطاق تردد": "rather than a calculation for each frequency band"
+ "لا حسابًا لكل نطاق تردد": "rather than a calculation for each frequency band",
+ "الاختبار وشروط التركيب": "Testing and installation conditions",
+ "الضغط التصميمي للشبكة": "Design pressure of the network",
+ "لحساب ضغط الاختبار": "to calculate the test pressure",
+ "الفجوة الهوائية فوق حافة القطعة الصحية": "Air gap above the rim of the sanitary fixture",
+ "ارتفاع أنبوب المياه فوق أنبوب الصرف في خندق مشترك": "Height of the water pipe above the drain pipe in a shared trench",
+ "المسافة الأفقية الخالصة على الرف الخاص في الخندق المشترك": "Clear horizontal distance on the special shelf in the shared trench",
+ "ارتفاع أنبوب مياه الشرب فوق غرفة تفتيش أو حفرة عن سطح الأرض": "Height of the drinking water pipe above a manhole or pit from the ground surface",
+ "البعد عن غرفة تفتيش": "Distance from a manhole",
+ "البعد عن غرفة تحليلية أو تجميعية": "Distance from a septic or collection chamber",
+ "البعد عن حفرة امتصاصية": "Distance from a soakaway pit",
+ "ارتفاع أنبوب المياه فوق أنبوب الصرف في الخندق المشترك": "Height of the water pipe above the drain pipe in the shared trench",
+ "المسافة الأفقية الخالصة على الرف الخاص": "Clear horizontal distance on the special shelf",
+ "ارتفاع أنبوب مياه الشرب فوق غرفة التفتيش أو الحفرة عن سطح الأرض": "Height of the drinking water pipe above the manhole or pit from the ground surface",
+ "اختبار الشبكة وشروط التركيب": "Network testing and installation conditions",
+ "ضغط الاختبار": "Test pressure",
+ "، لمدة": ", for a period of",
+ "ساعة قبل العزل": "hours before insulation"
 }
