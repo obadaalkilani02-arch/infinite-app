@@ -1358,6 +1358,18 @@ check('a family clipped direct (not in air) ignores the trench option (the trenc
 w = boot('intl'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
 check('other codes: the trench option does not change the NEC result (no trench note)', w.document.getElementById('cs_results').textContent.includes('الخندق المغلق'), false);
 
+// ---------- Jordan: electrical installations code 4/2/7 B and Table 5 (bending radius of non-flexible cables) in the cable sizing ----------
+w = boot('jo'); doc = w.document;
+const jbend = (k, d) => w.eval('joBend(' + JSON.stringify(k) + ', ' + d + ')');
+check('Table 5: unarmoured rubber or PVC 3 up to 10 mm (2 for round stranded single-core cables in a conduit), 4 over 10 up to 25 mm (3), 6 over 25 mm; armoured and mineral insulated 6; no diameter gives nothing', [[10, 10.5, 25, 26].map(d => jbend('non', d)), jbend('arm', 12), jbend('mi', 30), jbend('non', 0), jbend('car', 8)], [[{ f: 3, f2: 2 }, { f: 4, f2: 3 }, { f: 4, f2: 3 }, { f: 6, f2: null }], { f: 6, f2: null }, { f: 6, f2: null }, null, { f: 3, f2: 2 }]);
+w.renderCalc('cablesizing'); w.calcResult('cablesizing');
+let bl = doc.getElementById('cs_results').textContent;
+check('the Jordanian cable sizing shows the bend block: default non-armoured 16 mm: radius 4 x 16 = 64 mm (3 x 16 = 48 mm in a conduit), the 2.5 times rule and the 500 mm / 10 m elbows rule', [bl.includes('جدول 5'), bl.includes('64'), bl.includes('48'), bl.includes('2.5'), bl.includes('4/2/7 B 2')], [true, true, true, true, true]);
+setv(w, 'cs_clip_kind', 'arm'); setv(w, 'cs_clip_d', 20); w.calcResult('cablesizing');
+check('armoured 20 mm: 6 x 20 = 120 mm; a diameter of 5 mm gives 3 x 5 = 15 mm', [doc.getElementById('cs_results').textContent.includes('120'), (setv(w, 'cs_clip_kind', 'non'), setv(w, 'cs_clip_d', 5), w.calcResult('cablesizing'), doc.getElementById('cs_results').textContent.includes('15'))], [true, true]);
+w = boot('intl'); w.renderCalc('cablesizing'); w.calcResult('cablesizing');
+check('other codes: no bend block', w.document.getElementById('cs_results').textContent.includes('جدول 5'), false);
+
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');

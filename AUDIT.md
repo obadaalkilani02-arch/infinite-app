@@ -813,3 +813,23 @@ The figures assume that the conduit or trunking is not exposed to other mechanic
 Rules: the factors apply to the ratings of methods J and K (Table 11); a conductor below 4 mm2 takes the 4 mm2 row; a size between two printed rows takes the larger row (the smaller factor).
 
 🔴 Uncertain: three cells (Table 13, 300 mm2, column 2 blank; Table 15, 300 mm2, columns 1 and 3 printed 0.69 and 0.64, which break the series: 0.61 / 0.57 and 0.48 / 0.44) were replaced by the factor of the lower neighbouring row (0.73, 0.57, 0.44); the column headers of Tables 13 - 15 are read from the images (the third word group of Table 15 column 2 reads "six or twelve double-core" in the text layer and was read as twelve). Not done: the other cable families in trenches (the codes prints only these three methods) and the cable-use guidance of Tables 62 - 63.
+
+
+## National codes, part 39: Jordanian electrical installations code 4/2/7 B and Table 5 (bending radius of non-flexible cables) in the cable sizing
+
+A results block after the clip spacing (`joBend`, `joBendHTML`), using the same two fields (cable kind and overall diameter, now labelled for both). Table 5 (page 124 of the code, read from the rendered page; the factors are in the image only):
+
+| Cable | Overall diameter d | Factor (x d) = minimum internal radius of the bend |
+|---|---|---|
+| rubber or PVC, unarmoured, round copper or aluminium conductors | up to 10 mm | 3 (2 for round stranded single-core cables in a conduit or trunking) |
+| | over 10 up to 25 mm | 4 (3 in a conduit or trunking) |
+| | over 25 mm | 6 |
+| armoured (PVC or rubber) | any | 6 |
+| PVC with solid or shaped copper conductors, armoured or unarmoured | any | 8 |
+| paper insulated, lead sheathed | any | 12 |
+| mineral insulated (copper or aluminium sheath, PVC covering or none) | any | 6 |
+| flat cables | the factor is multiplied by the length of the major axis | |
+
+4/2/7 B 3: the internal radius of a conduit bend equals that of the cables and is at least 2.5 times the outside diameter of the conduit; 4/2/7 B 2: elbows without inspection openings only at the ends of conduits behind a lighting fitting or at an outlet box, or at positions not more than 500 mm from an easily accessible outlet box in a run of at most 10 m between two outlet points, if the other bends of the run total at most one right angle.
+
+🔴 Uncertain: the third row is printed "PVC (solid or shaped copper conductors)" with the word read as "solid"; the paper insulated row is not selectable by the cable-kind list of the clip table (the lead-sheathed value 12 is quoted in the note); "armoured" is taken for every armoured kind. Test heap: `tests/nationalcodes2.js` now needs `node --max-old-space-size=6144` (set in the npm test script).
