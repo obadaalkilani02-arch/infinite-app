@@ -891,3 +891,22 @@ Source: the whole code (chapters 2 - 4, pages 12 - 46 of the PDF, read from the 
 | incinerator (chapter 3) | combustion chamber 0.25 m3 at least; capacity 1.5 x the daily volume, standard sizes 0.5 / 1 / 1.5 / 2 / 2.5 / 3 m3; explosion relief 0.1 m2 per 3 m3 of the primary chamber; 1200 C design, 1750 C firebrick; clearances 1.2 m (0.6 m with plates) at the feed door, 0.9 m sides, 1.2 m front; chimney 0.9 m above the roof or 0.6 m above the highest part within 3 m |
 
 🔴 Uncertain: 2/4/5 B (450 mm high buildings) and 2/4/6 A (400 mm) overlap for a building of more than four floors under 30 m: 450 mm is the governing value and 400 mm is shown as a partial pass; the number of cleaning gates is taken as one per three floors; the reduced feed-door clearance is printed 0.3 mm (read as printed); 0.3 m3 per person with the 10 m2 and 2.3 m minimum is the reading of "i.e. 0.3 m3 per person"; the primary chamber volume is taken equal to the standard incinerator capacity when not entered. Not done: figures 1 - 16 (typical details), the technical terms and the unit-conversion tables.
+
+## National codes, part 44: Jordanian building space requirements code (كودة متطلبات الفراغ في المباني), chapter 5 toilet rooms, in the `sanfix` calculator
+
+Source: 5/3 (toilet rooms), 5/4 (vertical clearance), graphs 1 and 2 and Table 7 (pages 47 - 52 of the PDF, read from the rendered pages). The rest of the code was looked at and left: chapter 4 (exit distances and widths, Tables 1 - 6) repeats what the fire code already gives in `egress` and `exitparts`; chapters 6 and 7 (Tables 8 - 19: area per person in restaurants, schools, wards, factories, room areas of dwellings, hotels and dormitories) are architectural space standards that no calculator of the app uses; Table 7 (fixtures per capacity for mosques, health care and dormitories) is the same as the Appendix E counts in `sanfix`.
+
+Added to `sanfix` (all codes, the calculator is Jordanian): fields sf_sa_floor, sf_sa_cls, sf_sa_np, sf_sa_sex; `JO_SA_G1`, `JO_SA_G2`, `joSaInterp`, `joSfAreaCalc`, `joSfAreaHTML`.
+
+| Rule | Value |
+|---|---|
+| 5/3/1 | each building of fixed use: at least one toilet room with a WC and a basin of at least 2 m2; one for each body sharing the building; the area per sex not below that of one toilet room (residential and up to 30 occupants excepted) |
+| 5/3/3 | unknown ratio of the sexes: 1 : 2 for women and men |
+| 5/3/4 | men only: area 10 % less (never below 2 m2) with at least one urinal per two WCs; women only: 10 % more |
+| 5/3/5 | occupancy under 6 hours: men's WCs may be replaced by one urinal each, urinals not above the WCs (not for educational buildings) |
+| 5/3/7 | one WC per 2.5 m2 of toilet room; graph 1 (commercial) and graph 2 (public gatherings other than mosques, theatres, lecture halls, cinemas; 3 m2 per person for the floor area) give the toilet-room area from the floor area |
+| 5/4/1 | clear height 2.100 m under tiles, ceiling, beams or hanging objects |
+
+Graph readings (toilet-room area m2 at a floor area of 100 / 200 / ... / 1000 m2): graph 1 1.4, 3.2, 4.9, 6.4, 7.8, 9.2, 10.6, 12.0, 13.4, 14.8 (ends near 1025 m2 at 15.2); graph 2 2.4, 4.4, 6.0, 7.3, 8.4, 9.4, 10.3, 11.2, 11.7, 12.1 (ends at 1000 m2). Obtained by locating the printed curve in the 3x rendered image (accuracy about 0.2 m2).
+
+🔴 Uncertain: the graph values (read by pixel position, the origin of the area axis is about 10 m2 uncertain in graph 2); the code says women : men = 1 : 2 while Appendix E of the natural ventilation code (the counts of the calculator) uses 2 : 1 for the unknown ratio, which the screen points out; Figures 6 and 7 (fixture dimensions and clearances) and Tables 10, 16, 17 not transferred.

@@ -1461,6 +1461,24 @@ check('... relief 0.09 m2 for a 3 m3 chamber fails, 0.1 passes; a 0.2 m3 chamber
 check('the system text follows the building type (low-rise: 40 m between chutes; high-rise: chutes; hotel: sorting)', [['low', '40 m'], ['high', 'تُستعمل المساقط'], ['hotel', 'فرز']].map(a => { wsRun({ws_type: a[0]}); return doc.getElementById('ws_results').textContent.includes(a[1]); }), [true, true, true]);
 check('the notes quote the printed numbers (0.25 m3, 1200, 1750, 1.2 m, 0.9 m, 225, 15 m, 0.3 m3 per person)', ['0.25 m³', '1200', '1750', '1.2 m', '0.9 m', '15 m', '0.3 m³ لكل شخص'].every(s => doc.getElementById('ws_results').textContent.includes(s)), true);
 check('the plumbing card exists and the calculator opens with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('wastechute'); x.calcResult('wastechute'); return x.document.getElementById('ws_results').textContent.length > 500; }), [true, true, true]);
+
+// ---------- part 44: Jordanian space requirements code 5/3 - 5/4 (floor area of toilet rooms, graphs 1 and 2) in `sanfix` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('sanfix');
+const saRun = o => { Object.entries(Object.assign({sf_type: 'office', sf_n: 0, sf_sa_floor: '', sf_sa_cls: 'com', sf_sa_np: '', sf_sa_sex: 'both'}, o || {})).forEach(([k, x]) => setv(w, k, x)); w.calcResult('sanfix'); return w.eval('calcSanFix()').sa; };
+check('space code graphs: commercial 100 m2 -> 1.4, 500 -> 7.8, 1000 -> 14.8 m2 of toilet rooms (read from the curve); public gatherings 100 -> 2.4, 600 -> 9.4, 1000 -> 12.1', [[100, 'com'], [500, 'com'], [1000, 'com'], [100, 'asm'], [600, 'asm'], [1000, 'asm']].map(a => +saRun({sf_sa_floor: a[0], sf_sa_cls: a[1]}).g.toFixed(2)), [1.4, 7.8, 14.8, 2.4, 9.4, 12.1]);
+check('... linear between the printed points (250 m2 commercial: 4.05) and the last point beyond the graph (1500 m2: 15.2, flagged)', [+saRun({sf_sa_floor: 250}).g.toFixed(2), saRun({sf_sa_floor: 1500}).g, saRun({sf_sa_floor: 1500}).beyond, saRun({sf_sa_floor: 1000}).beyond], [4.05, 15.2, true, false]);
+check('men only: 10 % less but not below 2 m2; women only: 10 % more', [saRun({sf_sa_floor: 500, sf_sa_sex: 'men'}).area, saRun({sf_sa_floor: 100, sf_sa_sex: 'men'}).area, saRun({sf_sa_floor: 500, sf_sa_sex: 'women'}).area].map(x => +x.toFixed(2)), [7.02, 2, 8.58]);
+check('one water closet per 2.5 m2: 500 m2 commercial holds 3, 600 m2 gathering (9.4 m2) holds 3', [Math.floor(saRun({sf_sa_floor: 500}).wcByArea + 1e-9), Math.floor(saRun({sf_sa_floor: 600, sf_sa_cls: 'asm'}).wcByArea + 1e-9)], [3, 3]);
+check('gatherings with a head count: 3 m2 per person (200 persons -> 600 m2 -> 9.4 m2)', [saRun({sf_sa_cls: 'asm', sf_sa_np: 200, sf_sa_floor: 50}).floorA, +saRun({sf_sa_cls: 'asm', sf_sa_np: 200}).g.toFixed(1)], [600, 9.4]);
+{
+  const s = saRun({sf_type: 'office', sf_n: 90});
+  const wc = w.eval('calcSanFix()').rows.reduce((a, r) => a + r.wc, 0);
+  check('the water closets of the fixture table need 2.5 m2 each (office of 90 persons)', [s.wcTotal, s.byWc, s.floorA], [wc, 2.5 * wc, 0]);
+  check('nothing is shown without a floor area or any fixture', saRun({sf_type: 'office', sf_n: 0, sf_sa_floor: ''}), null);
+  saRun({sf_sa_floor: 500});
+  const t = doc.getElementById('sf_results').textContent;
+  check('the block quotes 2 m2 per toilet room, 1 : 2, 6 hours, 2.100 m and the 0.2 m2 reading note', ['2 m²', '1 : 2', '6 ساعات', '2.100 m', '0.2 m²', '15.2'].filter(x => x !== '15.2').every(x => t.includes(x)), true);
+}
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
