@@ -910,3 +910,21 @@ Added to `sanfix` (all codes, the calculator is Jordanian): fields sf_sa_floor, 
 Graph readings (toilet-room area m2 at a floor area of 100 / 200 / ... / 1000 m2): graph 1 1.4, 3.2, 4.9, 6.4, 7.8, 9.2, 10.6, 12.0, 13.4, 14.8 (ends near 1025 m2 at 15.2); graph 2 2.4, 4.4, 6.0, 7.3, 8.4, 9.4, 10.3, 11.2, 11.7, 12.1 (ends at 1000 m2). Obtained by locating the printed curve in the 3x rendered image (accuracy about 0.2 m2).
 
 🔴 Uncertain: the graph values (read by pixel position, the origin of the area axis is about 10 m2 uncertain in graph 2); the code says women : men = 1 : 2 while Appendix E of the natural ventilation code (the counts of the calculator) uses 2 : 1 for the unknown ratio, which the screen points out; Figures 6 and 7 (fixture dimensions and clearances) and Tables 10, 16, 17 not transferred.
+
+## National codes, part 45: Jordanian general safety code in the execution of construction projects, chapter 2: new calculator `sitesafety` (SS-01, plumbing screen)
+
+Source: chapter 2 (working environment), pages 32 - 50 of the PDF, read from the rendered pages (the text layer loses the numbers). A new calculator `renderSiteSafety`, `calcSiteSafety`, `siteSafetyResultsHTML` (fields ss_*, tables `JO_SS_LUX`, `JO_SS_NOISE`, `joSsNoiseHours`); chapters 1, 3 - 7 (contractor duties, material handling, welding, scaffolds, excavation, demolition, blasting, painting, boilers, tools, lifting plant, personal protective equipment, temporary works) are procedural and were not transferred.
+
+| Rule | Value |
+|---|---|
+| 2/2/1 - 2/2/9 sanitary facilities | one facility = WC with shower + one basin + one urinal; up to 100 workers one per 25 (plus one for any remainder); above 100 one per 35 (plus one for any remainder); vent pipe at least 100 mm at least 25 mm below the WC; washed daily, sterilised twice a week; one hand basin per 5 workers (with nail brush) when lead or toxic materials are used |
+| 2/3 drinking water | own pipes at least 2 m from pipes carrying polluted water |
+| 2/4/2 first aid | 10 - 100 workers one box and a stretcher; above 100 one box per 100 workers or fraction, and one per group of more than 10 workers working 300 m or more apart; first aider: trained worker up to 100 workers, full-time nurse above 100 |
+| 2/5/2 extinguishers | at least one per 300 m2 with at most 30 m to the farthest point; flammable liquids above 0.02 m3 or gases above 0.023 kN in one place: one within 10 m; room storing 0.250 m3: one within 3 m of the door; outdoor store: one 7.5 - 9 m away; may be replaced by a 2 m3 tank with a 30 m x 19 mm hose, 6 m reach, 19 L/min |
+| 2/6/4 | 3 m between buildings and stacks of timber and other combustibles; incompatible materials separated by a 1 hour barrier |
+| 2/7, Table 4 illuminance | 30 lux external corridors and excavation / fill; 50 lux internal corridors, concrete placing, tunnels; 100 lux walkways, stairs, compressed-air work, interior construction, storerooms, toilets; 300 lux welding |
+| 2/9, Table 5 noise | 90 dB 8 h, 92 6, 95 4, 97 3, 100 2, 102 1.5, 105 1, 110 0.5, 115 0.25 h per day; Fe = sum T / L; impact or impulse noise at most 140 dB |
+| 2/12 temporary electrical | portable lamps at most 12 V and non-sparking in wet or explosive places; earthing; marking of the maximum voltage; protection of cables from damage |
+| 2/13 openings and edges | guard rail 0.5 kN/m, at least 1 m high, opening height at most 0.85 m; toe board at least 150 mm; roof-edge guards at least 0.85 m |
+
+🔴 Uncertain: the first-aid, extinguisher and sanitary counts above 100 workers (read as 4 facilities for the first hundred and one per 35 beyond, because "one per 35 of the whole number" would lower the count above 100); Fe has no printed limit (taken as 1); between two printed noise levels the next higher level (shorter time) is used; "vertical opening height 0.85 m" of 2/13/1 is quoted as printed. Not transferred: the contents lists of the first-aid box and chapter 4/10 boilers.

@@ -744,7 +744,7 @@ setv(w, 'sp_dw', 3); w.calcResult('septic');
 const spText = doc.getElementById('sp_results').textContent;
 check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
 w = boot('intl'); w.renderCalc('septic');
-check('the septic calculator is available with every code and the plumbing screen counts 23 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('23 حاسبة متاحة')], [true, true]);
+check('the septic calculator is available with every code and the plumbing screen counts 24 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('24 حاسبة متاحة')], [true, true]);
 
 // ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
@@ -1479,6 +1479,25 @@ check('gatherings with a head count: 3 m2 per person (200 persons -> 600 m2 -> 9
   const t = doc.getElementById('sf_results').textContent;
   check('the block quotes 2 m2 per toilet room, 1 : 2, 6 hours, 2.100 m and the 0.2 m2 reading note', ['2 m²', '1 : 2', '6 ساعات', '2.100 m', '0.2 m²', '15.2'].filter(x => x !== '15.2').every(x => t.includes(x)), true);
 }
+
+// ---------- part 45: Jordanian general safety code in construction projects, chapter 2, new calculator `sitesafety` ----------
+w = boot('jo'); doc = w.document; w.renderCalc('sitesafety');
+const ssDef = {ss_n: 60, ss_tox: '0', ss_area: 3000, ss_grp: 0, ss_f1: '0', ss_f2: '0', ss_f3: '0', ss_lp: 0, ss_lx: 30, ss_nl0: 95, ss_nt0: 2, ss_nl1: 100, ss_nt1: 1, ss_nl2: '', ss_nt2: '', ss_nl3: '', ss_nt3: ''};
+const ssRun = o => { Object.entries(Object.assign({}, ssDef, o || {})).forEach(([k, x]) => setv(w, k, x)); const r = w.eval('calcSiteSafety()'); w.calcResult('sitesafety'); return r; };
+let ss = ssRun();
+check('site safety: 60 workers need 3 sanitary facilities (one per 25), 1 first-aid box, 10 extinguishers for 3000 m2 (one per 300 m2)', [ss.san, ss.fa, ss.ext.total, doc.getElementById('ss_results').textContent.includes('المرافق الصحية للعمال')], [3, 1, 10, true]);
+check('sanitary facilities: 25 workers 1, 26 workers 2, 100 workers 4, 101 workers 5, 135 workers 5, 136 workers 6, 200 workers 7, none for no workers', [25, 26, 100, 101, 135, 136, 200, 0].map(n => ssRun({ss_n: n}).san), [1, 2, 4, 5, 5, 6, 7, 0]);
+check('one wash basin per 5 workers when toxic or polluting materials are used (60 workers: 12), none otherwise', [ssRun({ss_tox: '1'}).basins, ssRun({ss_tox: '0'}).basins, ssRun({ss_tox: '1', ss_n: 62}).basins], [12, 0, 13]);
+check('first aid: none below 10 workers, one box from 10 to 100, then one per 100 workers or part (101: 2, 250: 3), a nurse above 100, extra boxes for remote groups', [5, 10, 100, 101, 250].map(n => ssRun({ss_n: n}).fa), [0, 1, 1, 2, 3]);
+check('... remote groups add boxes (3 groups with 60 workers: 1 + 3); the nurse only above 100', [ssRun({ss_grp: 3}).fa + ssRun({ss_grp: 3}).faExtra, ssRun({ss_n: 100}).nurse, ssRun({ss_n: 101}).nurse, ssRun({ss_n: 5, ss_grp: 3}).faExtra], [4, false, true, 0]);
+check('extinguishers: one per 300 m2 (at least one): 100 m2 -> 1, 301 m2 -> 2; +1 for each flammable-liquid condition', [ssRun({ss_area: 100}).ext.base, ssRun({ss_area: 301}).ext.base, ssRun({ss_area: 100, ss_f1: '1', ss_f2: '1', ss_f3: '1'}).ext.total], [1, 2, 4]);
+check('lighting, Table 4: 30 / 30 / 50 / 50 / 50 / 100 / 100 / 100 / 100 / 300 lux', w.eval('JO_SS_LUX.map(r => r[1])'), [30, 30, 50, 50, 50, 100, 100, 100, 100, 300]);
+check('... 250 lux at a welding place fails, 300 passes; 30 lux in an excavation passes', [ssRun({ss_lp: 9, ss_lx: 250}).lux.ok, ssRun({ss_lp: 9, ss_lx: 300}).lux.ok, ssRun({ss_lp: 1, ss_lx: 30}).lux.ok], [false, true, true]);
+check('noise, Table 5: permitted hours 90 dB 8, 92 6, 95 4, 97 3, 100 2, 102 1.5, 105 1, 110 0.5, 115 0.25; below 90 unlimited; next higher level between two; above 115 none', [90, 92, 95, 97, 100, 102, 105, 110, 115, 85, 93, 96, 116].map(L => w.eval('joSsNoiseHours(' + L + ')')), [8, 6, 4, 3, 2, 1.5, 1, 0.5, 0.25, Infinity, 4, 3, 0]);
+check('Fe = sum T / L: 2 h at 95 dB (4 h) + 1 h at 100 dB (2 h) = 0.5 + 0.5 = 1.0 passes; 1.1 h at 100 dB makes 1.05 and fails', [ssRun().fe, ssRun().noiseOk, +ssRun({ss_nt1: 1.1}).fe.toFixed(2), ssRun({ss_nt1: 1.1}).noiseOk], [1, true, 1.05, false]);
+check('... a level above 115 dB is not permitted at all; levels below 90 dB add nothing', [ssRun({ss_nl2: 120, ss_nt2: 0.1}).noiseBad, ssRun({ss_nl2: 120, ss_nt2: 0.1}).noiseOk, ssRun({ss_nl2: 80, ss_nt2: 8}).fe], [true, false, 1]);
+check('the notes quote the printed numbers (25 and 35 workers, 300 m2, 30 m, 0.02 m3, 12 V, 2 m, 140 dB, 0.5 kN)', ['4 مرافق للمئة الأولى', '300 m²', '30 m', '0.02 m³', '12 V', '2 m', '140 dB', '0.5 kN'].every(x => (ssRun({ss_n: 150}), doc.getElementById('ss_results').textContent.includes(x))), true);
+check('the plumbing card exists and the calculator opens with the other codes too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('sitesafety'); x.calcResult('sitesafety'); return x.document.getElementById('ss_results').textContent.length > 500; }), [true, true, true]);
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
