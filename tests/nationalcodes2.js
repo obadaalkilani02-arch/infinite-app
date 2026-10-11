@@ -111,7 +111,7 @@ check('Jordanian minimum outdoor air: 10 rows, first row factories 0.8 L/s per m
 check('... offered in the ventilation list', doc.getElementById('calc-body').innerHTML.includes('الكودة الأردنية للتهوية الميكانيكية جدول 2'), true);
 
 w.renderCalc('cablesizing');
-check('cable sizing: the Jordanian code reference (Tables 16 - 25 and 47 - 55) and 2.5 % voltage drop', [doc.getElementById('cs_std').value, +doc.getElementById('cs_vdlim').value, +doc.getElementById('cs_amb').value], ['jo', 2.5, 40]);
+check('cable sizing: the Jordanian code reference (Tables 16 - 32 and 47 - 59) and 2.5 % voltage drop', [doc.getElementById('cs_std').value, +doc.getElementById('cs_vdlim').value, +doc.getElementById('cs_amb').value], ['jo', 2.5, 40]);
 setv(w, 'cs_len', 250);
 cs = w.eval('calcCableSizing()');
 check('... 250 m: limit stays 2.5 %', cs.vdLimEff, 2.5, 1e-9);
@@ -121,10 +121,10 @@ w = boot('jo'); doc = w.document; w.renderCalc('cablesizing');
 const J = w.eval('JSON.parse(JSON.stringify(JO_CABLE))');
 const jo = vals => { Object.keys(vals).forEach(id => setv(w, id, vals[id])); w.csToggle(); return w.eval('calcCableSizing()'); };
 const joBase = {cs_std: 'jo', cs_phase: '3', cs_volt: 400, cs_mode: 'kw', cs_load: 55, cs_pf: 0.85, cs_len: 80, cs_amb: 40, cs_ngroup: 1, cs_par: 1, cs_metal: 'cu', cs_vdlim: 2.5, cs_jo_arr: 'flat', cs_jo_c: 'no'};
-check('Jordan cable tables: 10 copper families, 9 aluminium families (19 tables)', [Object.keys(J).filter(k => J[k].m === 'cu').length, Object.keys(J).filter(k => J[k].m === 'al').length], [10, 9]);
-check('the copper list is offered and Table 24 (XLPE armoured, clipped direct) is the default; the IEC fields are hidden and the Jordanian fields shown', [doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value, doc.querySelector('.cs-iec').style.display, doc.querySelector('.cs-jo').style.display], [10, 'cu_xlpea_clip', 'none', '']);
+check('Jordan cable tables: 17 copper families, 13 aluminium families (30 tables, 16 - 32 and 47 - 59)', [Object.keys(J).filter(k => J[k].m === 'cu').length, Object.keys(J).filter(k => J[k].m === 'al').length], [17, 13]);
+check('the copper list is offered and Table 24 (XLPE armoured, clipped direct) is the default; the IEC fields are hidden and the Jordanian fields shown', [doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value, doc.querySelector('.cs-iec').style.display, doc.querySelector('.cs-jo').style.display], [17, 'cu_xlpea_clip', 'none', '']);
 setv(w, 'cs_metal', 'al'); w.csToggle('metal');
-check('aluminium: the list switches to the nine aluminium tables and Table 54', [doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value], [9, 'al_xlpea_clip']);
+check('aluminium: the list switches to the thirteen aluminium tables and Table 54', [doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value], [13, 'al_xlpea_clip']);
 setv(w, 'cs_metal', 'cu'); w.csToggle('metal');
 check('table entries as printed: Table 16 (16 mm2), 17 (50), 19 (35), 22 (16), 24 (95), 47 (150), 54 (300)', [J.cu_pvc1_encl.rows['16'], J.cu_pvc1_clip.rows['50'], J.cu_pvcm_encl.rows['35'], J.cu_pvca_clip.rows['16'], J.cu_xlpea_clip.rows['95'], J.al_pvc1_encl.rows['150'], J.al_xlpea_clip.rows['300']],
   [[74, 2.7, 66, 2.3], [175, 0.93, 160, 0.82], [98, 1.3, 86, 1.1], [86, 2.7, 73, 2.3], [338, 0.52, 289, 0.45], [235, 0.73, 200, 0.64], [null, null, 460, 0.26]]);
@@ -132,7 +132,7 @@ check('Table 23 rows 70 - 400 read from the page image; Table 49 (air, flat and 
 check('printed values that contradict their neighbours are left empty (Table 17 300 mm2 two cables, Table 51 50 mm2 three-phase)', [J.cu_pvc1_clip.rows['300'][0], J.al_pvcm_air.rows['50'][2]], [null, null]);
 let bad = [];
 for (const [id, f] of Object.entries(J)) {
-  const sizes = Object.keys(f.rows).map(Number).sort((a, b) => a - b), cols = f.ar ? [0, 3] : [0, 2];
+  const sizes = Object.keys(f.rows).map(Number).sort((a, b) => a - b), cols = f.ar === 2 ? [0, 2, 4] : f.ar ? [0, 3] : [0, 2];
   for (const c of cols) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x <= p) bad.push(id + ' I' + c + ' ' + s); p = x; } }
   if (!f.ar) for (const c of [1, 3]) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x > p) bad.push(id + ' v' + c + ' ' + s); p = x; } }
 }

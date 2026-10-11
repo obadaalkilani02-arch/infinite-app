@@ -1,4 +1,4 @@
-// Reference-code selector, part 3: Jordanian national codes, parts 65 onward (steel, formwork, scaffolding, concrete, foundations); split from nationalcodes2.js to keep the heap small.
+// Reference-code selector, part 3: Jordanian national codes, parts 65 onward (steel, formwork, scaffolding, concrete, foundations, cables); split from nationalcodes2.js to keep the heap small.
 //   node tests/nationalcodes3.js
 const { JSDOM, VirtualConsole } = require('jsdom');
 const fs = require('fs');
@@ -448,6 +448,139 @@ check('end block: Y_po / Y_o = 50 / 150 = 0.333, F_bst / P_0 = 0.22, F_bst = 220
 check('unbonded tendons: the bursting steel at 0.87 f_y (460) = 220000 / 400.2 = 550 mm2', [+ecc({unb: '1'}).Asu.toFixed(0), ecc({}).Asu], [550, 0]);
 w.renderCalc('prestressend'); w.calcResult('prestressend');
 check('the transfer length and end block results are shown; other codes open it too', [doc.getElementById('pse_results').querySelectorAll('.results-box').length, ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('prestressend'); return x.document.getElementById('pse_results').textContent.length > 300; }).join()], [1, 'true,true,true']);
+}
+// ---------- part 75: Jordanian concrete code, flat slabs (`rcflatslab`: chapter 7), continuous beams and one-way slabs by coefficients (`rccoef`: 4/2/2, 5/3) and walls (`rcwall`: chapter 9) ----------
+{
+w = boot('jo'); doc = w.document;
+const fd = {L1: 6, L2: 6, G: 8, Q: 3, h: 250, cover: 25, dia: 16, fcu: 30, fy: 420, c1: 400, c2: 400, hc: 400, drop: 0, negCs: 75, posCs: 55, pos: 'int', zone: 'int', axis: 'par', method: 'simp', g1: 0, g2: 0, Vt: 0, Mt: 0, rho: 0.8, fyw: 460, beK: 'cx', by: 150, bx: 200};
+const fc = o => w.eval('joFslCalc(' + JSON.stringify(Object.assign({}, fd, o)) + ')');
+let fl = fc({});
+const rowM = (r, k) => +r.rows.find(z => z.k === k).M.toFixed(1);
+check('flat slab 6 x 6 m, G 8 and Q 3: u = 1.4 x 8 + 1.6 x 3 = 16 kN/m2, F = 576 kN, l = 6 - 2 x 0.4 / 3 = 5.733 m, d = 250 - 25 - 8 = 217 mm and the mean depth 209', [fl.u, fl.F, +fl.l.toFixed(3), fl.d, fl.dm, fl.thOk], [16, 576, 5.733, 217, 209, true]);
+check('Table 15 moments (F l = 3302.4): outer column -0.04 gives -132.1, wall -66.0, first span +0.083 gives 274.1, first interior support -208.1, interior span +234.5, interior support -181.6', [rowM(fl, 'col'), rowM(fl, 'wall'), rowM(fl, 'span1'), rowM(fl, 'int1'), rowM(fl, 'span'), rowM(fl, 'int')], [-132.1, -66, 274.1, -208.1, 234.5, -181.6]);
+check('Table 16 split: the negative moment 75 : 25 (interior support -181.6 gives 136.2 / 45.4) and the positive 55 : 45 (first span 274.1 gives 150.8 / 123.3); the strips are 3.0 m wide each', [+fl.rows[5].Mcs.toFixed(1), +fl.rows[5].Mms.toFixed(1), +fl.rows[2].Mcs.toFixed(1), +fl.rows[2].Mms.toFixed(1), fl.bcs, fl.bms], [136.2, 45.4, 150.8, 123.3, 3, 3]);
+const ras = (M, b) => w.eval('joRcFlex({M: ' + M + ', b: ' + b + ', d: 217, dp: 33, fcu: 30, fy: 420, beta: 1}).As');
+check('steel of the interior support column strip = the beam flexure formula for 136.2 kN.m on 3000 mm; the middle strip 45.4 kN.m is governed by the minimum 70 / 420 % = 0.167 % x 3000 x 217 = 1085 mm2', [Math.abs(fl.rows[5].cs.As - ras(fl.rows[5].Mcs, 3000)) < 1e-6, +fl.rows[5].ms.As.toFixed(0), fl.rows[5].ms.min, Math.round(fl.rows[5].cs.As / 10) * 10], [true, +(70 / 420 * 3000 * 217 / 100).toFixed(0), true, 1810]);
+const dr = fc({drop: 2400});
+check('a drop 2400 mm wide (not below l_x / 3 = 2000) replaces the column strip: widths 2.4 / 3.6 m; a narrower drop (1500) is ignored', [dr.dropOn, dr.bcs, dr.bms, fc({drop: 1500}).dropOn, fc({drop: 1500}).bcs], [true, 2.4, 3.6, false, 3]);
+check('internal column 400 x 400: V_t = F = 576 kN, simplified V_e = 1.15 V_t = 662.4, perimeter at 1.5 d = 4 x (400 + 627) = 4108 mm, v = 662400 / (4108 x 209) = 0.772, face perimeter 1600 gives 1.98 N/mm2 against v_max 4.38', [fl.Vt, +fl.Ve.toFixed(1), fl.c, +fl.v.toFixed(3), fl.u0, +fl.v0.toFixed(2), +fl.vmax.toFixed(2)], [576, 662.4, 4108, 0.772, 1600, 1.98, 4.38]);
+const vcRef = 0.27 * 0.8 * Math.cbrt(0.8 * 30) * Math.pow(400 / 209, 0.25);
+check('v_c = 0.27 x 0.8 x cbrt (0.8 x 30) x (400 / 209)^0.25 = 0.733 N/mm2 (rho = 0.8 %); v exceeds it, so shear links with v_s = 0.4 (minimum) are needed: A_sv = 0.4 x 4108 x 209 / (0.87 x 460) = 858 mm2 on the first perimeter and only one perimeter (the next, 5362 mm, gives v = 0.591)', [+fl.vc.toFixed(3), fl.needLinks, fl.nLinkPer, +fl.perims[0].A.toFixed(0), +fl.perims[1].c.toFixed(0), +fl.perims[1].v.toFixed(3)], [+vcRef.toFixed(3), true, 1, 858, 5362, 0.591], 0.5);
+check('with a higher steel ratio (rho 2 %) v_c = 1.09 N/mm2 and no links are needed; the slab thinner than 200 mm may not carry punching links', [+fc({rho: 2}).vc.toFixed(2), fc({rho: 2}).needLinks, fc({h: 190, cover: 25, rho: 0.2, Q: 6}).linkOk], [+(0.27 * 0.8 * Math.cbrt(60) * Math.pow(400 / 209, 0.25)).toFixed(2), false, false]);
+const ed = fc({pos: 'edge', zone: 'col', axis: 'par'});
+check('edge column, moment axis parallel to the free edge: V_t = 0.45 F = 259.2, V_e = 1.25 V_t = 324 (69); perimeter (400 + 627) + 2 x (400 + 313.5) = 2454 mm; the face perimeter 400 + 800 = 1200', [ed.Vt, ed.Ve, ed.c, ed.u0], [259.2, 324, 2454, 1200]);
+check('edge column, axis perpendicular: simplified 1.4 V_t = 362.9 (71); the full equation (70) 1.25 V_t + 1.5 M_t / x with M_t = 0.04 F l = 132.1 kN.m and x = 1027 gives 516.9', [+fc({pos: 'edge', zone: 'col', axis: 'perp'}).Ve.toFixed(1), +fc({pos: 'edge', zone: 'col', axis: 'perp', method: 'full'}).Ve.toFixed(1), +fc({pos: 'edge', zone: 'col', axis: 'perp', method: 'full'}).Mt.toFixed(1)], [362.9, 516.9, 132.1], 0.2);
+check('internal column by equation (67): V_t + 1.5 M_t / x with M_t = 0.022 F l = 72.7 kN.m and x = 1027 gives 682.1 kN', [+fc({method: 'full'}).Ve.toFixed(1), +fc({method: 'full'}).Mt.toFixed(1)], [682.1, 72.7], 0.2);
+const cr = fc({pos: 'corner', zone: 'col'});
+check('corner column: perimeter (400 + 313.5) + (400 + 313.5) = 1427 mm, face perimeter 800, default V_t a quarter of the panel (144 kN); a free edge 100 mm beyond each face limits the sides to the edge: 2 x (400 + 313.5 + 100) = 1627', [cr.c, cr.u0, cr.Vt, fc({pos: 'corner', zone: 'col', g1: 100, g2: 100}).c], [1427, 800, 144, 1627]);
+check('moment transfer: M_tmax = 0.15 b_e d² f_cu with b_e = c = 400 gives 84.8 kN.m; the edge column M_t = 132.1 exceeds it (flagged) while b_e = c_x + c_y = 800 gives 169.5 and passes; the six b_e rules of Figure 13', [+ed.mtMax.toFixed(1), ed.mtOk, +fc({pos: 'edge', zone: 'col', beK: 'cxcy'}).mtMax.toFixed(1), fc({pos: 'edge', zone: 'col', beK: 'cxcy'}).mtOk, ['cx', 'cxy', 'cxcy', 'cxyn', 'cxy2', 'xy2'].map(k => w.eval('joFslBe("' + k + '", {c1: 400, c2: 300, by: 150, bx: 200})')).join()], [84.8, false, 169.5, true, '300,450,700,450,375,275'], 0.1);
+check('deflection: Table 7 for continuous spans gives 26 (6 m below the table), times 0.9 without drops, times f1 = 0.55 + (477 - 262.5) / (120 x (0.9 + M / b d²)) = 1.459 for M = 50.25 kN.m/m: the least depth 6000 / 34.1 = 176 mm against 217; with a drop the factor 0.9 is removed', [+fl.f1.toFixed(3), +fl.dMin.toFixed(0), fl.defOk, +dr.dMin.toFixed(0) < +fl.dMin.toFixed(0)], [1.459, 176, true, true], 1);
+check('the slab thickness below 150 mm is flagged; the whole check passes for the base case', [fc({h: 140}).thOk, fl.ok, fl.v0Ok], [false, true, true]);
+w.renderCalc('rcflatslab'); w.calcResult('rcflatslab');
+check('the flat slab results are shown (strips, punching, notes); other codes open it too', [doc.getElementById('fsl_results').querySelectorAll('.results-box').length, doc.getElementById('fsl_results').querySelectorAll('tbody tr').length, ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rcflatslab'); return x.document.getElementById('fsl_results').textContent.length > 600; }).join()], [3, 6, 'true,true,true']);
+const kd = {kind: 'beam', arr: 'b1', endL: 'wall', endR: 'wall', spans: [5, 5], G: 20, Q: 10, u: 44, b: 300, d: 500, dp: 40, fcu: 30, fy: 420};
+const kc = o => w.eval('joRkcCalc(' + JSON.stringify(Object.assign({}, kd, o)) + ')');
+let kb = kc({});
+check('Table 5 first row, two 5 m spans, u = 1.4 x 20 + 1.6 x 10 = 44 kN/m: end supports -44 x 25 / 24 = -45.8, interior support -44 x 25 / 9 = -122.2, spans +100.0; shear 0.45 x 44 x 5 = 99, 0.6 x 44 x 5 = 132 each side', [+kb.sup[0].M.toFixed(1), +kb.sup[1].M.toFixed(1), +kb.span[0].M.toFixed(1), +kb.span[1].M.toFixed(1), kb.sup[0].Vs[0], kb.sup[1].Vs.join(), kb.u], [-45.8, -122.2, 100, 100, 99, '132,132', 44], 0.05);
+check('a beam ending on a column takes K = -16 at that support (-68.75) and +14 in the span beside it (78.57); the other side stays -24 / +11', [+kc({endL: 'col'}).sup[0].M.toFixed(2), +kc({endL: 'col'}).span[0].M.toFixed(2), +kc({endL: 'col'}).span[1].M.toFixed(1), +kc({endL: 'col'}).sup[2].M.toFixed(1)], [-68.75, 78.57, 100, -45.8], 0.02);
+const k2 = kc({spans: [5, 6]});
+check('different spans 5 and 6 m: the interior support moment is the mean (-44 x 25 / 9 - 44 x 36 / 9) / 2 = -149.1; the difference 20 % of the shorter span just passes, 7 m (40 %) fails; live above dead fails', [+k2.sup[1].M.toFixed(1), +k2.pct.toFixed(1), k2.spanOk, kc({spans: [5, 7]}).spanOk, kc({Q: 25}).liveOk], [-149.1, 20, true, false, false], 0.05);
+check('Table 5 second and third rows: K -24 -10 -12 with spans +10 +14 and J 0.45 0.6 0.55; one span -12 / -12 / +14 with J 0.55', [JSON.stringify(kc({arr: 'b2'}).K), kc({arr: 'b2'}).J.join(), JSON.stringify(kc({arr: 'b3', spans: [6, 0]}).K), kc({arr: 'b3', spans: [6, 0]}).sup.length, +kc({arr: 'b3', spans: [6, 0]}).span[0].M.toFixed(1), +kc({arr: 'b3', spans: [6, 0]}).sup[0].M.toFixed(1)], ['{"sup":[-24,-10,-12],"span":[10,14]}', '0.45,0.6,0.55', '{"sup":[-12,-12],"span":[14]}', 2, 113.1, -132], 0.05);
+const sd = {kind: 'slab', arr: 's1', endL: 'wall', endR: 'wall', spans: [4, 4], G: 5, Q: 3, u: 11.8, b: 1000, d: 150, dp: 25, fcu: 30, fy: 420};
+const sc2 = o => w.eval('joRkcCalc(' + JSON.stringify(Object.assign({}, sd, o)) + ')');
+let sk = sc2({});
+check('Table 11, two 4 m spans, u = 11.8 kN/m2: interior support -11.8 x 16 / 11 = -17.2, spans +17.2 and +12.6 (K 15), shear J 0.4 / 0.6 / 0.5; the outer support on a wall takes the minimum -u l² / 16 = -11.8 instead of -7.9, and the right end -12.6 stays (above 11.8)', [+sk.sup[1].M.toFixed(1), +sk.span[0].M.toFixed(1), +sk.span[1].M.toFixed(1), +sk.sup[0].M.toFixed(1), sk.sup[0].min, +sk.sup[2].M.toFixed(1), sk.sup[2].min, +sk.sup[0].Vs[0].toFixed(2)], [-17.2, 17.2, 12.6, -11.8, 1, -12.6, 0, 18.88], 0.05);
+check('an outer support monolithic with a beam takes -u l² / 20 = -9.44 (above -7.87); a free slab end takes the table K only', [+sc2({endL: 'beam'}).sup[0].M.toFixed(2), sc2({endL: 'beam'}).sup[0].min, +sc2({endL: 'none'}).sup[0].M.toFixed(2), sc2({endL: 'none'}).sup[0].min], [-9.44, 1, -7.87, 0], 0.01);
+check('the design steel of the 17.2 kN.m/m span moment equals the flexure formula (b 1000, d 150) and a lower moment is governed by the minimum 70 / 420 %', [+sk.span[0].des.As.toFixed(0), +sc2({G: 1, Q: 0.5, u: 2.2}).span[0].des.As.toFixed(0), sc2({G: 1, Q: 0.5, u: 2.2}).span[0].des.min], [+Math.max(w.eval('joRcFlex({M: 17.16, b: 1000, d: 150, dp: 25, fcu: 30, fy: 420, beta: 1}).As'), 70 / 420 * 1000 * 150 / 100).toFixed(0), +(70 / 420 * 1000 * 150 / 100).toFixed(0), true], 3);
+w.renderCalc('rccoef'); w.calcResult('rccoef');
+check('the coefficient results are shown (a table row per support and span); other codes open it too', [doc.getElementById('rkc_results').querySelectorAll('tbody tr').length, doc.getElementById('rkc_results').textContent.includes('122.2'), ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rccoef'); return x.document.getElementById('rkc_results').textContent.length > 400; }).join()], [5, true, 'true,true,true']);
+const wd = {t: 200, lw: 4000, H: 3000, lo: 3000, fcu: 30, fy: 420, rho: 0.6, rhoH: 0, dp: 35, mode: 'bra', top: 1, bot: 1, pcase: 'bm', n: 600, e: 0, e2: 0, V: 0, fyw: 460, axial: '1'};
+const wc = o => w.eval('joRwlCalc(' + JSON.stringify(Object.assign({}, wd, o)) + ')');
+let wl = wc({});
+check('reinforced braced wall 200 mm, l_o 3 m, beta 0.75: l_e = 2250 mm, l_e / t = 11.25 (short: below 15, below 40); minimum eccentricity 0.05 t = 10 mm', [wl.reinforced, wl.beta, wl.le, wl.ratio, wl.short, wl.limSl, wl.slOk, wl.emin], [true, 0.75, 2250, 11.25, true, 40, true, 10]);
+check('equation (88): 0.5 x 0.67 x 30 x 198800 + 0.75 x 0.87 x 420 x 1200 = 2326.8 kN/m used when the conditions of 9/3/1 (b) hold; 600 kN/m passes; 2400 fails', [+wl.n88.toFixed(1), wl.use88, wl.capOk, wc({n: 2400}).capOk], [2326.8, true, true, false], 0.1);
+check('without the conditions the section analysis is used (moment capacity at N against N x e = 600 x 10 mm = 6 kN.m); an unbraced wall is limited to l_e / t 30 and 10 for a short one', [wc({axial: '0'}).use88, wc({axial: '0'}).Mu > 6, wc({axial: '0'}).capOk, wc({mode: 'unb', top: 1, bot: 1}).limSl, wc({mode: 'unb', top: 1, bot: 1}).short], [false, true, true, 30, false]);
+check('the limit 45 applies from rho 1 %: 1.2 gives 45, 0.6 gives 40; the steel limits 0.4 - 4 %', [wc({rho: 1.2}).limSl, wc({rho: 0.6}).limSl, wc({rho: 4.5}).rhoVok, wc({rho: 0.5}).rhoVok], [45, 40, false, true]);
+check('plain wall (rho 0.3 %): braced short n = 0.3 (t - 2 e) f_cu = 0.3 x 180 x 30 = 1620 kN/m (equation 93)', [wc({rho: 0.3}).reinforced, wc({rho: 0.3}).cap, wc({rho: 0.3}).eq, wc({rho: 0.3}).capOk], [false, 1620, '(93)', true]);
+check('braced slender (l_o 5 m, l_e = 3750, l_e / t = 18.75): delta = 3750² / (2500 x 200) = 28.1 mm and n = 0.3 (200 - 20 - 56.25) x 30 = 1113.8 (94); unbraced (l_e = 4500, delta 40.5): the smaller of 1620 and 891', [+wc({rho: 0.3, lo: 5000}).delta.toFixed(1), +wc({rho: 0.3, lo: 5000}).cap.toFixed(1), wc({rho: 0.3, lo: 5000}).eq, wc({rho: 0.3, mode: 'unb', pcase: 'bru'}).cap1, wc({rho: 0.3, mode: 'unb', pcase: 'bru'}).cap2, wc({rho: 0.3, mode: 'unb', pcase: 'bru'}).cap], [28.1, 1113.8, '(94)', 1620, 891, 891], 0.1);
+check('plain wall effective heights: 1.5 l_o and 2.0 l_o unbraced, 0.75 l_o and 1.0 l_o braced; slenderness above 30 fails (l_o 7 m unbraced 1.5: 52)', [['bru', 'bro', 'bm', 'bh'].map(p => wc({rho: 0.3, pcase: p}).beta).join(), wc({rho: 0.3, lo: 7000, mode: 'unb', pcase: 'bru'}).slOk], ['1.5,2,0.75,1', false]);
+const sw = wc({V: 500});
+check('shear V = 500 kN, l_w 4 m: d = 0.8 l_w = 3200, v = 500000 / (200 x 3200) = 0.781; v_max = 0.8 x 0.8 x sqrt 30 = 3.51; v_c = 0.27 x 0.8 x cbrt (0.6 x 30) = 0.566, so horizontal steel with v_s = 0.4: A_sv / S_v = 0.4 x 200 / (0.87 x 460) = 0.200 mm2/mm', [sw.d, +sw.v.toFixed(3), +sw.vmax.toFixed(2), +sw.vc.toFixed(3), sw.needH, +sw.vs.toFixed(2), +sw.AsvS.toFixed(3)], [3200, 0.781, 3.51, 0.566, true, 0.4, 0.2], 0.002);
+check('squat wall (H / l_w = 0.75) with horizontal steel 0.4 %: rho_n = 0.25 + 0.5 x (2.5 - 0.75) x (0.4 - 0.25) = 0.381 (92); H / l_w up to 0.5 gives rho_n = rho_h = 0.4; from 2.5 it is 0.25; without a shear check the horizontal steel is the minimum 0.25 %', [+wc({V: 500, rhoH: 0.4}).rhoN.toFixed(3), wc({V: 500, rhoH: 0.4, H: 1500}).rhoN, wc({V: 500, rhoH: 0.4, H: 12000}).rhoN, wc({V: 500, rhoH: 0.4, H: 12000}).squat, wc({}).rhoH], [0.381, 0.4, 0.25, false, 0.25], 0.001);
+check('the shear above v_max fails: V = 3000 kN gives 4.69 N/mm2', [+wc({V: 3000}).v.toFixed(2), wc({V: 3000}).v0Ok, wc({V: 3000}).ok], [4.69, false, false]);
+w.renderCalc('rcwall'); w.calcResult('rcwall');
+check('the wall results are shown; other codes open it too', [doc.getElementById('rwl_results').querySelectorAll('.results-box').length, ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rcwall'); return x.document.getElementById('rwl_results').textContent.length > 400; }).join()], [2, 'true,true,true']);
+}
+
+// ---------- part 76: Jordanian electrical installations code, cable tables of rubber 85 C (26 - 28) and paper-insulated cables (29 - 32 copper, 56 - 59 aluminium) in the cable sizing calculator ----------
+{
+w = boot('jo'); doc = w.document; w.renderCalc('cablesizing');
+const J = w.eval('JSON.parse(JSON.stringify(JO_CABLE))');
+const jo = vals => { Object.keys(vals).forEach(id => setv(w, id, vals[id])); w.csToggle(); return w.eval('calcCableSizing()'); };
+const joBase = {cs_std: 'jo', cs_phase: '3', cs_volt: 400, cs_mode: 'amp', cs_load: 100, cs_pf: 0.85, cs_len: 1, cs_amb: 30, cs_ngroup: 1, cs_par: 1, cs_metal: 'cu', cs_vdlim: 10, cs_jo_arr: 'flat', cs_jo_c: 'no', cs_jo_sv: 'no', cs_jo_trench: 'no'};
+const fam = k => Object.keys(J).filter(x => J[x].m === k).length;
+check('Jordan cable tables now 17 copper families (Tables 16 - 32) and 13 aluminium families (47 - 59): 30 tables', [fam('cu'), fam('al')], [17, 13]);
+jo(Object.assign({}, joBase, {cs_metal: 'cu'})); w.csToggle('metal');
+const nCu = doc.getElementById('cs_jo').options.length;
+setv(w, 'cs_metal', 'al'); w.csToggle('metal');
+check('the lists offer 17 copper and 13 aluminium tables, the default stays Table 24 / 54', [nCu, doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value], [17, 13, 'al_xlpea_clip']);
+setv(w, 'cs_metal', 'cu'); w.csToggle('metal');
+check('rubber Tables 26, 27, 28 as printed: 50 mm2 (170 A, 1.0 mV / 145 A, 0.89 mV), 630 mm2 (1050 / 950 A), 150 mm2 in air (480 A, 0.40 mV, 0.40, trefoil 425 A, 0.30)', [J.cu_rub1_encl.rows['50'], J.cu_rub1_clip.rows['630'], J.cu_rub1_air.rows['150']], [[170, 1, 145, 0.89], [1050, 0.18, 950, 0.22], [480, 0.4, 0.4, 425, 0.3]]);
+check('paper copper Tables 29 - 32: 1000 mm2 clipped (1280 A, 0.16 mV, 1190 A, 0.15), 800 mm2 in air (two cables 1290, three flat 1220, trefoil 1150), multi-core 400 mm2 (610 / 545 A), 240 mm2 in air (555 / 480 A)', [J.cu_pap1_clip.rows['1000'], J.cu_pap1_air.rows['800'], J.cu_papm_clip.rows['400'], J.cu_papm_air.rows['240']], [[1280, 0.16, 1190, 0.15], [1290, 0.26, 1220, 0.24, 1150, 0.15], [610, 0.2, 545, 0.17], [555, 0.24, 480, 0.2]]);
+check('paper aluminium Tables 56 - 59: 800 mm2 clipped (910 A / 890 A), 150 mm2 in air (370, 360, 325 A), multi-core 300 mm2 (425 / 335 A), 400 mm2 in air (585 / 510 A)', [J.al_pap1_clip.rows['800'], J.al_pap1_air.rows['150'], J.al_papm_clip.rows['300'], J.al_papm_air.rows['400']], [[910, 0.19, 890, 0.19], [370, 0.58, 360, 0.56, 325, 0.46], [425, 0.3, 335, 0.26], [585, 0.26, 510, 0.22]]);
+check('the misprints: Table 26 6 mm2 two-cable drop 2.7 replaced by 7.7 (as Table 27); Table 30 trefoil 400 mm2 (275 A), Table 56 240 mm2 two cables (345 A) and Table 59 185 and 240 mm2 three-phase (205, 265 A) left empty', [J.cu_rub1_encl.rows['6'][1], J.cu_pap1_air.rows['400'][4], J.al_pap1_clip.rows['240'][0], J.al_papm_air.rows['185'][2], J.al_papm_air.rows['240'][2]], [7.7, null, null, null, null]);
+let bad = [];
+const newIds = Object.keys(J).filter(k => /_(rub|pap)/.test(k));
+for (const id of newIds) {
+  const f = J[id], sizes = Object.keys(f.rows).map(Number).sort((a, b) => a - b), cols = f.ar === 2 ? [0, 2, 4] : f.ar ? [0, 3] : [0, 2];
+  for (const c of cols) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x <= p) bad.push(id + ' I' + c + ' ' + s); p = x; } }
+  if (!f.ar) for (const c of [1, 3]) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x > p) bad.push(id + ' v' + c + ' ' + s); p = x; } }
+}
+check('the 11 new tables: the current rises and the voltage drop falls with the conductor size (a typing check on the transcription)', [newIds.length, bad], [11, []]);
+check('ambient factors: rubber 25 C -> 1.05, 28 -> 1, 40 -> 0.89, 75 -> 0.39, 80 -> not tabulated; paper 70 C -> 0.43 (the 0.34 of Table 56 is a misprint), 75 -> 0.30, 76 -> not tabulated', [w.eval("joAmbFactor('rub', 25)"), w.eval("joAmbFactor('rub', 28)"), w.eval("joAmbFactor('rub', 40)"), w.eval("joAmbFactor('rub', 75)"), w.eval("joAmbFactor('rub', 80)"), w.eval("joAmbFactor('pap', 70)"), w.eval("joAmbFactor('pap', 75)"), w.eval("joAmbFactor('pap', 76)")], [1.05, 1, 0.89, 0.39, null, 0.43, 0.3, null]);
+let r = jo(Object.assign({}, joBase, {cs_jo: 'cu_rub1_clip', cs_mode: 'kw', cs_load: 55, cs_len: 80, cs_amb: 40, cs_vdlim: 2.5}));
+check('55 kW, 400 V, 80 m, 40 C on Table 27 (rubber, clipped): Ib 93.4 A, In 100 A, factor 0.89; 25 mm2 (128 A) carries it but drops 2.99 %; 35 mm2 (158 A x 0.89 = 140.6 A, 1.2 mV) 2.24 %', [r.mm2, r.ocpd, r.kT, r.byAmp.s, +r.allowed.toFixed(1), +r.vdPct.toFixed(2), r.governs], [35, 100, 0.89, 25, 140.6, 2.24, 'vd']);
+r = jo(Object.assign({}, joBase, {cs_jo: 'cu_rub1_encl', cs_phase: '1', cs_volt: 230, cs_load: 40, cs_len: 10}));
+check('single-phase 40 A, 10 m on Table 26 (enclosed): 6 mm2 (48 A) with the corrected 7.7 mV = 3.08 V (1.34 %); the printed 2.7 would give only 1.08 V', [r.mm2, r.tab, +r.dV.toFixed(2), +r.vdPct.toFixed(2)], [6, 48, 3.08, 1.34]);
+r = jo(Object.assign({}, joBase, {cs_phase: '3', cs_volt: 400, cs_jo_c: 'yes', cs_load: 150}));
+check('Table 26 with method C (underground ducts) stops at 35 mm2 (134 A): 150 A has no size, with a warning naming Table 26', [!!r.chosen, r.warnings.some(x => x.includes('26'))], [false, true]);
+r = jo(Object.assign({}, joBase, {cs_jo: 'cu_rub1_air', cs_jo_c: 'no', cs_load: 400, cs_jo_arr: 'flat'}));
+const rf = [r.mm2, r.tab];
+r = jo({cs_jo_arr: 'trefoil'});
+check('Table 28 (rubber, in air), 400 A three-phase: flat needs 120 mm2 (425 A); trefoil 150 mm2 (425 A); 95 mm2 carries 360 / 325 A', [rf, r.mm2, r.tab], [[120, 425], 150, 425]);
+r = jo({cs_jo_arr: 'flat', cs_amb: 80});
+check('rubber at 80 C: no factor, the calculation stops and the warning gives the last printed temperature (75 C)', [r.invalid === true, r.warnings.some(x => x.includes('75'))], [true, true]);
+r = jo({cs_jo_arr: 'flat', cs_amb: 30, cs_jo: 'cu_pap1_air', cs_load: 285});
+const pAir = [r.mm2, r.tab, r.ocpd];
+r = jo({cs_jo_arr: 'trefoil'});
+const pTre = [r.mm2, r.tab];
+r = jo({cs_jo_arr: 'flat', cs_phase: '1', cs_volt: 230});
+check('Table 30 (paper, in air), 285 A, In 315 A: three-phase flat uses the column of three cables (95 mm2: 345 A; 70 mm2 gives 280 A), trefoil 315 A at 95 mm2, single-phase two cables 355 A', [pAir, pTre, [r.mm2, r.tab]], [[95, 345, 315], [95, 315], [95, 355]]);
+setv(w, 'cs_phase', '3'); setv(w, 'cs_volt', 400);
+r = jo({cs_jo_arr: 'flat', cs_jo_sv: 'flat'});
+check('unserved lead sheath, flat (Table 30): 95 mm2 factor 0.95 -> 345 x 0.95 = 327.75 A, still enough for 315 A', [r.mm2, r.kSv, +r.allowed.toFixed(2), r.svForm], [95, 0.95, 327.75, 'flat']);
+r = jo({cs_jo_arr: 'trefoil', cs_jo_sv: 'flat'});
+check('... in air the formation follows the arrangement: trefoil takes the trefoil factor 0.93 (copper) whatever the list says: 95 mm2 gives 315 x 0.93 = 292.95 A, not enough; 120 mm2 (370 x 0.93 = 344.1 A)', [r.mm2, r.kSv, +r.allowed.toFixed(2), r.svForm], [120, 0.93, 344.1, 'tre']);
+r = jo({cs_jo: 'cu_pap1_clip', cs_jo_sv: 'tre', cs_jo_arr: 'flat', cs_load: 250});
+check('clipped (Table 29) has no arrangement list: the unserved trefoil choice is used as set: 250 A, In 250 A, 70 mm2 (230 A) is short, 95 mm2 (285 x 0.93 = 265.05 A)', [r.mm2, r.kSv, +r.allowed.toFixed(2), r.ocpd], [95, 0.93, 265.05, 250]);
+check('the lead-sheath factors: copper flat 50 - 185 mm2 0.95, 240 - 500 1.00, 630 - 1000 1.01; trefoil 0.93 / 0.94 / 0.96; aluminium trefoil 0.95 for 50 - 185 mm2', [w.eval("joSvFactor('cu', 'flat', 150)"), w.eval("joSvFactor('cu', 'flat', 300)"), w.eval("joSvFactor('cu', 'flat', 800)"), w.eval("joSvFactor('cu', 'tre', 150)"), w.eval("joSvFactor('cu', 'tre', 500)"), w.eval("joSvFactor('cu', 'tre', 1000)"), w.eval("joSvFactor('al', 'tre', 120)")], [0.95, 1, 1.01, 0.93, 0.94, 0.96, 0.95]);
+r = jo({cs_jo: 'cu_papm_clip', cs_jo_sv: 'flat', cs_load: 150});
+check('multi-core paper (Table 31) has no lead-sheath factor: the field is ignored; 150 A, In 160 A: 70 mm2 (180 A)', [r.svForm, r.kSv === undefined, r.mm2, r.tab], ['', true, 70, 180]);
+setv(w, 'cs_jo', 'cu_pap1_clip'); w.csToggle();
+const svShown = doc.querySelector('.cs-josv').style.display;
+setv(w, 'cs_jo', 'cu_xlpea_clip'); w.csToggle();
+const svHidden = doc.querySelector('.cs-josv').style.display;
+setv(w, 'cs_jo', 'cu_pap1_air'); w.csToggle();
+check('the lead-sheath field shows for Tables 29 / 30 / 56 / 57 only; the arrangement list for single-core cables in air', [svShown, svHidden, doc.querySelector('.cs-joair').style.display, doc.querySelector('.cs-josv').style.display], ['', 'none', '', '']);
+setv(w, 'cs_metal', 'al'); w.csToggle('metal');
+r = jo({cs_metal: 'al', cs_jo: 'al_papm_air', cs_load: 280, cs_amb: 30});
+check('aluminium paper multi-core in air (Table 59), 280 A, In 315 A: 150 mm2 (265 A) is short, the empty three-phase cells at 185 and 240 mm2 are skipped and 300 mm2 (420 A) is chosen', [r.mm2, r.tab], [300, 420]);
+r = jo({cs_metal: 'al', cs_jo: 'al_pap1_clip', cs_load: 300, cs_amb: 40});
+check('aluminium Table 56 at 40 C (0.89): 300 A, In 315 A: 185 mm2 (345 x 0.89 = 307.1 A) is short; 240 mm2 is empty for two cables but three-phase 430 x 0.89 = 382.7 A is used', [r.mm2, r.tab, +r.kT.toFixed(2)], [240, 430, 0.89]);
+setv(w, 'cs_metal', 'cu'); w.csToggle('metal');
+setv(w, 'cs_jo', 'cu_pap1_air'); setv(w, 'cs_amb', 40); setv(w, 'cs_mode', 'amp'); setv(w, 'cs_load', 285); setv(w, 'cs_len', 1); setv(w, 'cs_vdlim', 10); setv(w, 'cs_jo_sv', 'flat'); w.calcResult('cablesizing');
+const t76 = doc.getElementById('cs_results').textContent;
+check('the results quote the table, the lead-sheath factor and the printed-misprint notes', ['جدول 30', 'قراب رصاصي غير مخدوم', '275 A', '🔴'].every(s => t76.includes(s)), true);
 }
 check('no page errors', errors, []);
 console.log(fail ? '\n' + fail + ' FAILED' : '\nAll national-code (Jordan, part 3) checks passed');
