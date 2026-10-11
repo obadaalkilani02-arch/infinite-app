@@ -242,6 +242,73 @@ const txt = doc.getElementById('sct_results').textContent;
 check('the page lists the checks, quotes the class name and the drawn-glyph reading note; the default medium scaffold passes', [txt.includes('الجدول 2'), txt.includes('🔴'), txt.includes('يحقق')], [true, true, true]);
 check('other codes open the calculator too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('scaffoldtimber'); x.calcResult('scaffoldtimber'); return x.document.getElementById('sct_results').textContent.length > 300; }).join(), 'true,true,true');
 }
+// ---------- part 80: Jordanian concrete code, torsion of beams (`rctorsion`: 4/5, equations 34 - 41 and Table 6) ----------
+{
+w = boot('jo'); doc = w.document;
+const to = o => w.eval('joRtCalc(' + JSON.stringify(Object.assign({shape: 'R', bw: 300, h: 600, bf: 900, hf: 150, T: 40, V: 100, cover: 25, phiL: 10, phiM: 20, As: 1256, fcu: 30, fy: 420, fyv: 420, d: 0}, o)) + ')');
+let r = to({});
+check('tau_c = 0.8 / 12 x sqrt(30) = 0.365 N/mm2 (the same as BS 8110 0.067 sqrt(fcu)); the limit 0.4 applies from fcu 36 upward (fcu 80 gives 0.4)', [+r.tauC.toFixed(4), to({fcu: 80}).tauC], [0.3651, 0.4]);
+check('300 x 600 beam, d = 600 - 25 - 10 - 10 = 555, T = 40 kN.m, V = 100 kN: tau = 2 x 40e6 / (300^2 (600 - 100)) = 1.778 N/mm2, v = 0.601, v_c = 0.611 (rho 0.754), v_max 4.38', [r.d, +r.rows[0].tau.toFixed(3), +r.sh.v.toFixed(3), +r.sh.vc.toFixed(3), +r.sh.vmax.toFixed(2)], [555, 1.778, 0.601, 0.611, 4.38]);
+const q = r.rows[0];
+check('links 240 x 540 (x = 300 - 2 x 25 - 10, y = 600 - 60): tau_max = 4.38 x 540 / 550 = 4.30; v + tau = 2.38 passes; torsion links 40e6 / (0.8 x 240 x 540 x 0.87 x 420) = 1.056 mm2/mm per leg; A_sl = 1.056 x 780 = 824 mm2', [q.x1, q.y1, +q.tauMax.toFixed(2), +q.comb.toFixed(2), q.combOk, +q.perLeg.toFixed(3), Math.round(q.Asl)], [240, 540, 4.3, 2.38, true, 1.056, 824]);
+check('Table 6 case: tau above tau_c and v at most v_c = torsion links (minimum shear links add 0.4 b / (0.87 f_yv) / 2 = 0.164 per leg): 1.220 mm2/mm per leg, 10 mm links at 50 mm (limit min(x, y/2, 200) = 200), six longitudinal bars', [r.case6, +q.req.toFixed(3), q.s, q.sMax, q.nBars, r.ok], ['Tv', 1.22, 50, 200, 6, true]);
+check('a small torsion (5 kN.m, tau 0.22) needs no torsion steel: case "nv" with the minimum shear links only; a large shear (300 kN, v 1.80 above v_c) with the same small torsion is case "nV"; both torsion and shear exceeded is "TV"', [to({T: 5}).case6, to({T: 5}).rows[0].need, to({T: 5, V: 300}).case6, to({V: 300}).case6], ['nv', false, 'nV', 'TV']);
+r = to({shape: 'T', T: 60});
+check('T section 900 x 150 flange, web 300 x 600, T = 60: the flange projection 300 mm (not above 3 x 150); the first division (web full depth, two 300 x 150 wings: sum B3A = 1.8225e10) beats the second (1.519e10); the web takes 53.3 kN.m and each wing 3.33 kN.m', [r.option, r.rows.length, +(r.S / 1e10).toFixed(4), +(r.rows[0].Ti / 1e6).toFixed(2), +(r.rows[1].Ti / 1e6).toFixed(2)], [0, 3, 1.8225, 53.33, 3.33]);
+check('... the web has tau 2.37 and the wings 1.19 (above tau_c 0.365: they need links too); the flange overhang is capped at 3 h_f: a 1600 mm flange still gives 450 mm wings', [+r.rows[0].tau.toFixed(2), +r.rows[1].tau.toFixed(2), r.rows[1].need, Math.round(Math.max(to({shape: 'T', T: 60, bf: 1600}).rows[1].A, to({shape: 'T', T: 60, bf: 1600}).rows[1].B))], [2.37, 1.19, true, 450]);
+r = to({shape: 'L', T: 30});
+check('L section: one wing; the share by the stiffness (37)', [r.rows.length, +(r.rows.reduce((s, x) => s + x.Ti, 0) / 1e6).toFixed(3)], [2, 30]);
+r = to({h: 800});
+check('a larger link dimension y = 740 mm (above 550) takes tau_max = v_max (4.38)', [+r.rows[0].tauMax.toFixed(2), r.rows[0].y1], [4.38, 740]);
+r = to({T: 150, bw: 250, h: 450});
+check('a heavy torsion on a slim beam (T = 150 kN.m on 250 x 450) exceeds tau_max: the section fails', [r.rows[0].tauOk, r.ok], [false, false]);
+check('f_y and f_yv above 460 are taken as 460 (4/5/5 e)', [to({fyv: 600}).fyv, to({fy: 600}).fy], [460, 460]);
+w.renderCalc('rctorsion'); w.calcResult('rctorsion');
+const tt = doc.getElementById('rtr_results').textContent;
+check('the page lists the stresses, the case of Table 6, the rectangles and the 🔴 reading note', [tt.includes('τ'), tt.includes('الجدول 6'), tt.includes('🔴'), doc.getElementById('rtr_results').querySelectorAll('tbody tr').length], [true, true, true, 1]);
+check('other codes open the calculator too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rctorsion'); x.calcResult('rctorsion'); return x.document.getElementById('rtr_results').textContent.length > 300; }).join(), 'true,true,true');
+}
+
+// ---------- part 81: Jordanian concrete code, crack width of beams (`rccrack`: 2/2/3 b, 4/7/2, equations 49 and 50) ----------
+{
+w = boot('jo'); doc = w.document;
+const ck = o => w.eval('joCkCalc(' + JSON.stringify(Object.assign({b: 300, h: 500, d: 450, ap: 0, As: 1256, M: 120, fcu: 30, fy: 420, c: 40, phi: 20, s: 70, pos: 'mid', a: 0, shr: 0, severe: false, cnom: 0}, o)) + ')');
+let r = ck({});
+check('E_c = 4500 sqrt(30) = 24 648, half of it 12 324 and the modular ratio E_s / E_c = 16.23', [Math.round(r.Ec), Math.round(r.Ece), +r.ae.toFixed(2)], [24648, 12324, 16.23]);
+check('300 x 500 beam, d 450, A_s 1256 mm2, M = 120 kN.m: neutral axis of the cracked section b x2 / 2 = a_e A_s (d - x): x = 188.5 mm', r.x, 188.5, 0.3);
+check('steel stress M / (A_s (d - x / 3)) = 246.8 N/mm2, strain 1.234e-3 (below 0.8 x 420 / 200000 = 1.68e-3)', [+r.fs.toFixed(1), +(r.es * 1e3).toFixed(3), r.steelOk], [246.8, 1.234, true]);
+check('strain at the soffit 1.470e-3, the stiffening deduction b (h - x)^2 / (3 E_s A_s (d - x)) = 0.148e-3 gives eps_m = 1.322e-3', [+(r.e1 * 1e3).toFixed(3), +(r.em * 1e3).toFixed(3)], [1.47, 1.322]);
+check('a between two bars 70 mm apart with 40 mm cover and 20 mm bars = sqrt(35^2 + 50^2) - 10 = 51.0 mm; w = 3 a eps_m / (1 + 2 (a - c) / (h - x)) = 0.189 mm: below 0.3', [+r.a.toFixed(1), +r.w.toFixed(3), r.ok], [51, 0.189, true]);
+check('M = 250 kN.m takes the steel strain above 0.8 f_y / E_s: the equation is flagged as not valid', [ck({M: 250}).steelOk, ck({M: 250}).w > 0.3], [false, true]);
+check('M = 10 kN.m: eps_m is negative (no cracking), w = 0', [ck({M: 10}).cracked, ck({M: 10}).w], [false, 0]);
+check('very severe exposure: limit 0.004 x nominal cover = 0.16 mm (cover 40) fails at 0.189 mm; with a nominal cover of 50 mm the limit 0.20 passes', [ck({severe: true}).limit, ck({severe: true}).ok, ck({severe: true, cnom: 50}).limit, ck({severe: true, cnom: 50}).ok], [0.16, false, 0.2, true]);
+check('a shrinkage strain of 0.0005 (not above 0.0006) adds nothing; 0.0008 adds half of it, 0.0004, to eps_m', [ck({shr: 0.0005}).em === r.em, +(ck({shr: 0.0008}).em - r.em).toFixed(5)], [true, 0.0004]);
+check('a corner point (a = 1.414 x 50 - 10 = 60.7 mm) gives a wider crack than between bars; a manual a of 100 mm gives 0.286 mm; a point on a side face (a\' = 400) has a smaller strain', [ck({pos: 'corner'}).w > r.w, +ck({pos: 'direct', a: 100}).w.toFixed(3), ck({ap: 400}).w < r.w], [true, 0.286, true]);
+w.renderCalc('rccrack'); w.calcResult('rccrack');
+const tt = doc.getElementById('rck_results').textContent;
+check('the page quotes the equations, the 0.3 mm limit and the reading note', [tt.includes('0.3'), tt.includes('49'), tt.includes('🔴'), tt.includes('0.189')], [true, true, true, true]);
+check('other codes open the calculator too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rccrack'); x.calcResult('rccrack'); return x.document.getElementById('rck_results').textContent.length > 300; }).join(), 'true,true,true');
+}
+// ---------- part 82: Jordanian concrete code, deflection of beams from the curvatures (`rcdeflect`: 4/6/4, equations 45 - 48, Table 10) ----------
+{
+w = boot('jo'); doc = w.document;
+const df = o => w.eval('joDfCalc(' + JSON.stringify(Object.assign({b: 300, h: 500, d: 450, As: 1256, fcu: 30, psi: 2, eps: 0.0003, Mt: 120, Mp: 80, l: 6, pat: 'udl', a: 0.5, beta: 0, k: 0}, o)) + ')');
+const kk = (t, a, b) => w.eval('joDfK(' + JSON.stringify(t) + ', ' + (a || 0) + ', ' + (b || 0) + ')');
+check('Table 10 coefficients: UDL 0.104, central point load (a = 1/2) 1/12, two loads at a = 1/3 -> 0.125 - a2/6 = 0.1065, triangular 0.102, constant moment 0.125, end moment 0.0625', [kk('udl'), +kk('pt', 0.5).toFixed(4), +kk('two', 1 / 3).toFixed(4), kk('tri'), kk('mom'), kk('end')], [0.104, 0.0833, 0.1065, 0.102, 0.125, 0.0625]);
+check('... with end moments: UDL 0.104 (1 - beta / 10) and point load 0.083 (1 - beta / 4) at beta = 0.5 -> 0.0988 and 0.0726; cantilevers: tip load (3 - a) a / 6 = 0.333 at a = 1, UDL a (4 - a) / 12 = 0.25 at a = 1', [+kk('udlm', 0, 0.5).toFixed(4), +kk('ptm', 0, 0.5).toFixed(4), +kk('cp', 1).toFixed(3), kk('cu', 1)], [0.0988, 0.0726, 0.333, 0.25]);
+let r = df({});
+check('E_c = 4500 sqrt(30) = 24.6 kN/mm2 and with psi = 2 E_ce = 8.2; the uncracked section (alpha_e = 8.11) has x = 261 mm and I = 3.46e9 mm4; the cracked one x = 144 mm', [+(r.Ec / 1000).toFixed(1), +(r.Ece / 1000).toFixed(1), Math.round(r.sS.xu), +(r.sS.Iu / 1e9).toFixed(2), Math.round(r.sS.xc)], [24.6, 8.2, 261, 3.46, 144]);
+check('instantaneous curvature of the total load 120 kN.m: uncracked 1.41e-6 per mm, cracked (tension stiffening 1.0 N/mm2, f_s 197 N/mm2) 3.22e-6: the cracked one governs', [+(r.shortTot.u * 1e6).toFixed(2), +(r.shortTot.c * 1e6).toFixed(2), r.shortTot.state, Math.round(r.shortTot.fs)], [1.41, 3.22, 'cracked', 197], 0.01);
+check('the permanent 80 kN.m: instantaneous 1.92e-6; long term with E_ce and 0.55 N/mm2: 3.20e-6; shrinkage 0.0003 gives 0.79e-6 (cracked)', [+(r.shortPerm.v * 1e6).toFixed(2), +(r.longPerm.v * 1e6).toFixed(2), +(r.cs.v * 1e6).toFixed(2), r.cs.state], [1.92, 3.2, 0.79, 'cracked'], 0.02);
+check('total long-term curvature 3.20 + (3.22 - 1.92) + 0.79 = 5.29e-6; delta_T = 0.104 x 6000^2 x 5.29e-6 = 19.8 mm (limit l / 250 = 24: passes); instantaneous 12.0 mm; after the partitions 19.8 - 7.2 = 12.6 mm (limit min(l / 350, 20) = 17.1: passes)', [+(r.total * 1e6).toFixed(2), +r.dT.toFixed(1), +r.dInst.toFixed(1), +r.dAfter.toFixed(1), r.lim1, +r.lim2.toFixed(1), r.ok1, r.ok2], [5.29, 19.8, 12, 12.6, 24, 17.1, true, true], 0.15);
+check('a weaker beam (only 628 mm2 of steel, 7.5 m span) exceeds both limits; with the deflection limit of 20 mm after partitions on a 8 m span the limit is 20, not l / 350 = 22.9', [df({As: 628, l: 7.5}).ok1, df({As: 628, l: 7.5}).ok2, df({l: 8}).lim2], [false, false, 20]);
+check('a small moment (10 kN.m) leaves the section uncracked: the uncracked curvature governs and the deflection is small', [df({Mt: 10, Mp: 5}).shortTot.state, df({Mt: 10, Mp: 5}).dT < 5], ['uncracked', true]);
+check('a manual k overrides the pattern: k = 0.125 gives 0.125 / 0.104 times the deflection', [+(df({k: 0.125}).dT / r.dT).toFixed(3)], [+(0.125 / 0.104).toFixed(3)]);
+w.renderCalc('rcdeflect'); w.calcResult('rcdeflect');
+const tt = doc.getElementById('rdf_results').textContent;
+check('the page quotes the curvatures, the limits and the 🔴 note', [tt.includes('l ÷ 250'), tt.includes('🔴'), tt.includes('19.8')], [true, true, true]);
+check('other codes open the calculator too', ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rcdeflect'); x.calcResult('rcdeflect'); return x.document.getElementById('rdf_results').textContent.length > 300; }).join(), 'true,true,true');
+}
 check('no page errors', errors, []);
 console.log(fail ? '\n' + fail + ' FAILED' : '\nAll national-code (Jordan, part 4) checks passed');
 process.exit(fail ? 1 : 0);
