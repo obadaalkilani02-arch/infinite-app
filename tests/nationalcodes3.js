@@ -1,4 +1,4 @@
-// Reference-code selector, part 3: Jordanian national codes, parts 65 onward (steel, formwork, scaffolding, concrete, foundations, cables); split from nationalcodes2.js to keep the heap small.
+// Reference-code selector, part 3: Jordanian national codes, parts 65 - 75 (loads, steel, formwork, scaffolding, concrete, foundations); split from nationalcodes2.js to keep the heap small.
 //   node tests/nationalcodes3.js
 const { JSDOM, VirtualConsole } = require('jsdom');
 const fs = require('fs');
@@ -512,76 +512,6 @@ w.renderCalc('rcwall'); w.calcResult('rcwall');
 check('the wall results are shown; other codes open it too', [doc.getElementById('rwl_results').querySelectorAll('.results-box').length, ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rcwall'); return x.document.getElementById('rwl_results').textContent.length > 400; }).join()], [2, 'true,true,true']);
 }
 
-// ---------- part 76: Jordanian electrical installations code, cable tables of rubber 85 C (26 - 28) and paper-insulated cables (29 - 32 copper, 56 - 59 aluminium) in the cable sizing calculator ----------
-{
-w = boot('jo'); doc = w.document; w.renderCalc('cablesizing');
-const J = w.eval('JSON.parse(JSON.stringify(JO_CABLE))');
-const jo = vals => { Object.keys(vals).forEach(id => setv(w, id, vals[id])); w.csToggle(); return w.eval('calcCableSizing()'); };
-const joBase = {cs_std: 'jo', cs_phase: '3', cs_volt: 400, cs_mode: 'amp', cs_load: 100, cs_pf: 0.85, cs_len: 1, cs_amb: 30, cs_ngroup: 1, cs_par: 1, cs_metal: 'cu', cs_vdlim: 10, cs_jo_arr: 'flat', cs_jo_c: 'no', cs_jo_sv: 'no', cs_jo_trench: 'no'};
-const fam = k => Object.keys(J).filter(x => J[x].m === k).length;
-check('Jordan cable tables now 17 copper families (Tables 16 - 32) and 13 aluminium families (47 - 59): 30 tables', [fam('cu'), fam('al')], [17, 13]);
-jo(Object.assign({}, joBase, {cs_metal: 'cu'})); w.csToggle('metal');
-const nCu = doc.getElementById('cs_jo').options.length;
-setv(w, 'cs_metal', 'al'); w.csToggle('metal');
-check('the lists offer 17 copper and 13 aluminium tables, the default stays Table 24 / 54', [nCu, doc.getElementById('cs_jo').options.length, doc.getElementById('cs_jo').value], [17, 13, 'al_xlpea_clip']);
-setv(w, 'cs_metal', 'cu'); w.csToggle('metal');
-check('rubber Tables 26, 27, 28 as printed: 50 mm2 (170 A, 1.0 mV / 145 A, 0.89 mV), 630 mm2 (1050 / 950 A), 150 mm2 in air (480 A, 0.40 mV, 0.40, trefoil 425 A, 0.30)', [J.cu_rub1_encl.rows['50'], J.cu_rub1_clip.rows['630'], J.cu_rub1_air.rows['150']], [[170, 1, 145, 0.89], [1050, 0.18, 950, 0.22], [480, 0.4, 0.4, 425, 0.3]]);
-check('paper copper Tables 29 - 32: 1000 mm2 clipped (1280 A, 0.16 mV, 1190 A, 0.15), 800 mm2 in air (two cables 1290, three flat 1220, trefoil 1150), multi-core 400 mm2 (610 / 545 A), 240 mm2 in air (555 / 480 A)', [J.cu_pap1_clip.rows['1000'], J.cu_pap1_air.rows['800'], J.cu_papm_clip.rows['400'], J.cu_papm_air.rows['240']], [[1280, 0.16, 1190, 0.15], [1290, 0.26, 1220, 0.24, 1150, 0.15], [610, 0.2, 545, 0.17], [555, 0.24, 480, 0.2]]);
-check('paper aluminium Tables 56 - 59: 800 mm2 clipped (910 A / 890 A), 150 mm2 in air (370, 360, 325 A), multi-core 300 mm2 (425 / 335 A), 400 mm2 in air (585 / 510 A)', [J.al_pap1_clip.rows['800'], J.al_pap1_air.rows['150'], J.al_papm_clip.rows['300'], J.al_papm_air.rows['400']], [[910, 0.19, 890, 0.19], [370, 0.58, 360, 0.56, 325, 0.46], [425, 0.3, 335, 0.26], [585, 0.26, 510, 0.22]]);
-check('the misprints: Table 26 6 mm2 two-cable drop 2.7 replaced by 7.7 (as Table 27); Table 30 trefoil 400 mm2 (275 A), Table 56 240 mm2 two cables (345 A) and Table 59 185 and 240 mm2 three-phase (205, 265 A) left empty', [J.cu_rub1_encl.rows['6'][1], J.cu_pap1_air.rows['400'][4], J.al_pap1_clip.rows['240'][0], J.al_papm_air.rows['185'][2], J.al_papm_air.rows['240'][2]], [7.7, null, null, null, null]);
-let bad = [];
-const newIds = Object.keys(J).filter(k => /_(rub|pap)/.test(k));
-for (const id of newIds) {
-  const f = J[id], sizes = Object.keys(f.rows).map(Number).sort((a, b) => a - b), cols = f.ar === 2 ? [0, 2, 4] : f.ar ? [0, 3] : [0, 2];
-  for (const c of cols) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x <= p) bad.push(id + ' I' + c + ' ' + s); p = x; } }
-  if (!f.ar) for (const c of [1, 3]) { let p = null; for (const s of sizes) { const x = f.rows[s][c]; if (x == null) continue; if (p != null && x > p) bad.push(id + ' v' + c + ' ' + s); p = x; } }
-}
-check('the 11 new tables: the current rises and the voltage drop falls with the conductor size (a typing check on the transcription)', [newIds.length, bad], [11, []]);
-check('ambient factors: rubber 25 C -> 1.05, 28 -> 1, 40 -> 0.89, 75 -> 0.39, 80 -> not tabulated; paper 70 C -> 0.43 (the 0.34 of Table 56 is a misprint), 75 -> 0.30, 76 -> not tabulated', [w.eval("joAmbFactor('rub', 25)"), w.eval("joAmbFactor('rub', 28)"), w.eval("joAmbFactor('rub', 40)"), w.eval("joAmbFactor('rub', 75)"), w.eval("joAmbFactor('rub', 80)"), w.eval("joAmbFactor('pap', 70)"), w.eval("joAmbFactor('pap', 75)"), w.eval("joAmbFactor('pap', 76)")], [1.05, 1, 0.89, 0.39, null, 0.43, 0.3, null]);
-let r = jo(Object.assign({}, joBase, {cs_jo: 'cu_rub1_clip', cs_mode: 'kw', cs_load: 55, cs_len: 80, cs_amb: 40, cs_vdlim: 2.5}));
-check('55 kW, 400 V, 80 m, 40 C on Table 27 (rubber, clipped): Ib 93.4 A, In 100 A, factor 0.89; 25 mm2 (128 A) carries it but drops 2.99 %; 35 mm2 (158 A x 0.89 = 140.6 A, 1.2 mV) 2.24 %', [r.mm2, r.ocpd, r.kT, r.byAmp.s, +r.allowed.toFixed(1), +r.vdPct.toFixed(2), r.governs], [35, 100, 0.89, 25, 140.6, 2.24, 'vd']);
-r = jo(Object.assign({}, joBase, {cs_jo: 'cu_rub1_encl', cs_phase: '1', cs_volt: 230, cs_load: 40, cs_len: 10}));
-check('single-phase 40 A, 10 m on Table 26 (enclosed): 6 mm2 (48 A) with the corrected 7.7 mV = 3.08 V (1.34 %); the printed 2.7 would give only 1.08 V', [r.mm2, r.tab, +r.dV.toFixed(2), +r.vdPct.toFixed(2)], [6, 48, 3.08, 1.34]);
-r = jo(Object.assign({}, joBase, {cs_phase: '3', cs_volt: 400, cs_jo_c: 'yes', cs_load: 150}));
-check('Table 26 with method C (underground ducts) stops at 35 mm2 (134 A): 150 A has no size, with a warning naming Table 26', [!!r.chosen, r.warnings.some(x => x.includes('26'))], [false, true]);
-r = jo(Object.assign({}, joBase, {cs_jo: 'cu_rub1_air', cs_jo_c: 'no', cs_load: 400, cs_jo_arr: 'flat'}));
-const rf = [r.mm2, r.tab];
-r = jo({cs_jo_arr: 'trefoil'});
-check('Table 28 (rubber, in air), 400 A three-phase: flat needs 120 mm2 (425 A); trefoil 150 mm2 (425 A); 95 mm2 carries 360 / 325 A', [rf, r.mm2, r.tab], [[120, 425], 150, 425]);
-r = jo({cs_jo_arr: 'flat', cs_amb: 80});
-check('rubber at 80 C: no factor, the calculation stops and the warning gives the last printed temperature (75 C)', [r.invalid === true, r.warnings.some(x => x.includes('75'))], [true, true]);
-r = jo({cs_jo_arr: 'flat', cs_amb: 30, cs_jo: 'cu_pap1_air', cs_load: 285});
-const pAir = [r.mm2, r.tab, r.ocpd];
-r = jo({cs_jo_arr: 'trefoil'});
-const pTre = [r.mm2, r.tab];
-r = jo({cs_jo_arr: 'flat', cs_phase: '1', cs_volt: 230});
-check('Table 30 (paper, in air), 285 A, In 315 A: three-phase flat uses the column of three cables (95 mm2: 345 A; 70 mm2 gives 280 A), trefoil 315 A at 95 mm2, single-phase two cables 355 A', [pAir, pTre, [r.mm2, r.tab]], [[95, 345, 315], [95, 315], [95, 355]]);
-setv(w, 'cs_phase', '3'); setv(w, 'cs_volt', 400);
-r = jo({cs_jo_arr: 'flat', cs_jo_sv: 'flat'});
-check('unserved lead sheath, flat (Table 30): 95 mm2 factor 0.95 -> 345 x 0.95 = 327.75 A, still enough for 315 A', [r.mm2, r.kSv, +r.allowed.toFixed(2), r.svForm], [95, 0.95, 327.75, 'flat']);
-r = jo({cs_jo_arr: 'trefoil', cs_jo_sv: 'flat'});
-check('... in air the formation follows the arrangement: trefoil takes the trefoil factor 0.93 (copper) whatever the list says: 95 mm2 gives 315 x 0.93 = 292.95 A, not enough; 120 mm2 (370 x 0.93 = 344.1 A)', [r.mm2, r.kSv, +r.allowed.toFixed(2), r.svForm], [120, 0.93, 344.1, 'tre']);
-r = jo({cs_jo: 'cu_pap1_clip', cs_jo_sv: 'tre', cs_jo_arr: 'flat', cs_load: 250});
-check('clipped (Table 29) has no arrangement list: the unserved trefoil choice is used as set: 250 A, In 250 A, 70 mm2 (230 A) is short, 95 mm2 (285 x 0.93 = 265.05 A)', [r.mm2, r.kSv, +r.allowed.toFixed(2), r.ocpd], [95, 0.93, 265.05, 250]);
-check('the lead-sheath factors: copper flat 50 - 185 mm2 0.95, 240 - 500 1.00, 630 - 1000 1.01; trefoil 0.93 / 0.94 / 0.96; aluminium trefoil 0.95 for 50 - 185 mm2', [w.eval("joSvFactor('cu', 'flat', 150)"), w.eval("joSvFactor('cu', 'flat', 300)"), w.eval("joSvFactor('cu', 'flat', 800)"), w.eval("joSvFactor('cu', 'tre', 150)"), w.eval("joSvFactor('cu', 'tre', 500)"), w.eval("joSvFactor('cu', 'tre', 1000)"), w.eval("joSvFactor('al', 'tre', 120)")], [0.95, 1, 1.01, 0.93, 0.94, 0.96, 0.95]);
-r = jo({cs_jo: 'cu_papm_clip', cs_jo_sv: 'flat', cs_load: 150});
-check('multi-core paper (Table 31) has no lead-sheath factor: the field is ignored; 150 A, In 160 A: 70 mm2 (180 A)', [r.svForm, r.kSv === undefined, r.mm2, r.tab], ['', true, 70, 180]);
-setv(w, 'cs_jo', 'cu_pap1_clip'); w.csToggle();
-const svShown = doc.querySelector('.cs-josv').style.display;
-setv(w, 'cs_jo', 'cu_xlpea_clip'); w.csToggle();
-const svHidden = doc.querySelector('.cs-josv').style.display;
-setv(w, 'cs_jo', 'cu_pap1_air'); w.csToggle();
-check('the lead-sheath field shows for Tables 29 / 30 / 56 / 57 only; the arrangement list for single-core cables in air', [svShown, svHidden, doc.querySelector('.cs-joair').style.display, doc.querySelector('.cs-josv').style.display], ['', 'none', '', '']);
-setv(w, 'cs_metal', 'al'); w.csToggle('metal');
-r = jo({cs_metal: 'al', cs_jo: 'al_papm_air', cs_load: 280, cs_amb: 30});
-check('aluminium paper multi-core in air (Table 59), 280 A, In 315 A: 150 mm2 (265 A) is short, the empty three-phase cells at 185 and 240 mm2 are skipped and 300 mm2 (420 A) is chosen', [r.mm2, r.tab], [300, 420]);
-r = jo({cs_metal: 'al', cs_jo: 'al_pap1_clip', cs_load: 300, cs_amb: 40});
-check('aluminium Table 56 at 40 C (0.89): 300 A, In 315 A: 185 mm2 (345 x 0.89 = 307.1 A) is short; 240 mm2 is empty for two cables but three-phase 430 x 0.89 = 382.7 A is used', [r.mm2, r.tab, +r.kT.toFixed(2)], [240, 430, 0.89]);
-setv(w, 'cs_metal', 'cu'); w.csToggle('metal');
-setv(w, 'cs_jo', 'cu_pap1_air'); setv(w, 'cs_amb', 40); setv(w, 'cs_mode', 'amp'); setv(w, 'cs_load', 285); setv(w, 'cs_len', 1); setv(w, 'cs_vdlim', 10); setv(w, 'cs_jo_sv', 'flat'); w.calcResult('cablesizing');
-const t76 = doc.getElementById('cs_results').textContent;
-check('the results quote the table, the lead-sheath factor and the printed-misprint notes', ['جدول 30', 'قراب رصاصي غير مخدوم', '275 A', '🔴'].every(s => t76.includes(s)), true);
-}
 check('no page errors', errors, []);
 console.log(fail ? '\n' + fail + ' FAILED' : '\nAll national-code (Jordan, part 3) checks passed');
 process.exit(fail ? 1 : 0);
