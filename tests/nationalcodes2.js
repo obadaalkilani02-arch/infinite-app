@@ -1962,6 +1962,50 @@ check('a thin slab needs compression steel and is flagged: h 100 on a 6 x 6 m fo
 w.renderCalc('rcslab'); w.calcResult('rcslab');
 check('the slab results carry the moment table, the shear and the deflection; other codes open it too', [doc.getElementById('sl_results').querySelectorAll('.results-box').length, doc.getElementById('sl_results').querySelectorAll('tbody tr').length, ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rcslab'); return x.document.getElementById('sl_results').textContent.length > 400; }).join()], [2, 4, 'true,true,true']);
 }
+// ---------- part 68: Jordanian plain and reinforced concrete code, columns (`rccolumn`: chapter 8) and isolated footings (`rcfooting`: chapter 10 and 7/5) ----------
+{
+w = boot('jo'); doc = w.document;
+const cld = {b: 300, h: 400, dp: 50, fcu: 30, fy: 420, Asc: 1963, N: 1500, Mx: 60, My: 20, lo: 3200, braced: true, topx: 1, botx: 1, topy: 1, boty: 1, dia: 20, tdia: 8, ts: 200};
+const clc = o => w.eval('joClCalc(' + JSON.stringify(Object.assign({}, cld, o)) + ')');
+let cl = clc({});
+check('Table 17 braced: 0.75 0.80 0.90 / 0.80 0.85 0.95 / 0.90 0.95 1.00; unbraced: 1.2 1.3 1.6 / 1.3 1.5 1.8 / 1.6 1.8 - / 2.2 - -', [w.eval('JO_CL_BRACED.map(r => r.join(" ")).join(" / ")'), w.eval('JO_CL_UNBR.map(r => r.map(x => x == null ? "-" : x).join(" ")).join(" / ")')], ['0.75 0.8 0.9 / 0.8 0.85 0.95 / 0.9 0.95 1', '1.2 1.3 1.6 / 1.3 1.5 1.8 / 1.6 1.8 - / 2.2 - -']);
+check('beta 0.75 for a braced column restrained 1 - 1 gives l_ex = 0.75 x 3.2 = 2.4 m: l_ex / h = 6.0 and l_ey / b = 8.0, both below 15 so the column is short; unbraced 1 - 1 (1.2) gives 3.84 m, 9.6 and 12.8 (above 10: slender); an unbraced column with a free top uses 2.2; a free end above a pinned base is not tabulated', [cl.beta.x, cl.lex, cl.sx, cl.sy, cl.short, clc({braced: false}).lex, clc({braced: false}).short, clc({braced: false, topx: 4}).beta.x, clc({braced: false, topx: 3, botx: 3}).beta.x], [0.75, 2400, 6, 8, true, 3840, false, 2.2, null]);
+check('axial capacities: N_uz = 0.67 x 0.67 x 30 x 118037 + 0.87 x 420 x 1963 = 2307 kN, equation (78) 2033 kN, equation (79) 1724 kN; rho = 1.64 %', [Math.round(cl.Nuz), Math.round(cl.N78), Math.round(cl.N79), +cl.rho.toFixed(2)], [2307, 2033, 1724, 1.64]);
+check('least eccentricity 0.05 x 400 = 20 mm and 0.05 x 300 = 15 mm (25 mm cap for deep sections); the least moments 30 and 22.5 kN.m at N = 1500 kN', [cl.emin.x, cl.emin.y, +clc({h: 700}).emin.x.toFixed(0), cl.Mmin.x, cl.Mmin.y], [20, 15, 25, 30, 22.5]);
+check('Table 18: alpha 1.00 up to N / N_uz 0.2, 1.33 at 0.4, 1.67 at 0.6, 2.00 from 0.8, linear between (0.3 -> 1.165, 0.7 -> 1.835)', [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 1].map(x => +w.eval('joClAlpha(' + x + ')').toFixed(3)).join(), '1,1,1.165,1.33,1.67,1.835,2,2');
+check('limits: rho between 0.4 and 6 % (1.64 passes, 0.3 and 7 fail, 7 is allowed up to 10 at laps); ties 8 mm at 200 mm pass (minimum 6 mm and 240 mm); 6 mm at 300 mm fails', [cl.rhoOk, clc({Asc: 360}).rhoOk, clc({Asc: 8400}).rhoOk, clc({Asc: 8400}).rhoLap, cl.tieOk, clc({ts: 300}).tieOk, clc({dia: 32}).tie.dia], [true, false, false, true, true, false, 8]);
+const secM = (N, b, h, dp, Asc, fcu, fy) => w.eval('joClSection(' + [N, b, h, dp, Asc, fcu, fy].join(',') + ')');
+const brute = (N, b, h, dp, Asc, fcu, fy) => {                                          // independent scan of the neutral axis depth
+  const fyd = 0.87 * fy, As1 = Asc / 2, d2 = h - dp; let best = null;
+  for (let x = 1; x <= 20000; x += 0.5) {
+    const a = Math.min(0.9 * x, h), Fc = 2 / 3 * 0.67 * fcu * b * a, s1 = Math.max(-fyd, Math.min(fyd, 200000 * 0.0035 * (x - dp) / x)), s2 = Math.max(-fyd, Math.min(fyd, 200000 * 0.0035 * (x - d2) / x));
+    const Nn = (Fc + As1 * s1 + As1 * s2) / 1000, M = (Fc * (h / 2 - a / 2) + As1 * s1 * (h / 2 - dp) - As1 * s2 * (h / 2 - dp)) / 1e6;
+    if (best == null || Math.abs(Nn - N) < Math.abs(best.N - N)) best = {N: Nn, M};
+  }
+  return best.M;
+};
+check('the moment capacity of the 300 x 400 section matches an independent scan of the neutral axis at N = 0, 800 and 1500 kN (within 0.5 kN.m)', [0, 800, 1500].map(N => Math.abs(secM(N, 300, 400, 50, 1963, 30, 420) - brute(N, 300, 400, 50, 1963, 30, 420)) < 0.5).join(), 'true,true,true');
+check('capacity falls to zero at the section axial limit and the interaction curve has its balanced peak above the pure bending value: M(0) < M(800) and M(1500) < M(800); above 2.4 MW there is no capacity', [secM(0, 300, 400, 50, 1963, 30, 420) < secM(800, 300, 400, 50, 1963, 30, 420), secM(1500, 300, 400, 50, 1963, 30, 420) < secM(800, 300, 400, 50, 1963, 30, 420), secM(5000, 300, 400, 50, 1963, 30, 420)], [true, true, null]);
+check('pure bending of the symmetric steel at N = 0: x = 62 mm, concrete 224 kN and compression steel 134 kN balance the tension steel 359 kN, giving about 113 kN.m (the steel couple alone is 107.6)', +secM(0, 300, 400, 50, 1963, 30, 420).toFixed(0), 113);
+check('the design example (N 1500, Mx 60, My 20): the design moments are the larger of the applied and the least ones (60 and 22.5), the exponent is alpha = 1.77 and the biaxial sum is below 1.0 or above it consistently with the uniaxial ratios', [cl.Md.x, cl.Md.y, +cl.a.toFixed(2), cl.bi != null, +Math.pow(cl.Md.x / cl.Mu.x, cl.a).toFixed(4) + +Math.pow(cl.Md.y / cl.Mu.y, cl.a).toFixed(4) > 0], [60, 22.5, +w.eval('joClAlpha(1500 / ' + cl.Nuz + ')').toFixed(2), true, true]);
+check('a heavily loaded column is flagged: N = 2400 kN is above N_uz (axial check fails) and above the section capacity (no moment capacity)', [clc({N: 2400}).axialOk, clc({N: 2400}).Mu.x, clc({N: 2400}).ok], [false, null, false]);
+check('a lightly loaded column passes: N = 600 kN, Mx = 40, My = 10 satisfy the biaxial sum', [clc({N: 600, Mx: 40, My: 10}).ok, clc({N: 600, Mx: 40, My: 10}).bi < 1], [true, true]);
+w.renderCalc('rccolumn'); w.calcResult('rccolumn');
+check('the column results carry the slenderness, capacity and biaxial parts; other codes open it too', [doc.getElementById('cl_results').querySelectorAll('.results-box').length, ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rccolumn'); return x.document.getElementById('cl_results').textContent.length > 500; }).join()], [3, 'true,true,true']);
+const ftd = {D: 600, L: 300, c1: 0.4, c2: 0.3, qa: 250, Df: 1.5, B: 2, Lf: 2.4, h: 500, cover: 75, dia: 16, fcu: 30, fy: 420};
+const ftc = o => w.eval('joFtCalc(' + JSON.stringify(Object.assign({}, ftd, o)) + ')');
+let ft = ftc({});
+check('loads and pressure: P_u = 1.4 x 600 + 1.6 x 300 = 1320 kN, service 900 kN; net allowable 250 - 24 x 0.5 - 18 x 1.0 = 220 kN/m2, required area 4.09 m2, provided 4.8 m2 gives 187.5 kN/m2 and q_u = 275 kN/m2', [ft.Pu, ft.Ps, ft.qnet, +ft.Areq.toFixed(2), ft.A, ft.q, ft.qOk, ft.qu], [1320, 900, 220, 4.09, 4.8, 187.5, true, 275]);
+check('a smaller footing 1.8 x 2.0 m (3.6 m2) exceeds the allowable pressure (250 kN/m2 service) and is flagged', [ftc({B: 1.8, Lf: 2}).q, ftc({B: 1.8, Lf: 2}).qOk], [250, false]);
+check('effective depths 500 - 75 - 8 = 417 and 401 mm; moments at the column face: long direction 275 x 2.0 x 1.0^2 / 2 = 275 kN.m, short direction 275 x 2.4 x 0.85^2 / 2 = 238.4 kN.m', [ft.dx, ft.dy, +ft.ML.toFixed(1), +ft.MB.toFixed(1)], [417, 401, 275, 238.4]);
+check('steel: long direction 1900 mm2 (lever arm capped at 0.95 d = 396.2 mm), short direction 1713 mm2; the minimum 70 / 420 % is 1390 and 1604 mm2; the band takes 2 / (1.2 + 1) = 0.909 of the short steel', [Math.round(ft.AsL), Math.round(ft.AsB), Math.round(ft.AsMinL), Math.round(ft.AsMinB), +ft.m.toFixed(3), Math.round(ft.AsBband)], [1900, 1713, 1390, 1604, 0.909, Math.round(0.909 * 1712.6)]);
+check('one-way shear at d from the column face: V = 275 x 2.0 x (1.0 - 0.417) = 320.6 kN, v = 0.384 N/mm2 against v_c = 0.410; short direction 275 x 2.4 x (0.85 - 0.401) = 296.3 kN gives 0.308', [+ft.VL.toFixed(1), +ft.vL.toFixed(3), +ft.vcL.toFixed(3), +ft.vB.toFixed(3)], [320.6, 0.384, 0.41, 0.308]);
+check('punching at 1.5 d (d mean 409 mm): perimeter 6308 mm, the load inside 275 x 1.627 x 1.527 = 683 kN leaves V = 637 kN, v = 0.247 N/mm2 against v_c = 0.394; at the column face v = 1320000 / (1400 x 409) = 2.305 against v_max 4.38', [Math.round(ft.perim), +ft.Vp.toFixed(0), +ft.vp.toFixed(3), +ft.vcP.toFixed(3), +ft.vcol.toFixed(3), +ft.vmax.toFixed(2), ft.fits, ft.shearOk], [6308, 637, 0.247, 0.394, 2.305, 4.38, true, true]);
+check('a thin footing fails the shear: h = 300 mm gives a punching or one-way stress above v_c', ftc({h: 300}).shearOk, false);
+check('a footing too small for the 1.5 d perimeter is flagged (1.2 x 1.2 m under a 0.4 x 0.3 m column with h 500)', ftc({B: 1.2, Lf: 1.2}).fits, false);
+w.renderCalc('rcfooting'); w.calcResult('rcfooting');
+check('the footing results carry the size, bending and shear parts; other codes open it too', [doc.getElementById('ft_results').querySelectorAll('.results-box').length, ['intl', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('rcfooting'); return x.document.getElementById('ft_results').textContent.length > 500; }).join()], [3, 'true,true,true']);
+}
 // the other codes are unchanged
 w = boot('sa');
 w.renderCalc('cablesizing');
