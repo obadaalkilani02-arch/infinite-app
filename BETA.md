@@ -1,11 +1,11 @@
-# +Infinite — نسخة Beta 0.9.0-beta.1
+# +Infinite — نسخة Beta 0.9.0-beta.2
 
 ## ما هو جاهز الآن
 | المنصة | الحالة | الملف / الطريقة |
 |---|---|---|
-| Windows | ✅ جاهز | `release/Infinite-Setup-0.9.0-beta.1.exe` (مثبّت NSIS، غير موقَّع → قد تظهر شاشة SmartScreen: «مزيد من المعلومات ← تشغيل على أي حال») |
+| Windows | ✅ جاهز | `release/Infinite-Setup-0.9.0-beta.2.exe` (مثبّت NSIS، غير موقَّع → قد تظهر شاشة SmartScreen: «مزيد من المعلومات ← تشغيل على أي حال») |
 | ويب / PWA | ✅ جاهز للرفع | مجلد `dist/web/` (يُنشأ بالأمر `npm run build:web`) — يُرفع على أي استضافة ثابتة (GitHub Pages) فيصبح قابلاً للتثبيت على الهاتف («إضافة إلى الشاشة الرئيسية») ويعمل دون إنترنت |
-| Android | ⏸ المشروع جاهز، البناء ينتظر SDK | مجلد `android/` (Capacitor، المعرّف `com.obada.infinite`). يحتاج JDK 17 (مثبّت) + Android SDK (لم يُنزَّل بقرارك) |
+| Android | ✅ مبني (2026-10-11) | `release/Infinite-0.9.0-beta.2-debug.apk` (5.5 MB، للتجربة المباشرة على الهاتف) و`release/Infinite-0.9.0-beta.2-release-UNSIGNED.aab` (4.1 MB، غير موقَّع: يحتاج keystore قبل الرفع إلى Google Play). المعرّف `com.obada.infinite` |
 
 ## إعادة البناء
 ```bash
@@ -14,9 +14,9 @@ npm run build:web     # dist/web
 npm run build:win     # release/Infinite-Setup-<version>.exe
 ```
 
-## بناء Android (عند الموافقة على تنزيل SDK)
-1. تثبيت Android SDK (platform 36 + build-tools 36.0.0) وضبط `ANDROID_HOME`
-2. `npx cap sync android` ثم `cd android && gradlew bundleRelease` (AAB للمتجر) أو `gradlew assembleDebug` (APK للتجربة)
+## بناء Android
+1. الأدوات مثبّتة: Android SDK في `D:android-sdk` (platform 36 + build-tools 36.0.0، `ANDROID_HOME`) وJDK 21 في `D:jdk21` (Capacitor 8 يتطلب Java 21، ولا يكفي JDK 17 الموجود في النظام فاضبط `JAVA_HOME=D:jdk21` قبل Gradle)
+2. `npm run build:web` ثم `npx cap sync android` ثم `cd android && gradlew assembleDebug bundleRelease`؛ المخرجات في `android/app/build/outputs/` (apk/debug و bundle/release)
 3. توقيع الإصدار بمفتاح keystore خاص (احفظه في مكانين — فقدانه يمنع تحديث التطبيق؛ الملفات `*.jks` و`keystore.properties` مستثناة من git)
 
 ## توزيع Beta على المختبرين
@@ -27,5 +27,5 @@ npm run build:win     # release/Infinite-Setup-<version>.exe
 ## قبل الإصدار النهائي (لم يُنجَز بعد)
 - سياسة الخصوصية (التطبيق يعمل دون اتصال ولا يجمع بيانات) — مسودة في `PRIVACY.md`
 - لقطات شاشة للمتاجر ووصف عربي/إنجليزي
-- توقيع المثبّت (اختياري) واختبار على جهاز Windows نظيف وهاتف Android حقيقي
+- توقيع المثبّت (اختياري)، وتوقيع AAB بمفتاح keystore خاص بك، واختبار على جهاز Windows نظيف وهاتف Android حقيقي
 - تأكيد معرّف الحزمة `com.obada.infinite` قبل أول رفع (لا يمكن تغييره بعده)
