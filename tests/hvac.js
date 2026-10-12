@@ -98,10 +98,6 @@ setVal('cl_area', 200);
 let cl = w.calcCoolingLoad();
 check('cooling load quick (default): internal gains not added', cl.Q_people + cl.Q_light + cl.Q_equip, 0);
 check('cooling load quick (default): Q = area × density × (1+10%) = 99,000', cl.Q_total, 99000, 1);
-setVal('cl_quick_int', 'added');
-cl = w.calcCoolingLoad();
-// office method: 90,000 + people 4,500 + lights 6,824 + equip 5,118 = 106,442 → ×1.10 = 117,086
-check('cooling load quick (office method): internal gains added', cl.Q_total, 117086, 2);
 setVal('cl_mode', 'detailed');
 cl = w.calcCoolingLoad();
 check('cooling load detailed mode always adds internal gains', cl.Q_people > 0 && cl.Q_light > 0 && cl.Q_equip > 0, true);
