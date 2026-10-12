@@ -992,7 +992,7 @@ w.calcResult('natvent');
 check('crack results: the three leakage rates and the Table 5 reference', ['9.82', '2.81', '37.42', 'المعادلة 1'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
 w.renderCalc('natvent'); w.calcResult('natvent');
 check('two-openings results: the wind and temperature flows, the governing effect, the air changes and the Table 11 note', ['7.14', '4.18', 'الحاكم: الريح', '12.9', 'الجدول 11 صورة نقطية'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
-check('HVAC category: 25 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('25 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
+check('HVAC category: 27 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('27 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
 
 // ---------- Jordan: mechanical ventilation and air conditioning code, Tables 23 (persons), 12 (duct velocities) and 16 (outlet velocities) ----------
 w = boot('jo'); doc = w.document;
@@ -1086,7 +1086,7 @@ check('choosing zone 1 (Table A) fills the winter design temperature 6 C and the
 check('Table 21: group 2 needs 0.06 g/(MN s) for every element; group 3: walls 0.06, ceiling underside 0.02, roof back 0.02, metal construction 0.002; group 1 needs none', [w.eval('JO_BARRIER[2]'), w.eval('JO_BARRIER[3]'), w.eval('JO_BARRIER[1]') === undefined], [[0.06, 0.06, 0.06, 0.06], [0.06, 0.02, 0.02, 0.002], true]);
 w.renderCalc('condensation'); w.addNcLayer();
 check('the form: four default layers and the add button gives a fifth; the zone list has four zones', [doc.querySelectorAll('#nc-tbody tr').length, doc.getElementById('nc_zone').options.length], [5, 5]);
-check('HVAC category: 25 calculators and the condensation card', [doc.getElementById('main-categories-grid').textContent.includes('25 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('condensation')")], [true, true]);
+check('HVAC category: 27 calculators and the condensation card', [doc.getElementById('main-categories-grid').textContent.includes('27 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('condensation')")], [true, true]);
 
 // ---------- Jordan: shelters code (Table 6, 3/2/2, chapter 5, 6/3/4, 6/4), `shelter` ----------
 w = boot('jo'); doc = w.document; w.renderCalc('shelter');
@@ -1104,7 +1104,7 @@ w.calcResult('shelter');
 check('the results show the units, the ventilation flows and the notes (the 300 m2 fan area is flagged as unusable)', ['100', '600', '300', '118.0', '5000', 'غير معقول'].every(t => doc.getElementById('sh_results').textContent.includes(t)), true);
 setv(w, 'sh_occ', 5); w.shToggle();
 check('the office / shop occupancy shows the second quantity (area); the others hide it', [doc.getElementById('sh_q2').closest('.field').style.display, (setv(w, 'sh_occ', 1), w.shToggle(), doc.getElementById('sh_q2').closest('.field').style.display)], ['', 'none']);
-check('HVAC category: 25 calculators and the shelter card', [doc.getElementById('main-categories-grid').textContent.includes('25 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('shelter')")], [true, true]);
+check('HVAC category: 27 calculators and the shelter card', [doc.getElementById('main-categories-grid').textContent.includes('27 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('shelter')")], [true, true]);
 
 // ---------- Jordan: acoustics code, Table 20 (recommended noise criteria of the spaces) in the duct sizing sound check ----------
 w = boot('jo'); doc = w.document;
