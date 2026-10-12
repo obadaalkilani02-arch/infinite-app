@@ -1,6 +1,6 @@
 {
   "name": "infinite",
-  "version": "0.9.0-beta.2",
+  "version": "0.9.0-beta.3",
   "description": "+Infinite engineering calculators",
   "main": "platform/electron/main.js",
   "scripts": {
