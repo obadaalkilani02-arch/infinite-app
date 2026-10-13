@@ -536,7 +536,7 @@ footer strong { color: var(--orange); }
       <div class="icon">🚰</div>
       <h3>الصحية<br><span style="font-weight:400;color:var(--subtext)">السباكة (Plumbing)</span></h3>
       <p>مضخات، سخانات، تصريف أمطار، فقد ضغط، Fixture Units، حمامات سباحة، ري، وغرّاسة دهون.</p>
-      <span class="tag">26 حاسبة متاحة</span>
+      <span class="tag">28 حاسبة متاحة</span>
     </div>
     <div class="calc-card" onclick="showCategory('hvac')">
       <div class="icon">❄️</div>
@@ -560,7 +560,7 @@ footer strong { color: var(--orange); }
       <div class="icon">⚡</div>
       <h3>الكهرباء<br><span style="font-weight:400;color:var(--subtext)">Electrical</span></h3>
       <p>الإضاءة، مقطع الكابل وهبوط الجهد، دوائر المحركات، حساب الأحمال، التأريض وتحمّل القصر، حلقة العطل، المحولات، معامل القدرة، ملء المجاري، معدات التكييف، مضخة الحريق، بطارية الإنذار، الصواعق، المصاعد، تيار القصر، قطب التأريض، الحمل الأقصى، محرك المصعد، المولّد وUPS، حماية الجهد الزائد، الحيادي، وتوزيع الأحمال على الأطوار — حسب NEC وSBC 401 وNFPA 72.</p>
-      <span class="tag">32 حاسبة متاحة</span>
+      <span class="tag">34 حاسبة متاحة</span>
     </div>
     <div class="calc-card" onclick="showCategory('architect')">
       <div class="icon">🏛️</div>
@@ -818,6 +818,21 @@ footer strong { color: var(--orange); }
       <h3>صمام تخفيف الضغط<br><span style="font-weight:400;color:var(--subtext)">PRV Sizing</span></h3>
       <p>تحديد مقاس صمام تخفيف الضغط المناسب من التصرف وفرق الضغط المطلوب.</p>
       <span class="tag">ASSE 1003</span>
+    </div>
+  </div>
+  <div class="section-label" style="margin-top:8px;">الغازات الطبية والتفريغ (NFPA 99)</div>
+  <div class="cards-grid">
+    <div class="calc-card" onclick="showCalc('medgas')">
+      <div class="icon">🫁</div>
+      <h3>مصادر الغازات الطبية والتفريغ<br><span style="font-weight:400;color:var(--subtext)">NFPA 99 · الأسطوانات والهواء والتفريغ</span></h3>
+      <p>وصلات رأس الأسطوانات لإمداد يوم متوسط، وحد الأكسجين وأكسيد النيتروز في الغرفة، وتهوية غرفة الأسطوانات، وعدد ضواغط الهواء الطبي ومضخات التفريغ ومنتجات التخلص من غازات التخدير بقاعدة الأكبر خارج الخدمة، وجودة الهواء والمسافات، مع مقارنة إصداري 2002 و 2024.</p>
+      <span class="tag">NFPA 99-2024 §5.1.3 · §9.3.6 · NFPA 99-2002</span>
+    </div>
+    <div class="calc-card" onclick="showCalc('medpipe')">
+      <div class="icon">🩺</div>
+      <h3>أنابيب الغازات الطبية واختباراتها وإنذاراتها<br><span style="font-weight:400;color:var(--subtext)">NFPA 99 · الاختبارات والإنذارات والدعامات</span></h3>
+      <p>الألوان والضغوط القياسية، وبرنامج اختبارات المركِّب والمدقِّق، وتصحيح الاختبار الثابت لتغير الحرارة، وعتبات إنذارات الضغط والتفريغ والندى، وتباعد الدعامات وأصغر الأقطار ومدى المقاييس، مع الفروق بين الإصدارين.</p>
+      <span class="tag">NFPA 99-2024 §5.1.9 · §5.1.10 · §5.1.12</span>
     </div>
   </div>
 </div><!-- /plumbing-category -->
@@ -1401,6 +1416,21 @@ footer strong { color: var(--orange); }
       <h3>القدرة الاحتياطية والطوارئ<br><span style="font-weight:400;color:var(--subtext)">NFPA 110 · الوقود والبطارية والاختبار</span></h3>
       <p>مدة التشغيل بحسب الفئة والمستوى والزلزال، وكمية الوقود وسعة الخزان الرئيسي (133%)، وبطارية التدوير وتيار الشاحن، وأحمال الاختبار الشهري والسنوي.</p>
       <span class="tag">NFPA 110-2005 Ch. 4, 5, 7, 8</span>
+    </div>
+  </div>
+  <div class="section-label" style="margin-top:8px;">المنشآت الصحية (NFPA 99)</div>
+  <div class="cards-grid">
+    <div class="calc-card" onclick="showCalc('isopower')">
+      <div class="icon">🏥</div>
+      <h3>الأنظمة المعزولة وتأريض مناطق المرضى<br><span style="font-weight:400;color:var(--subtext)">NFPA 99 · المآخذ والتأريض ومراقب العزل</span></h3>
+      <p>عدد المآخذ في موقع السرير بحسب الفئة، واختبار التأريض (20 mV و 0.1 / 0.2 Ω ودقة القياس وعدد المآخذ)، ومعاوقة النظام المعزول من قراءة الملّي أميتر، ومقاومة اختبار مراقب العزل وعتباته، مع مقارنة إصداري 2002 و 2024.</p>
+      <span class="tag">NFPA 99-2024 Ch. 6 · NFPA 99-2002 Ch. 4</span>
+    </div>
+    <div class="calc-card" onclick="showCalc('essential')">
+      <div class="icon">🔌</div>
+      <h3>النظام الكهربائي الأساسي للمنشآت الصحية<br><span style="font-weight:400;color:var(--subtext)">NFPA 99 · الأنواع والفروع والمولدات</span></h3>
+      <p>نوع النظام الأساسي بحسب فئة الحيّز أو المنشأة، والطلب الأقصى لكل فرع (أمان وحرج ومعدات)، وعدد المولدات مع قاعدة أكبر مولد خارج الخدمة، وعدد مفاتيح التحويل وحد 150 kVA، والأزمنة والاختبار، وتصنيف الأحمال على الفروع، مع الفروق بين 2002 و 2024.</p>
+      <span class="tag">NFPA 99-2024 §6.7 · NFPA 99-2002 §4.4-4.6</span>
     </div>
   </div>
 </div><!-- /electrical-category -->
@@ -3984,6 +4014,10 @@ function renderCalc(type) {
     combair: {icon:'💨', title:'هواء الاحتراق للأجهزة الغازية (NFPA 54)', sub:'حجم الغرفة · فتحات الهواء الخارجي'},
     ventsize: {icon:'🏭', title:'مقاس مداخن الأجهزة الغازية (NFPA 54)', sub:'الفئة I · جهاز واحد · الارتفاع والجانبي'},
     epss: {icon:'🔋', title:'القدرة الاحتياطية والطوارئ (NFPA 110)', sub:'الفئة والنوع · الوقود · بطارية التدوير · الاختبار'},
+    isopower: {icon:'🏥', title:'الأنظمة المعزولة وتأريض مناطق المرضى (NFPA 99)', sub:'المآخذ · اختبار التأريض · معاوقة النظام المعزول · مراقب العزل'},
+    essential: {icon:'🔌', title:'النظام الكهربائي الأساسي للمنشآت الصحية (NFPA 99)', sub:'النوع 1 و 2 و 3 · الفروع · المولدات · مفاتيح التحويل'},
+    medgas: {icon:'🫁', title:'مصادر الغازات الطبية والتفريغ (NFPA 99)', sub:'مشعب الأسطوانات · التهوية · الهواء الطبي · التفريغ · N-1'},
+    medpipe: {icon:'🩺', title:'أنابيب الغازات الطبية واختباراتها وإنذاراتها (NFPA 99)', sub:'الضغوط والألوان · الاختبارات · تصحيح الحرارة · الإنذارات · الدعامات'},
     accessreq: {icon:'♿', title:'متطلبات المعوقين في الخدمات (Accessibility Requirements for Services)', sub:'حجيرات المراحيض · المغاسل · المتكآت · المبدلات والمقابس · الاستنارة · التدفئة · الكودة الأردنية'},
     sitesafety: {icon:'🏗️', title:'خدمات موقع الإنشاء والسلامة (Construction Site Services & Safety)', sub:'مرافق العمال · الإسعافات · الطفايات · الإنارة · الضجيج · الكودة الأردنية للسلامة العامة'},
     wastechute: {icon:'🗑️', title:'مساقط النفايات وحجرات الخزن (Waste Chutes & Storage Rooms)', sub:'قطر المسقط والتهوية · القادوس · حجرة الخزن · الأوعية · فرن الحرق · الكودة الأردنية للنفايات'},
@@ -4060,7 +4094,7 @@ function renderCalc(type) {
   document.getElementById('calcTitle').textContent = meta[type].title;
   document.getElementById('calcSub').textContent   = meta[type].sub;
   document.getElementById('hdrTitle').textContent  = meta[type].title;
-  const pi_tags = {epss:'EP-01', ventsize:'VS-01', combair:'CA-01', gaspipe:'GP-01', harmindex:'HI-01', substationvent:'SUB-01', lvtransformer:'LVT-01', pfcharm:'PFH-01', prmextlight:'EXT-01', pvprotect:'PV-01', prmfan:'FAN-01', prmchiller:'CHL-01', prmsystem:'SYS-01', prmenvelope:'ENV-01', prmpci:'PCI-01', swbinsul:'SB-02', swbdesign:'SB-01', rcdeflect:'DF-01', rccrack:'CK-01', rctorsion:'TR-01', scaffoldtimber:'SC-04', rcwall:'WL-01', rccoef:'RK-01', rcflatslab:'FS-01', prestressend:'PS-04', prestressultimate:'PS-03', prestressstress:'PS-02', prestressloss:'PS-01', scaffoldsafety:'SC-03', scaffoldtower:'SC-02', scaffoldcheck:'SC-01', formworkprop:'FW-03', formworkcheck:'FW-02', formworkpressure:'FW-01', steelweld:'ST-04', steelbolt:'ST-03', steeltension:'ST-02', steelmember:'ST-01', retainwall:'RW-01', bearingcap:'BC-01', rcfooting:'RF-01', rccolumn:'RC-01', rcslab:'RS-01', rcbeam:'RB-01', seismic:'SM-01', windload:'WD-01', liveload:'LL-01', deadload:'DL-01', masonrywall:'MW-01', accessplan:'AP-01', natlight:'NL-01', roomacoustics:'RA-01', spacereq:'SR-01', spacehome:'SH-01', spacestair:'SX-01', fitouttrack:'FT-01', aptboq:'AB-01', ductnoise:'DN-01', watersupplyjo:'WSJ-01', accessreq:'AC-01', sitesafety:'SS-01', wastechute:'WST-01', sanfix:'SF-01', septic:'SEP-01', sump:'SP-WW-01', sewage:'SE-SW-01', liftpit:'SP-LP-01', booster:'BP-DW-01', lifting:'LP-DW-01',
+  const pi_tags = {medgas:'MG-01', medpipe:'MP-01', essential:'EE-01', isopower:'IP-01', epss:'EP-01', ventsize:'VS-01', combair:'CA-01', gaspipe:'GP-01', harmindex:'HI-01', substationvent:'SUB-01', lvtransformer:'LVT-01', pfcharm:'PFH-01', prmextlight:'EXT-01', pvprotect:'PV-01', prmfan:'FAN-01', prmchiller:'CHL-01', prmsystem:'SYS-01', prmenvelope:'ENV-01', prmpci:'PCI-01', swbinsul:'SB-02', swbdesign:'SB-01', rcdeflect:'DF-01', rccrack:'CK-01', rctorsion:'TR-01', scaffoldtimber:'SC-04', rcwall:'WL-01', rccoef:'RK-01', rcflatslab:'FS-01', prestressend:'PS-04', prestressultimate:'PS-03', prestressstress:'PS-02', prestressloss:'PS-01', scaffoldsafety:'SC-03', scaffoldtower:'SC-02', scaffoldcheck:'SC-01', formworkprop:'FW-03', formworkcheck:'FW-02', formworkpressure:'FW-01', steelweld:'ST-04', steelbolt:'ST-03', steeltension:'ST-02', steelmember:'ST-01', retainwall:'RW-01', bearingcap:'BC-01', rcfooting:'RF-01', rccolumn:'RC-01', rcslab:'RS-01', rcbeam:'RB-01', seismic:'SM-01', windload:'WD-01', liveload:'LL-01', deadload:'DL-01', masonrywall:'MW-01', accessplan:'AP-01', natlight:'NL-01', roomacoustics:'RA-01', spacereq:'SR-01', spacehome:'SH-01', spacestair:'SX-01', fitouttrack:'FT-01', aptboq:'AB-01', ductnoise:'DN-01', watersupplyjo:'WSJ-01', accessreq:'AC-01', sitesafety:'SS-01', wastechute:'WST-01', sanfix:'SF-01', septic:'SEP-01', sump:'SP-WW-01', sewage:'SE-SW-01', liftpit:'SP-LP-01', booster:'BP-DW-01', lifting:'LP-DW-01',
     heater:'HWST-H-01', raindrain:'RD-01', waterconsumption:'WT-01', pool:'SP-POOL-01', fixtureunits:'FU-01',
     friction:'FL-01', irrigation:'IRR-01', grease:'GI-01', vent:'VNT-01', waterhammer:'WHA-01', recirc:'RCP-01',
     expansiontank:'ET-01', dhwrecirc:'RCP-HW-01', chlorination:'CHL-01', prv:'PRV-01',
@@ -4140,6 +4174,10 @@ function renderCalc(type) {
     combair: renderCombAir,
     ventsize: renderVentSize,
     epss: renderEpss,
+    isopower: renderIsoPower,
+    essential: renderEssential,
+    medpipe: renderMedPipe,
+    medgas: renderMedGas,
     spacereq: renderSpaceReq,
     spacehome: renderSpaceHome,
     spacestair: renderSpaceStair,
@@ -23740,6 +23778,527 @@ function epHTML() {
 }
 
 function renderEpss() { return epHTML(); }
+/* ── Isolated power systems and patient-care electrical (NFPA 99-2024 chapter 6 and NFPA 99-2002 chapter 4) ─────────────────────────────────────────────────
+   receptacles per patient bed location (2024 6.3.2.2.2): Category 2 bed 8 (at least 4 on the normal branch or on a critical branch from a different transfer switch), Category 1 bed 14 (at least 7), operating room 36 per room (at least 12); 2002 4.3.2.2.7.2: general care bed 4, critical care bed 6;
+   grounding system tests (6.3.3.1 / 4.3.3.1): voltage limit 20 mV, impedance limit 0.2 ohm with isolated-ground (2002: quiet ground) receptacles and 0.1 ohm otherwise, accuracy +/-5 % (2002: +/-20 %), impedance measured at 10 % of the receptacles of the patient care vicinity;
+   isolated power system (6.3.2.9 / 4.3.2.6): primary at most 600 V, impedance to ground of each conductor above 200 000 ohm when installed, LIM alarm when the total hazard current reaches 5.0 mA and no alarm below 3.7 mA, LIM internal current 1 mA (low-impedance LIM: 2 x the alarm threshold for 5 ms),
+   acceptance test of the LIM through 200 x V ohm, test switch at least monthly (12 months for an automated LIM); annex A.6.3.2.9.2.1: line impedance = V x 1000 / I with I in mA (the 2002 print has 100) and an isolation transformer of 10 kVA or less */
+const IP_REC = {'2024': {bed2: [8, 4, '6.3.2.2.2(A)'], bed1: [14, 7, '6.3.2.2.2(B)'], or: [36, 12, '6.3.2.2.2(C)']}, '2002': {bed2: [4, 0, '4.3.2.2.7.2(A)'], bed1: [6, 0, '4.3.2.2.7.2(B)'], or: [6, 0, '4.3.2.2.7.2(B)']}};
+function ipCalc(o) {
+  const ed = o.ed === '2002' ? '2002' : '2024', rec = IP_REC[ed][IP_REC[ed][o.sp] ? o.sp : 'bed2'];
+  const tol = ed === '2024' ? 0.05 : 0.20, zLim = o.iso ? 0.2 : 0.1, vLim = 20;
+  const nTest = o.nrec > 0 ? Math.max(1, Math.ceil(0.1 * o.nrec - 1e-9)) : 0;
+  const verdict = (m, lim) => !(m > 0) ? null : m * (1 + tol) <= lim + 1e-12 ? 'pass' : m <= lim + 1e-12 ? 'marginal' : 'fail';
+  const zMeter = o.imA > 0 ? o.V * 1000 / o.imA : null, zPrint2002 = o.imA > 0 ? o.V * 100 / o.imA : null;
+  const w = 2 * Math.PI * o.f, gR = o.rK > 0 ? 1 / (o.rK * 1000) : 0, bC = o.cN > 0 ? w * o.cN * 1e-9 : 0, yRC = Math.hypot(gR, bC);
+  return {ed, tol, perLoc: rec[0], alt: rec[1], clause: rec[2], total: rec[0] * o.n, altTotal: rec[1] * o.n, nTest, zLim, vLim, vV: verdict(o.vm, vLim), zV: verdict(o.zm, zLim),
+    vWorst: o.vm > 0 ? o.vm * (1 + tol) : null, zWorst: o.zm > 0 ? o.zm * (1 + tol) : null,
+    zMeter, zOk: zMeter == null ? null : zMeter > 200000, meterMax: o.V / 200, zPrint2002, zRC: yRC > 0 ? 1 / yRC : null, zRCok: yRC > 0 ? 1 / yRC > 200000 : null, iCap: bC > 0 ? o.V * bC * 1000 : null,
+    capMax: 1 / (w * 200000) * 1e9, suppOk: o.sup ? (o.rK > 0 ? o.rK * 1000 >= 1e6 : null) : null, rTest: 200 * o.V, iTest: o.V / (200 * o.V) * 1000, zLimMin: o.V * 1000, iRated: o.kva * 1000 / o.V, kvaBig: o.kva > 10};
+}
+function ipUpdate() {
+  const box = document.getElementById('ip_results'); if (!box) return;
+  const g = (id, d) => { const e = document.getElementById(id); return e && e.value !== '' && isFinite(+e.value) ? Math.max(0, +e.value) : d; };
+  const o = {ed: v('ip_ed') === '2002' ? '2002' : '2024', sp: ['bed2', 'bed1', 'or'].includes(v('ip_sp')) ? v('ip_sp') : 'bed2', n: Math.max(1, Math.round(g('ip_n', 1))), nrec: Math.round(g('ip_nrec', 0)), iso: v('ip_iso') === 'yes',
+    vm: g('ip_vm', 0), zm: g('ip_zm', 0), V: Math.max(1, g('ip_v', 120)), kva: g('ip_kva', 0), imA: g('ip_i', 0), rK: g('ip_r', 0), cN: g('ip_c', 0), f: v('ip_f') === '50' ? 50 : 60, sup: v('ip_sup') === 'yes'};
+  const r = ipCalc(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2), f3 = x => fmt(x, 3);
+  const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.3rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
+  const col = s => s === 'pass' || s === true ? 'color:#3a9d5d;' : s === 'marginal' ? 'color:var(--orange);' : s == null ? '' : 'color:#D9534F;';
+  const vtxt = s => s === 'pass' ? 'مقبول' : s === 'marginal' ? 'حدّي' : s === 'fail' ? 'مرفوض' : '—';
+  const e24 = r.ed === '2024', spName = {bed2: e24 ? 'سرير في حيّز من الفئة 2' : 'سرير في منطقة عناية عامة', bed1: e24 ? 'سرير في حيّز من الفئة 1 (غير غرفة العمليات)' : 'سرير في منطقة عناية حرجة', or: e24 ? 'غرفة عمليات' : 'غرفة عمليات (منطقة عناية حرجة)'}[o.sp];
+  const tr = (a, b, c) => `<tr style="border-top:1px solid var(--border);"><td style="padding:4px 5px;font-size:.72rem;">${a}</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${b}</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${c}</td></tr>`;
+  const th = 'padding:4px 5px;font-size:.62rem;color:var(--subtext);';
+  box.innerHTML = `
+  <div class="results-box">
+    <h4>مآخذ التيار في موقع السرير (NFPA 99-${r.ed} — ${r.clause})</h4>
+    <div class="results-grid">
+      ${item('أقل عدد من المآخذ لكل ' + (o.sp === 'or' && e24 ? 'غرفة عمليات' : 'موقع سرير'), f0(r.perLoc), spName + (e24 ? ' — 125 V و 15 أو 20 A من النوع غير المقفل' : ''))}
+      ${item('المجموع لـ ' + o.n + (o.sp === 'or' && e24 ? ' غرفة' : ' موقع'), f0(r.total), 'مأخذ')}
+      ${e24 ? item('منها على الفرع العادي أو فرع حرج من مفتاح تحويل آخر', f0(r.alt), 'مأخذ لكل ' + (o.sp === 'or' ? 'غرفة' : 'موقع') + ' (الأقل) — المجموع ' + f0(r.altTotal)) : item('التوزيع بين الفروع', '—', 'لا يحدد إصدار 2002 توزيعًا بين الفرع العادي والحرج في موقع السرير')}
+      ${item('الحد الأدنى لمآخذ الفرع الحرج', '1', 'مأخذ مزدوج لكل موقع سرير في حيّزات الفئة 1 و 2 (4.4.2.2.2.3(8)(a) — 2024: 6.7.5.1.3.2(7)(a))')}
+    </div>
+    ${o.sp === 'or' && !e24 ? '<div class="note" style="margin-top:8px;">🔴 لا يذكر إصدار 2002 عددًا خاصًا لغرفة العمليات؛ عُدّ موقع السرير فيها (طاولة الإجراء) في منطقة عناية حرجة: 6 مآخذ.</div>' : ''}
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>اختبار نظام التأريض في مناطق المرضى (${e24 ? '6.3.3.1' : '4.3.3.1'})</h4>
+    <div class="results-grid">
+      ${item('عدد المآخذ الواجب قياس ممانعتها', f0(r.nTest), 'مأخذ = 10% من ' + f0(o.nrec) + ' مأخذًا في حيّز المريض' + (r.nTest ? ' (تقريب للأعلى) 🔴' : ''))}
+      ${item('حد الجهد', f0(r.vLim), 'mV بين نقطة المرجع والأسطح الموصلة الثابتة (بلا عطل)')}
+      ${item('حد الممانعة', f1(r.zLim), 'Ω ' + (o.iso ? '(نظام فيه مآخذ بتأريض معزول)' : '(بقية الأنظمة)'))}
+      ${item('دقة القياس المسموحة', '±' + f0(r.tol * 100) + '%', e24 ? '2024 (كان ±20% في 2002)' : '2002 (شُدّدت إلى ±5% في 2024)')}
+      ${o.vm > 0 ? item('قياس الجهد', f1(o.vm) + ' → ' + f1(r.vWorst), 'mV — القراءة والقيمة بعد إضافة الدقة: ' + vtxt(r.vV), col(r.vV)) : ''}
+      ${o.zm > 0 ? item('قياس الممانعة', f3(o.zm) + ' → ' + f3(r.zWorst), 'Ω — القراءة والقيمة بعد إضافة الدقة: ' + vtxt(r.zV), col(r.zV)) : ''}
+    </div>
+    <div class="note" style="margin-top:8px;">الحكم «حدّي» يعني أن القراءة تحت الحد وأن القيمة بعد إضافة الدقة المسموحة فوقه: يُعاد القياس بأداة أدق. الممانعة = الجهد المتولد بين نقطة الاختبار والمرجع ÷ التيار المطبق (60 Hz أو تيار مستمر). الأداة: مقاومة دخل 1000 Ω ±10% حتى 1000 Hz، وجهد أطراف مقياس المقاومة لا يزيد على 500 mV (rms). فحص المأخذ: استمرارية التأريض والقطبية وقوة إمساك نصل التأريض 115 g (4 oz) على الأقل.</div>
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>النظام المعزول ومراقب العزل (${e24 ? '6.3.2.9 و 6.3.3.3' : '4.3.2.6 و 4.3.3.3'})</h4>
+    <div class="results-grid">
+      ${o.kva > 0 ? item('تيار ثانوي المحول المقنَّن', f1(r.iRated), 'A = ' + f1(o.kva) + ' kVA ÷ ' + f0(o.V) + ' V (طور واحد)' + (r.kvaBig ? ' — يفوق 10 kVA المستحسنة في الملحق' : ''), r.kvaBig ? 'color:var(--orange);' : '') : ''}
+      ${o.imA > 0 ? item('معاوقة الخط من قراءة الملّي أميتر', f0(r.zMeter), 'Ω = ' + f0(o.V) + ' × 1000 ÷ ' + f2(o.imA) + ' mA — المطلوب أكبر من 200,000 Ω: ' + (r.zOk ? 'محقَّق' : 'غير محقَّق'), col(r.zOk)) : ''}
+      ${item('أكبر قراءة مقبولة للملّي أميتر', f2(r.meterMax), 'mA = V ÷ 200 عند ' + f0(o.V) + ' V' + (r.meterMax > 1 ? ' (فوق تدريج المقياس 0–1 mA)' : ''))}
+      ${r.zRC != null ? item('المعاوقة الناتجة عن R و C لموصل واحد', f0(r.zRC), 'Ω عند ' + o.f + ' Hz — ' + (r.zRCok ? 'أكبر من 200,000 Ω' : 'أقل من 200,000 Ω') + ' 🔴', col(r.zRCok)) : ''}
+      ${r.iCap != null ? item('التيار السعوي لموصل واحد', f3(r.iCap), 'mA = V × 2π f C') : ''}
+      ${item('أكبر سعة لموصل واحد بلا مقاومة', f1(r.capMax), 'nF عند ' + o.f + ' Hz (1 ÷ 2π f × 200,000) 🔴')}
+      ${o.sup ? item('المقاومة قبل مثبّت السعة', r.suppOk == null ? '—' : (r.suppOk ? 'كافية' : 'غير كافية'), 'يجب ألا تقل عن 1 MΩ لكل موصل معزول (6.3.2.9.2.2)', col(r.suppOk)) : ''}
+      ${item('مقاومة اختبار قبول المراقب', f0(r.rTest), 'Ω = 200 × V — يُؤرَّض بها كل موصل من الدارة المغذّاة تباعًا فيعمل الإنذار (التيار ' + f1(r.iTest) + ' mA)')}
+      ${item('إنذار المراقب', '5.0', 'mA تيار خطر كلي عند جهد الخط العادي، ولا يعمل الإنذار لتيار عطل أقل من 3.7 mA')}
+      ${item('تيار المراقب الداخلي', '1', 'mA حدًا أعلى للنوع عالي الممانعة ⇒ ممانعته الداخلية ' + f0(r.zLimMin) + ' Ω على الأقل 🔴؛ والنوع منخفض الممانعة حتى 10 mA (ضعف عتبة الإنذار) لمدة 5 ms')}
+    </div>
+    <div class="note" style="margin-top:8px;">اختبار المراقب: بمفتاح الاختبار شهريًا على الأكثر (12 شهرًا للمراقب ذي الاختبار والمعايرة الآليين)، وبالمقاومة 200 × V بعد أي إصلاح أو تجديد${e24 ? '' : '، وكل 6 أشهر على الأكثر في 2002 (12 شهرًا للآلي) والدائرة غير مستعملة'}.</div>
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>أهم الفروق بين الإصدارين</h4>
+    <table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr><th style="${th}text-align:start;">البند</th><th style="${th}">2002</th><th style="${th}">2024</th></tr></thead><tbody>
+      ${tr('مآخذ كل سرير', '4 (عامة) · 6 (حرجة)', '8 (الفئة 2) · 14 (الفئة 1) · 36 لغرفة العمليات')}
+      ${tr('دقة قياس الجهد والممانعة', '±20%', '±5%')}
+      ${tr('تأريض المآخذ', 'موصل نحاسي مكافئ', 'مساران مستقلان للعطل في دارات حيّز المريض')}
+      ${tr('جهاز الحماية في المواقع الرطبة', 'قاطع أرضي 6 mA', 'قاطع أرضي من الصنف A (يعمل عند 6 mA فأكثر ولا يعمل دون 4 mA)')}
+      ${tr('غرفة العمليات', 'بحسب تحديد الإدارة', 'موقع رطب افتراضيًا ما لم يقرر تقييم المخاطر غير ذلك')}
+      ${tr('اختبار المراقب الدوري بالمقاومة', 'كل 6 أشهر', 'لا يوجد (بعد الإصلاح فقط)')}
+      ${tr('مراقب العزل في غرفة العمليات', 'يُستحسن أن يُرى فيها', 'يجب أن يكون فيها')}
+    </tbody></table>
+    <div class="note" style="margin-top:8px;">🔴 المعادلة في الملحق A.6.3.2.9.2.1 مطبوعة في 2024 ‏V × 1000 ÷ I (I بالملّي أمبير) وفي 2002 ‏V × 100 ÷ I${o.imA > 0 ? ' (تعطي ' + f0(r.zPrint2002) + ' Ω)' : ''}؛ المعتمد هنا 1000 لأنه الوحيد الذي يحقق شرط 200,000 Ω (120 V و 0.6 mA). التقريب للأعلى لعدد المآخذ المختبرة، والربط بين مناطق 2002 العامة والحرجة وفئات 2024، ومعاوقة R و C وتردد 60 أو 50 Hz، وممانعة المراقب الداخلية الدنيا V ÷ 1 mA كلها حسابات من عندنا لا من النص. لم تُبنَ قواعد NFPA 70 المادة 517.160 (تعريف الموصلات وأسلاك النظام) ولا اختبار تداخل المراقب مع إشارات الجسم (6.3.2.9.3.7).</div>
+  </div>`;
+}
+function ipHTML() {
+  const fld = (id, label, val, step, unit) => `<div class="field"><label>${label}</label><input id="${id}" type="number" value="${val}" min="0" step="${step}">${unit ? `<div class="unit">${unit}</div>` : ''}</div>`;
+  const opt = (k, a, sel) => `<option value="${k}"${sel ? ' selected' : ''}>${a}</option>`;
+  return `
+  <div class="note" style="margin-bottom:10px;"><strong>الأنظمة المعزولة وكهرباء مناطق المرضى (NFPA 99-2024 الفصل 6 و NFPA 99-2002 الفصل 4):</strong> عدد المآخذ في موقع السرير، واختبار التأريض (الجهد والممانعة وعدد المآخذ المقاسة)، ومعاوقة النظام المعزول من قراءة الملّي أميتر، ومقاومة اختبار مراقب العزل وعتباته، ومقارنة الإصدارين.</div>
+  <div class="form-section"><h4>الإصدار والحيّز</h4>
+    <div class="fields-grid">
+      <div class="field"><label>إصدار NFPA 99</label><select id="ip_ed">${opt('2024', 'NFPA 99-2024 (الفئات 1 إلى 4)', true)}${opt('2002', 'NFPA 99-2002 (مناطق العناية العامة والحرجة)')}</select></div>
+      <div class="field"><label>نوع الحيّز</label><select id="ip_sp">${opt('bed2', 'سرير: الفئة 2 (2002: عناية عامة)', true)}${opt('bed1', 'سرير: الفئة 1 غير غرفة العمليات (2002: عناية حرجة)')}${opt('or', 'غرفة عمليات')}</select></div>
+      ${fld('ip_n', 'عدد مواقع الأسرّة (أو غرف العمليات)', 10, 1)}
+    </div>
+  </div>
+  <div class="form-section"><h4>اختبار نظام التأريض (القبول للإنشاء الجديد)</h4>
+    <div class="fields-grid">
+      ${fld('ip_nrec', 'عدد المآخذ في حيّز المريض', 20, 1, '💡 تُختبر 10% منها (6.3.3.1.4)')}
+      <div class="field"><label>نوع نظام التأريض</label><select id="ip_iso">${opt('no', 'بلا مآخذ بتأريض معزول (حد 0.1 Ω)', true)}${opt('yes', 'فيه مآخذ بتأريض معزول (حد 0.2 Ω)')}</select></div>
+      ${fld('ip_vm', 'أكبر جهد مقاس (mV)', 12, 0.5, '💡 0 = لم يُقَس')}
+      ${fld('ip_zm', 'أكبر ممانعة مقاسة (Ω)', 0.06, 0.005, '💡 0 = لم تُقَس')}
+    </div>
+  </div>
+  <div class="form-section"><h4>النظام المعزول ومراقب العزل</h4>
+    <div class="fields-grid">
+      ${fld('ip_v', 'جهد النظام المعزول (V)', 120, 1)}
+      ${fld('ip_kva', 'قدرة محول العزل (kVA)', 5, 0.5, '💡 0 = غير محددة')}
+      ${fld('ip_i', 'قراءة الملّي أميتر في اختبار المعاوقة (mA)', 0.45, 0.01, '💡 0 = لم تؤخذ؛ مقياس 0–1 mA بين المرجع وكل موصل')}
+      ${fld('ip_r', 'المقاومة إلى الأرض لموصل واحد (kΩ)', 0, 10, '💡 0 = غير معروفة؛ لحساب معاوقة R و C')}
+      ${fld('ip_c', 'السعة إلى الأرض لموصل واحد (nF)', 0, 1, '💡 0 = غير معروفة')}
+      <div class="field"><label>تردد الشبكة</label><select id="ip_f">${opt('60', '60 Hz', true)}${opt('50', '50 Hz')}</select></div>
+      <div class="field"><label>مثبّت سعة (Capacitance suppressor)</label><select id="ip_sup">${opt('no', 'لا', true)}${opt('yes', 'نعم')}</select></div>
+    </div>
+  </div>
+  <div id="ip_results"></div>`;
+}
+function renderIsoPower() { return ipHTML(); }
+/* ── Essential electrical systems of health care facilities (NFPA 99-2024 section 6.7, NFPA 99-2002 sections 4.4 - 4.6) ─────────────────────────────────────────────
+   2024: Category 1 spaces need a Type 1 EES (life safety + critical + equipment branches), Category 2 a Type 1 or a Type 2 (life safety + equipment), Category 3 and 4 none; 2002: by facility (hospital Type 1, nursing home Type 2, other ambulatory Type 3 unless life support or critical care: Type 1);
+   sources Type 10 / Class X / Level 1 (2002 Type 3: Level 2), loads restored within 10 s, generator sized for the maximum demand likely to be produced by the connected load (no factor printed), 2002 4.4.1.1.8.1: when the sets serve other purposes too the demand is met with the largest set out of service,
+   each branch at least one transfer switch, one switch may serve several branches up to 150 kVA (120 kW) continuous with a bypass-isolation switch (2024), tests 12 per year 20 - 40 days apart, low-fuel warning at 4 h, engine cool-down 5 min, never shed: life safety, Category 1 critical loads, medical air, vacuum, fire and jockey pumps, fuel pumps, accessories */
+const EE_FAC = {
+  c1:  {ed: '2024', t: 1, n: 'أعلى حيّز مخدوم من الفئة 1 (فشله قد يسبب إصابة كبيرة أو وفاة)'},
+  c2a: {ed: '2024', t: 1, n: 'أعلى حيّز مخدوم من الفئة 2 — بنظام من النوع 1'},
+  c2b: {ed: '2024', t: 2, n: 'أعلى حيّز مخدوم من الفئة 2 — بنظام من النوع 2'},
+  c3:  {ed: '2024', t: 0, n: 'حيّزات من الفئة 3 أو 4 فقط (لا يلزم نظام أساسي)'},
+  h:   {ed: '2002', t: 1, n: 'مستشفى (13.3.4.2)'},
+  a1:  {ed: '2002', t: 1, n: 'منشأة إسعافية فيها معدات دعم حياة كهربائية أو مناطق عناية حرجة (14.3.4.2.1)'},
+  a3:  {ed: '2002', t: 3, n: 'منشأة إسعافية أخرى (14.3.4.2)'},
+  n:   {ed: '2002', t: 2, n: 'دار رعاية تمريضية أو رعاية محدودة (17.3.4.1.1)'}
+};
+function eeCalc(o) {
+  const ed = o.ed === '2002' ? '2002' : '2024', fk = EE_FAC[o.fac] && EE_FAC[o.fac].ed === ed ? o.fac : (ed === '2024' ? 'c1' : 'h'), t = EE_FAC[fk].t;
+  const d = k => o[k] * o[k + 'f'] / 100;
+  let ls = d('ls') + (t === 1 ? d('acc') : 0), cr = t === 1 || t === 2 ? d('cr') : 0, eq = 0;
+  if (t === 1) eq = d('eqa') + d('eqm') + d('mac') + d('mvp') + d('jp');
+  if (t === 2) { eq = d('eqa') + d('eqm') + d('mac') + d('mvp') + d('jp') + d('acc') + d('cr'); cr = 0; }
+  if (t === 3) { ls = d('ls'); }
+  const fp = o.fpOn ? d('fp') : 0, ees = ls + cr + eq, demand = t === 0 ? 0 : ees + fp;
+  const cap = o.unit > 0 ? o.unit : 0, nOp = cap > 0 ? Math.max(1, Math.ceil(demand / cap - 1e-9)) : 0;
+  const n1 = o.other && demand > 0, nSets = nOp ? nOp + (n1 ? 1 : 0) : 0, installed = nSets * cap, firm = (nSets - 1) * cap;
+  const branches = t === 1 ? [['فرع الأمان على الأرواح', ls], ['الفرع الحرج', cr], ['فرع المعدات', eq]] : t === 2 ? [['فرع الأمان على الأرواح', ls], ['فرع المعدات', eq]] : t === 3 ? [['نظام الطوارئ', ls]] : [];
+  const kwSwitch = 120, oneSwitch = t > 0 && ees > 0 && ees <= kwSwitch + 1e-9;
+  return {ed, fk, t, ls, cr, eq, fp, ees, demand, kva: demand / o.pf, nOp, nSets, installed, firm, n1, branches, oneSwitch, nSwitch: t === 0 ? 0 : oneSwitch ? 1 : branches.length, reserve: cap > 0 ? installed - demand : null, opt: d('opt'),
+    shortfall: cap > 0 && nSets > 0 ? (n1 ? firm : installed) < demand - 1e-9 : false};
+}
+function eeUpdate() {
+  const box = document.getElementById('ee_results'); if (!box) return;
+  const g = (id, d) => { const e = document.getElementById(id); return e && e.value !== '' && isFinite(+e.value) ? Math.max(0, +e.value) : d; };
+  const o = {ed: v('ee_ed') === '2002' ? '2002' : '2024', fac: v('ee_fac'), pf: Math.min(1, Math.max(0.5, g('ee_pf', 0.8))), unit: g('ee_unit', 0), other: v('ee_oth') === 'yes', fpOn: v('ee_fpon') === 'yes'};
+  ['ls', 'cr', 'eqa', 'eqm', 'acc', 'mac', 'mvp', 'fp', 'jp', 'opt'].forEach(k => { o[k] = g('ee_' + k, 0); o[k + 'f'] = Math.min(100, g('ee_' + k + 'f', 100)); });
+  const r = eeCalc(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), e24 = r.ed === '2024';
+  const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.3rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
+  const tr = (a, b, c) => `<tr style="border-top:1px solid var(--border);"><td style="padding:4px 5px;font-size:.72rem;">${a}</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${b}</td><td style="padding:4px 5px;font-size:.62rem;text-align:center;color:var(--subtext);" dir="ltr">${c}</td></tr>`;
+  const th = 'padding:4px 5px;font-size:.62rem;color:var(--subtext);';
+  const tname = r.t === 0 ? 'لا يلزم نظام أساسي' : 'النوع ' + r.t;
+  const br = r.branches.map(b => `<tr style="border-top:1px solid var(--border);"><td style="padding:4px 5px;font-size:.72rem;">${b[0]}</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${f1(b[1])} kW</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${f1(b[1] / o.pf)} kVA</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${b[1] <= 120 ? '≤ 120 kW' : '> 120 kW'}</td></tr>`).join('');
+  box.innerHTML = `
+  <div class="results-box">
+    <h4>نوع النظام الأساسي (NFPA 99-${r.ed} — ${e24 ? '6.4 إلى 6.6 و 6.7' : '13.3.4 و 4.4 إلى 4.6'})</h4>
+    <div class="results-grid">
+      ${item('النظام المطلوب', tname, EE_FAC[r.fk].n, r.t === 0 ? 'color:#3a9d5d;' : 'color:var(--orange);')}
+      ${r.t > 0 ? item('تصنيف المصدر (NFPA 110)', r.t === 3 ? 'Type 10 · Class X · Level 2' : 'Type 10 · Class X · Level 1', r.t === 3 ? '4.4.1.1.7.2 — النوع 3 موجود في 2002 فقط' : (e24 ? '6.7.1.2.1' : '4.4.1.1.7.1') + ' — استعادة الأحمال خلال 10 s') : ''}
+      ${r.t > 0 ? item('عدد المصادر المستقلة', '2', 'على الأقل: مصدر في الموقع ومصدر آخر (' + (e24 ? '6.7.1.1.2' : '4.4.1.1.4') + ')' + (e24 ? ' — مصدر واحد على الأقل في الموقع بسعة النظام كله (6.7.1.1.2.1)' : '')) : ''}
+      ${r.t === 1 && e24 ? item('دارات الحيّزات من الفئة 1', 'ATS + دارة', 'من لوحات الفرع الحرج بمفتاح تحويل آلي واحد، ودارة واحدة على الأقل من الشبكة العادية أو من مفتاح الفرع الحرج الثاني (6.4.3)') : ''}
+    </div>
+  </div>
+  ${r.t > 0 ? `<div class="results-box" style="margin-top:10px;">
+    <h4>الطلب الأقصى وسعة المولدات</h4>
+    <div class="results-grid">
+      ${item('الطلب الأقصى على النظام الأساسي', f1(r.ees), 'kW = الأحمال × معاملات الطلب لجميع الفروع' + (r.fp > 0 ? ' — مع مضخة الحريق: ' + f1(r.demand) + ' kW' : ''), 'color:var(--orange);font-size:1.5rem;')}
+      ${item('بالقدرة الظاهرية', f1(r.kva), 'kVA عند معامل قدرة ' + o.pf + ' 🔴')}
+      ${r.nSets ? item('عدد المولدات اللازم', String(r.nSets), (r.n1 ? r.nOp + ' للحمل + 1 احتياطي (أكبر مولد خارج الخدمة)' : r.nOp + ' للحمل') + ' × ' + f0(o.unit) + ' kW = ' + f0(r.installed) + ' kW', r.shortfall ? 'color:#D9534F;' : '') : ''}
+      ${r.nSets ? item('الاحتياطي فوق الطلب', f1(r.reserve), 'kW' + (r.n1 ? ' (والمتاح مع خروج أكبر مولد: ' + f0(r.firm) + ' kW)' : '') + (r.opt > 0 ? ' — الأحمال الاختيارية ' + f1(r.opt) + ' kW تُفصل قبل الحمل الزائد' : ''), r.shortfall ? 'color:#D9534F;' : '') : ''}
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-top:8px;"><thead><tr><th style="${th}text-align:start;">الفرع</th><th style="${th}">الطلب</th><th style="${th}">kVA</th><th style="${th}">حد مفتاح واحد</th></tr></thead><tbody>${br}</tbody></table>
+    <div class="note" style="margin-top:8px;">${e24 ? 'لا يطبع 2024 معاملات طلب ولا هامشًا: «الطلب الأقصى المرجح من الحمل الموصول» (6.7.1.2.2.2 و 6.7.1.2.4)، وتُبنى المعاملات على بيانات تاريخية حصيفة (الملحق A.6.7.1.2.4).' : 'السعة لأقصى طلب فعلي مرجَّح في أي وقت لا لمجموع الحمل الموصول (4.4.1.1.10 والملحق A.4.4.1.1.10).'} ${r.n1 ? 'قاعدة «أكبر مجموعة خارج الخدمة» حين تُستعمل المولدات لأغراض أخرى (قص الذروة وغيره) نصّ 2002 (4.4.1.1.8.1)' + (e24 ? ' ولم يُكرَّر في 2024، فتُعدّ هنا ممارسة حصيفة.' : '.') : 'مجموعة واحدة مسموحة للنظام الأساسي ولأغراض أخرى بشرط ألا يقل متوسط الفترة بين الإصلاحات الشاملة عن 3 سنوات (6.7.1.3.1).'}</div>
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>مفاتيح التحويل</h4>
+    <div class="results-grid">
+      ${item('أقل عدد من مفاتيح التحويل', String(r.nSwitch), r.oneSwitch ? 'مفتاح واحد يخدم الفروع كلها لأن الحمل المستمر ' + f1(r.ees) + ' kW ≤ 120 kW (150 kVA)' + (e24 ? ' بشرط مفتاح عزل وتجاوز (6.7.2.2.3.3)' : '') : 'مفتاح أو أكثر لكل فرع (' + (e24 ? '6.7.2.2.3.1' : '4.4.2.2.1.4') + ')')}
+      ${item('المفتاح الآلي', '≤ 600 V', 'مُدرَج للغرض ومعلَّم بما يحتمله من تيار القصر (6.7.2.1.3.16)')}
+    </div>
+  </div>` : ''}
+  <div class="results-box" style="margin-top:10px;">
+    <h4>الأزمنة والاختبار والتشغيل</h4>
+    <table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr><th style="${th}text-align:start;">البند</th><th style="${th}">القيمة</th><th style="${th}">البند في ${r.ed}</th></tr></thead><tbody>
+      ${tr('استعادة الأحمال بعد انقطاع المصدر العادي', '≤ 10 s', e24 ? '6.7.5.3.1' : '4.4.3.1')}
+      ${tr('تأخير بدء المولد (للانقطاعات العابرة)', 'نحو 1 s (ملحق)', e24 ? '6.7.2.1.3.4 · A' : '4.4.2.1.4(D)')}
+      ${tr('تأخير إعادة التحويل إلى العادي', '30 دقيقة موصى بها (ملحق)', e24 ? 'A.6.7.2.1.3.7' : 'A.4.4.2.1.4(F)')}
+      ${tr('تشغيل المولد بلا حمل قبل الإيقاف', '≥ 5 دقائق (إلا 15 kW فأقل)', e24 ? '6.7.2.1.3.9' : '4.4.2.1.4(J)')}
+      ${tr('اختبار المولد', '12 مرة في السنة بفاصل 20–40 يومًا', e24 ? '6.7.4.1.1.5(A)' : '4.4.4.1.1.2(A)')}
+      ${tr('تحذير انخفاض الوقود', 'أقل من 4 ساعات تشغيل', e24 ? '6.7.1.3.8.3(4)' : '4.4.1.1.17(C)')}
+      ${tr('درجة حرارة غرفة المولد', e24 ? '≥ 4.5°C (40°F) والتدفئة بحسب المصنّع' : 'الغرفة ≥ 10°C أو سترة الماء ≥ 32°C', e24 ? '6.7.1.3.4.6 · 6.7.1.3.3' : '4.4.1.1.12')}
+      ${tr('المسافة حول المولد', e24 ? '≥ 0.9 m (36 in.)' : '≥ 76 cm (30 in.)', e24 ? '6.7.1.3.2' : '4.4.1.1.9(B)')}
+      ${tr('غرفة المولد داخل المبنى', 'فصل بحريق 2 ساعة', e24 ? '6.7.1.2.3.1' : '4.4.1.1.9(A)')}
+      ${tr('بدء التشغيل بالهواء المضغوط', e24 ? 'فترتا تدوير كاملتان (NFPA 110 5.6.4.2.1)' : '5 محاولات × 10 s وراحة ≤ 10 s', e24 ? '6.7.1.3.6' : '4.4.1.1.15')}
+      ${e24 ? tr('تنسيق حمايات الزيادة في التيار', 'لأي عطل يتجاوز 0.1 s', '6.7.2.1.1') : ''}
+      ${e24 ? tr('إضاءة غرفة المولد بالبطارية', '32.3 lux (3.0 fc) ومدة 1.5 ساعة', '6.3.2.6.4 · 6.3.2.6.7') : ''}
+      ${r.t === 3 ? tr('مدة المصدر البديل للنوع 3', '≥ 1.5 ساعة وخلال 10 s', '4.6.3.1') : ''}
+    </tbody></table>
+    <div class="note" style="margin-top:8px;"><strong>لا تُفصل أبدًا</strong> بدارات تخفيف الحمل: أحمال الأمان على الأرواح، وأحمال الفرع الحرج في حيّزات الفئة 1 (2002: مناطق العناية الحرجة)، ومضخات الهواء الطبي ومضخات التفريغ الطبي الجراحي، ${e24 ? 'ومضخات الحريق، ' : ''}ومضخة الضغط (Jockey) للإطفاء بالماء، ومضخات وقود المولد ولواحقه (${e24 ? '6.7.5.1.5' : '4.4.1.1.3'}). الوقود والبطاريات: بحسب NFPA 110 (استعمل حاسبة «القدرة الاحتياطية والطوارئ»). تصنيف الأحمال بحسب الفروع في القوائم أدناه.</div>
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>تصنيف الأحمال على الفروع (${e24 ? '6.7.5.1 و 6.7.6.2' : '4.4.2.2 و 4.5.2.2'})</h4>
+    <div class="note"><strong>فرع الأمان على الأرواح:</strong> إضاءة طرق الخروج ولوحات المخارج (NFPA 101)، ${e24 ? 'إنذار الحريق، ' : 'الإنذارات (الحريق وإنذارات الغازات الطبية)، '}أنظمة الاتصال لتعليمات الطوارئ، إضاءة وأجهزة شحن بطارية الإضاءة والمآخذ المنتقاة في موقع المولد وغرف مفاتيح التحويل، إضاءة وتحكم واتصالات حجرة المصعد، ${e24 ? 'الأبواب الكهربائية للخروج' : 'الأبواب الآلية للخروج'}. لا يُوصَل غيرها بهذا الفرع.</div>
+    ${r.t === 1 ? `<div class="note" style="margin-top:6px;"><strong>الفرع الحرج:</strong> ${e24 ? 'حيّزات الفئة 1 (التخدير العميق أو العام)، إضاءة المهام والمآخذ في أحيّزة المرضى والتحضير الدوائي والصيدلية ومحطات التمريض، المزيد من إضاءة المهام المتخصصة، نداء الممرضات، بنوك الدم والعظام والأنسجة، غرف الاتصالات، العناية المركزة والقلب ومعامل القثطرة والتصوير الوعائي وغسيل الكلى وطوارئ منتقاة وتعافٍ بعد الجراحة (دوبلكس واحد لكل سرير على الأقل)، شبكات الحاسوب السريري، الهاتف اللاسلكي والنداء.' : 'مناطق العناية الحرجة التي تستعمل غازات التخدير، النظم المعزولة في البيئات الخاصة، إضاءة المهام والمآخذ في أحيّزة المرضى والتحضير الدوائي والصيدلية ومحطات التمريض، نداء الممرضات، بنوك الدم والعظام والأنسجة، غرف الهاتف، أسرّة العناية العامة (دوبلكس لكل غرفة)، التصوير الوعائي والقثطرة والقلب وغسيل الكلى والطوارئ المنتقاة وفسيولوجيا الإنسان والعناية المركزة والتعافي.'}</div>` : ''}
+    <div class="note" style="margin-top:6px;"><strong>فرع المعدات (تأخير آلي):</strong> أنظمة الشفط الطبي الجراحي (يجوز على الفرع الحرج)، مضخات الصرف وما يلزم لسلامة الأجهزة الكبيرة، منظومات الهواء المضغوط الطبي (يجوز على الفرع الحرج)، التحكم بالدخان وضغط السلالم، شفاطات مطابخ الحريق، تهوية غرف العزل والفاصل البيولوجي وشفاطات الكبائن المخبرية.${r.t === 1 ? '' : ' (النوع 2 يضيف: إضاءة ومآخذ المهام ونداء الممرضات وتكييف غرف الاتصالات).'}</div>
+    <div class="note" style="margin-top:6px;"><strong>فرع المعدات (تأخير آلي أو يدوي):</strong> تدفئة غرف العمليات والولادة والعناية والحضّانات والعزل والطوارئ وغرف المرضى (لا تلزم غرف المرضى فوق −6.7°C [+20°F] بحسب 97.5% من تصميم ASHRAE)، ومضخات الضغط للإطفاء، ومصاعد منتقاة، وتهوية غرف العمليات والعناية، والضغط العالي والمنخفض، والأوتوكلاف، وأحمال منتقاة أخرى.</div>
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>أهم الفروق بين 2002 و 2024</h4>
+    <table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr><th style="${th}text-align:start;">البند</th><th style="${th}">2002</th><th style="${th}">2024</th></tr></thead><tbody>
+      ${tr('اختيار النوع', 'بحسب نوع المنشأة', 'بحسب فئة الحيّز (1 إلى 4)')}
+      ${tr('الأنواع', '1 و 2 و 3', '1 و 2 فقط')}
+      ${tr('فروع النوع 1', 'نظام طوارئ (أمان + حرج) ونظام معدات', 'ثلاثة فروع: أمان وحرج ومعدات')}
+      ${tr('أكبر مولد خارج الخدمة', 'مطلوب عند استعمال المولدات لأغراض أخرى', 'غير مكرَّر في النص')}
+      ${tr('المولد داخل غرفة بحرارة', '≥ 10°C أو سترة ≥ 32°C', '≥ 4.5°C وبحسب المصنّع')}
+      ${tr('تنسيق الحمايات', 'غير مطلوب', '0.1 s')}
+    </tbody></table>
+    <div class="note" style="margin-top:8px;">🔴 معامل القدرة 0.8 وعدد المولدات (حمل ÷ قدرة المجموعة تقريبًا للأعلى) والحمل الاختياري المفصول قبل الزيادة من حسابنا، ولا يحددها NFPA 99. ربط الأحمال المنتقاة بالفروع تلخيص للقوائم الكاملة (انظر البنود المقتبسة)، وقد يغيّر مجلس الإدارة الأحمال المنتقاة. لم تُبنَ شروط الأجهزة الفرعية للقاطع والمفتاح الآلي (6.7.2.1.3) ولا الشبكات الدقيقة (6.10) ولا اختبار القبول (6.8) وبرنامج الصيانة الكهربائية (6.9).</div>
+  </div>`;
+}
+function eeHTML() {
+  const fld = (id, label, val, step, unit) => `<div class="field"><label>${label}</label><input id="${id}" type="number" value="${val}" min="0" step="${step}">${unit ? `<div class="unit">${unit}</div>` : ''}</div>`;
+  const opt = (k, a, sel) => `<option value="${k}"${sel ? ' selected' : ''}>${a}</option>`;
+  const ld = (k, label, kw, df) => `${fld('ee_' + k, label + ' (kW)', kw, 1)}${fld('ee_' + k + 'f', 'معامل الطلب (%)', df, 5)}`;
+  return `
+  <div class="note" style="margin-bottom:10px;"><strong>النظام الكهربائي الأساسي لمنشآت الرعاية الصحية (NFPA 99-2024 القسم 6.7 و NFPA 99-2002 الأقسام 4.4 إلى 4.6):</strong> نوع النظام بحسب الفئة أو المنشأة، والطلب الأقصى لكل فرع، وعدد المولدات مع قاعدة «أكبر مولد خارج الخدمة»، وعدد مفاتيح التحويل، والأزمنة والاختبار، وتصنيف الأحمال على الفروع.</div>
+  <div class="form-section"><h4>الإصدار والتصنيف</h4>
+    <div class="fields-grid">
+      <div class="field"><label>إصدار NFPA 99</label><select id="ee_ed">${opt('2024', 'NFPA 99-2024', true)}${opt('2002', 'NFPA 99-2002')}</select></div>
+      <div class="field" style="grid-column:1/-1;"><label>الحيّز أو المنشأة</label><select id="ee_fac">${Object.keys(EE_FAC).map(k => opt(k, '(' + EE_FAC[k].ed + ') ' + EE_FAC[k].n, k === 'c1')).join('')}</select></div>
+    </div>
+  </div>
+  <div class="form-section"><h4>الأحمال الموصولة ومعاملات الطلب</h4>
+    <div class="fields-grid">
+      ${ld('ls', 'فرع الأمان على الأرواح', 60, 100)}
+      ${ld('cr', 'الفرع الحرج', 250, 80)}
+      ${ld('eqa', 'فرع المعدات (تأخير آلي)', 150, 80)}
+      ${ld('eqm', 'فرع المعدات (تأخير آلي أو يدوي)', 200, 60)}
+      ${ld('acc', 'لواحق المولد (مضخة الوقود والمراوح والتحكم)', 15, 100)}
+      ${ld('mac', 'ضواغط الهواء الطبي', 30, 100)}
+      ${ld('mvp', 'مضخات التفريغ الطبي الجراحي', 30, 100)}
+      ${ld('jp', 'مضخة الضغط (Jockey)', 5, 100)}
+      ${ld('fp', 'مضخة حريق كهربائية', 90, 100)}
+      <div class="field"><label>مضخة الحريق على المولد نفسه</label><select id="ee_fpon">${opt('no', 'لا', true)}${opt('yes', 'نعم')}</select></div>
+      ${ld('opt', 'أحمال اختيارية (بمفتاح تحويل خاص)', 0, 100)}
+    </div>
+  </div>
+  <div class="form-section"><h4>المولدات</h4>
+    <div class="fields-grid">
+      ${fld('ee_unit', 'قدرة المولد الواحد (kW)', 500, 25, '💡 0 = دون تحديد عدد')}
+      ${fld('ee_pf', 'معامل القدرة', 0.8, 0.05, '🔴 افتراض عام')}
+      <div class="field"><label>المولدات تخدم أغراضًا أخرى أيضًا (قص الذروة وغيره)</label><select id="ee_oth">${opt('no', 'لا — للنظام الأساسي فقط', true)}${opt('yes', 'نعم')}</select></div>
+    </div>
+  </div>
+  <div id="ee_results"></div>`;
+}
+function renderEssential() { return eeHTML(); }
+/* ── Medical gas and vacuum distribution: services, tests, alarms, supports (NFPA 99-2024 section 5.1 and NFPA 99-2002 section 5.1) ──────────────────────────────────
+   Table 5.1.11 colours and standard gauge pressures (2024; the 2002 printout clips the pressure columns): 345 - 380 kPa for oxygen, nitrous oxide, medical air, CO2, helium; nitrogen and instrument air 0 - 2070 kPa (1100 - 1275 kPa at the outlet, 5.1.12.4.10.3); vacuum 380 - 760 mm HgV;
+   Table 5.1.10.11.4.6 (2002 5.1.10.6.4.5) support spacing 1520 / 1830 / 1830 / 2130 / 2440 / 2740 / 3050 mm and 4570 mm for risers; tests: initial 1.5 x operating pressure and at least 1035 kPa, 24 h standing at 1.2 x operating pressure (2024: leakage up to 0.5 % of the start pressure apart from temperature), 10 min verifier test, purge 225 Nl/min,
+   particulate 1000 L at 100 Nl/min through 0.45 micron, purity (2024: 5 ppm hydrocarbons and 5 ppm halogenated, 2002: 1 and 2 ppm), temperature correction P2a = P1a x T2a / T1a (absolute temperatures with 273 in 2024 and a printed 238 in 2002), master and area alarms at +/-20 % of the operating pressure and 300 mm HgV */
+const MP_GAS = {o2: ['الأكسجين', 'O2', 'أخضر/أبيض أو أبيض/أخضر', 345, 380, 'p'], n2o: ['أكسيد النيتروز', 'N2O', 'أزرق/أبيض', 345, 380, 'p'], air: ['الهواء الطبي', 'Med air', 'أصفر/أسود', 345, 380, 'p'], co2: ['ثاني أكسيد الكربون', 'CO2', 'رمادي/أسود أو رمادي/أبيض', 345, 380, 'p'],
+  he: ['الهيليوم', 'He', 'بني/أبيض', 345, 380, 'p'], n2: ['النيتروجين', 'N2', 'أسود/أبيض', 0, 2070, 'p'], ia: ['هواء الأجهزة', '—', 'أحمر/أبيض', 0, 2070, 'p'], vac: ['التفريغ الطبي الجراحي', 'Med vac', 'أبيض/أسود', 380, 760, 'v'], wagd: ['التخلص من غازات التخدير', 'WAGD', 'بنفسجي/أبيض', 0, 0, 'w']};
+const MP_SUP = [['DN8 (NPS 1/4) — 3/8 in.', 1520], ['DN10 (NPS 3/8) — 1/2 in.', 1830], ['DN15 (NPS 1/2) — 5/8 in.', 1830], ['DN20 (NPS 3/4) — 7/8 in.', 2130], ['DN25 (NPS 1) — 1-1/8 in.', 2440], ['DN32 (NPS 1-1/4) — 1-3/8 in.', 2740], ['DN40 (NPS 1-1/2) وأكبر', 3050]];
+const MP_ATM = [[0, 101.33], [500, 99.49], [1000, 97.63], [1500, 95.91], [2000, 94.19], [2500, 92.46], [3000, 90.81], [3500, 89.15], [4000, 87.49], [4500, 85.91], [5000, 84.33]];
+const MP_CV_P = {'1/2': 17, '3/4': 31, '1': 60, '1-1/4': 110, '1-1/2': 169, '2': 357, '2-1/2': 390, '3': 912, '4': 1837}, MP_CV_V = {'1/2': 17, '3/4': 31, '1': 60, '1-1/4': 110, '1-1/2': 169, '2': 357, '2-1/2': 196, '3': 302, '4': 600, '5': 1022, '6': 1579, '8': 3136};
+function mpAtm(elevM) {
+  const ft = Math.max(0, Math.min(5000, elevM / 0.3048));
+  for (let i = 1; i < MP_ATM.length; i++) if (ft <= MP_ATM[i][0]) { const a = MP_ATM[i - 1], b = MP_ATM[i]; return a[1] + (b[1] - a[1]) * (ft - a[0]) / (b[0] - a[0]); }
+  return MP_ATM[MP_ATM.length - 1][1];
+}
+function mpCalc(o) {
+  const ed = o.ed === '2002' ? '2002' : '2024', gas = MP_GAS[o.gas] ? o.gas : 'o2', G = MP_GAS[gas], kind = G[5], e24 = ed === '2024';
+  const sup = MP_SUP[Math.min(MP_SUP.length - 1, Math.max(0, o.size))][1], patm = mpAtm(o.elev);
+  const P = o.p, pTest = Math.max(1.5 * P, 1035), pStand = 1.2 * P;
+  const T1 = o.t1 + 273, T2 = o.t2 + 273, T1b = o.t1 + (e24 ? 273 : 238), T2b = o.t2 + (e24 ? 273 : 238);
+  const pa1 = o.ps + patm, pa2 = pa1 * T2 / T1, pg2 = pa2 - patm, pa2b = pa1 * T2b / T1b, pg2b = pa2b - patm;
+  const va1 = patm - o.vs, va2 = va1 * T2 / T1, vg2 = patm - va2;
+  const nRisers = o.floors > 0 ? Math.ceil(o.floors * Math.max(1, Math.ceil(o.fh / 4.57 - 1e-9))) : 0;
+  return {ed, gas, G, kind, sup, patm, pTest, pStand, pHigh: 1.2 * P, pLow: 0.8 * P, relief: 1.5 * P, pa2, pg2, pg2b, vg2, drop: pg2 - o.ps, dropAllow: e24 ? 0.005 * o.ps : null, loss: 0.1 * P, nH: o.len > 0 ? Math.ceil(o.len * 1000 / sup - 1e-9) : 0, nRisers,
+    zonesPart: o.zones > 0 ? Math.max(1, Math.ceil(0.25 * o.zones - 1e-9)) : 0, partMin: 1000 / 100, gaugeLo: 1.5 * P, gaugeHi: 3 * P, gaugeOk: o.gr > 0 ? (e24 ? P >= o.gr / 3 - 1e-9 && P <= 2 * o.gr / 3 + 1e-9 : P >= o.gr / 4 - 1e-9 && P <= 3 * o.gr / 4 + 1e-9) : null, gaugeAcc: o.gr * 0.01};
+}
+function mpUpdate() {
+  const box = document.getElementById('mp_results'); if (!box) return;
+  const g = (id, d) => { const e = document.getElementById(id); return e && e.value !== '' && isFinite(+e.value) ? +e.value : d; };
+  const o = {ed: v('mp_ed') === '2002' ? '2002' : '2024', gas: v('mp_g'), p: Math.max(0, g('mp_p', 350)), vs: Math.max(0, g('mp_vs', 0)), ps: Math.max(0, g('mp_ps', 420)), t1: g('mp_t1', 27), t2: g('mp_t2', 18), elev: Math.max(0, g('mp_el', 0)),
+    size: Math.round(g('mp_sz', 2)), len: Math.max(0, g('mp_len', 0)), floors: Math.max(0, Math.round(g('mp_fl', 0))), fh: Math.max(0.5, g('mp_fh', 3.5)), zones: Math.max(0, Math.round(g('mp_zn', 0))), gr: Math.max(0, g('mp_gr', 1000))};
+  if (o.gas === 'vac') o.p = Math.max(0, g('mp_vac', 460));
+  const r = mpCalc(o), e24 = r.ed === '2024', f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2), kpsi = x => f0(x) + ' kPa (' + f1(x * 0.145038) + ' psi)';
+  const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.3rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
+  const tr = (a, b, c) => `<tr style="border-top:1px solid var(--border);"><td style="padding:4px 5px;font-size:.72rem;">${a}</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${b}</td><td style="padding:4px 5px;font-size:.62rem;text-align:center;color:var(--subtext);" dir="ltr">${c}</td></tr>`;
+  const th = 'padding:4px 5px;font-size:.62rem;color:var(--subtext);';
+  const pos = r.kind === 'p', vac = r.kind === 'v', rng = r.G[3] + ' – ' + r.G[4] + (vac ? ' mm HgV' : ' kPa');
+  box.innerHTML = `
+  <div class="results-box">
+    <h4>الخدمة والضغط (الجدول 5.1.11)</h4>
+    <div class="results-grid">
+      ${item('الخدمة', r.G[1], r.G[0] + ' — الألوان (الخلفية/النص): ' + r.G[2])}
+      ${r.kind !== 'w' ? item('الضغط القياسي', rng, e24 ? (vac ? 'الجدول 5.1.11 (2024)' : 'مقياس الضغط في الجدول 5.1.11 (2024)') + (r.gas === 'n2' || r.gas === 'ia' ? ' — 1100 إلى 1275 kPa عند المأخذ (5.1.12.4.10.3)' : '') : 'عمودا الضغط مقصوصان في ملف 2002؛ 345 إلى 380 kPa بنص البند 5.1.11.1.3') : item('الضغط القياسي', 'بحسب النظام', 'التخلص من غازات التخدير — الجدول 5.1.11')}
+      ${pos ? item('إعداد صمام التنفيس', f0(r.relief), 'kPa = 1.5 × ' + f0(o.p) + ' kPa (أعلى 50% من ضغط التشغيل)') : ''}
+      ${pos ? item('الخسارة المسموحة في التوزيع', f1(r.loss), e24 ? 'kPa = 10% من ضغط التشغيل عند صمام المصدر (5.1.10.11.1.1)' : '2002: لا يطبع نسبة؛ التصميم لتحقيق التدفق بضغط الاستعمال (5.1.10.6.1.1)') : ''}
+    </div>
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>برنامج الاختبارات (${e24 ? '5.1.12.2 و 5.1.12.4' : '5.1.12.2 و 5.1.12.3'})</h4>
+    <table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr><th style="${th}text-align:start;">الاختبار</th><th style="${th}">القيمة</th><th style="${th}">البند</th></tr></thead><tbody>
+      ${pos ? tr('اختبار الضغط الأولي (المركِّب)', kpsi(r.pTest) + ' نيتروجين NF', '5.1.12.2.3.4 — 1.5 × ' + f0(o.p) + ' kPa وليس أقل من 1035 kPa (150 psi)') : tr('اختبار الضغط الأولي للتفريغ', e24 ? '≥ 1035 kPa (150 psi)' : '≥ 415 kPa (60 psi)', e24 ? '5.1.12.2.3.4 — كما للغازات (1.5 × التشغيل وليس أقل من 1035 kPa)' : '5.1.12.2.3.5')}
+      ${pos ? tr('اختبار الضغط الثابت 24 ساعة', kpsi(r.pStand), '5.1.12.2.6 — 20% فوق ضغط التشغيل؛ ' + (e24 ? 'التسرب حتى 0.5% من الضغط الابتدائي (' + f2(r.dropAllow) + ' kPa) عدا الحرارة' : 'لا تغيّر عدا الحرارة المحيطة')) : tr('اختبار التفريغ الثابت 24 ساعة', '≥ 300 mm HgV (12 in.)', '5.1.12.2.7 — المصدر مفصول؛ ' + (e24 ? 'التسرب حتى 0.5% من التفريغ الابتدائي' : 'لا تغيّر عدا الحرارة'))}
+      ${pos ? tr('اختبار المدقِّق الثابت', kpsi(o.p), (e24 ? '5.1.12.4.2' : '5.1.12.3.2') + ' — 10 دقائق، المصدر والمناطق مغلقة، بلا هبوط') : ''}
+      ${pos ? tr('اختبار التقاطع (ضغط واحد)', '345 kPa (50 psi)', (e24 ? '5.1.12.4.3.1' : '5.1.12.3.3.1') + ' — نيتروجين NF على النظام المختبَر') : ''}
+      ${pos ? tr('تنظيف الأنابيب بالتدفق', '≥ 225 Nl/min (8 SCFM)', (e24 ? '5.1.12.4.6' : '5.1.12.3.6') + ' — متقطع حتى لا يتلوّن القماش الأبيض') : ''}
+      ${pos ? tr('اختبار الجسيمات', '≥ 1000 L بمعدل ≥ 100 Nl/min (≥ ' + f0(r.partMin) + ' دقائق)', (e24 ? '5.1.12.4.7' : '5.1.12.3.7') + ' — مرشح 0.45 µm؛ أقصى 1 mg لكل مأخذ؛ ' + (o.zones > 0 ? '25% من المناطق = ' + r.zonesPart + ' 🔴' : '25% من المناطق')) : ''}
+      ${pos ? tr('اختبار النقاء (الفرق عن غاز المصدر)', e24 ? '≤ 5 ppm هيدروكربونات و ≤ 5 ppm مهلجنة' : '≤ 1 ppm هيدروكربونات و ≤ 2 ppm مهلجنة', e24 ? '5.1.12.4.8' : '5.1.12.3.8') : ''}
+      ${pos ? tr('الرطوبة', e24 ? '≤ 500 ppm أو نقطة ندى −12°C عند 345 kPa' : '≤ 500 ppm عند 12°C', e24 ? '5.1.12.4.8' : '5.1.12.3.8(E)') : ''}
+      ${tr('جودة الهواء الطبي: نقطة الندى', e24 ? '≤ 2°C (35°F)' : '≤ 4°C (39°F)', e24 ? 'الجدول 5.1.12.4.12.3' : 'الجدول 5.1.12.3.12.3')}
+      ${tr('جودة الهواء الطبي: CO · CO₂ · هيدروكربونات · مهلجنة', '10 · 500 · 25 (ميثان) · 2 ppm', e24 ? 'الجدول 5.1.12.4.12.3' : 'الجدول 5.1.12.3.12.3')}
+      ${tr('تركيز الأكسجين وأكسيد النيتروز', e24 ? '≥ 99%' : '> 99%', e24 ? 'الجدول 5.1.12.4.11' : 'الجدول 5.1.12.3.11')}
+      ${tr('مشغِّل 25% بعد التشغيل قبل اختبار جودة الهواء', e24 ? '≥ 12 ساعة' : '≥ 24 ساعة', e24 ? '5.1.12.4.14.3' : '5.1.12.3.14.3(E)')}
+      ${tr('اختبار التدفق عند مآخذ الضغط 345 kPa', '100 Nl/min وهبوط ≤ 35 kPa (5 psi) والسكوني 345–380 kPa', e24 ? '5.1.12.4.10.2' : '5.1.12.3.10.2')}
+      ${tr('مآخذ النيتروجين وهواء الأجهزة', '140 Nl/min وهبوط ≤ 35 kPa والسكوني 1100–1275 kPa', e24 ? '5.1.12.4.10.3' : '5.1.12.3.10.3 (النيتروجين فقط)')}
+      ${tr('مآخذ التفريغ', '85 Nl/min (3 SCFM) دون هبوط تحت 300 mm HgV', e24 ? '5.1.12.4.10.4' : '5.1.12.3.10.4')}
+      ${tr('تدفق عابر لمآخذ الأكسجين والهواء في الفئة 1', e24 ? '170 Nl/min لمدة 3 s وهبوط ≤ 70 kPa (10 psi)' : '170 Nl/min لمدة 3 s', e24 ? '5.1.12.4.10.5' : '5.1.12.3.10.5')}
+      ${tr('دقة مقياس الاختبار', '≤ 1% من تدريج القياس الكامل (' + f1(r.gaugeAcc) + ' kPa لتدريج ' + f0(o.gr) + ' kPa)', e24 ? '5.1.12.1.14' : '5.1.12.1')}
+    </tbody></table>
+  </div>
+  ${pos ? `<div class="results-box" style="margin-top:10px;">
+    <h4>تصحيح الاختبار الثابت لتغير الحرارة (الملحق ${e24 ? 'A.5.1.12.2.6.5' : '5.1.12.2.7.6'})</h4>
+    <div class="results-grid">
+      ${item('الضغط المطلق الجوي', f2(r.patm), 'kPa عند ارتفاع ' + f0(o.elev) + ' m (الجدول A.5.1.12.2.6.5(b))')}
+      ${item('الضغط المتوقع بعد تغير الحرارة', f1(r.pg2), 'kPa (مقياس) = (' + f0(o.ps) + ' + ' + f2(r.patm) + ') × ' + f0(o.t2 + 273) + ' ÷ ' + f0(o.t1 + 273) + ' − ' + f2(r.patm) + ' — الهبوط ' + f1(Math.abs(r.drop)) + ' kPa')}
+      ${!e24 ? item('بإزاحة 238 المطبوعة في 2002', f1(r.pg2b), 'kPa 🔴 الإزاحة الصحيحة 273: الفرق ' + f2(Math.abs(r.pg2b - r.pg2)) + ' kPa') : ''}
+      ${vac ? '' : item('التفريغ الثابت (للمقارنة)', f1(r.vg2), 'kPa = ' + f2(r.patm) + ' − (' + f2(r.patm) + ' − ' + f0(o.vs) + ') × ' + f0(o.t2 + 273) + ' ÷ ' + f0(o.t1 + 273) + ' (التفريغ ' + f0(o.vs) + ' kPa عند ' + f0(o.t1) + '°C)')}
+    </div>
+  </div>` : ''}
+  <div class="results-box" style="margin-top:10px;">
+    <h4>الإنذارات (5.1.9)</h4>
+    <table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr><th style="${th}text-align:start;">الإنذار</th><th style="${th}">القيمة</th><th style="${th}">البند في ${r.ed}</th></tr></thead><tbody>
+      ${pos ? tr('ضغط الخط الرئيسي عالٍ (مركزي ومنطقة)', kpsi(r.pHigh), (e24 ? '5.1.9.2.4(7) · 5.1.9.4.2' : '5.1.9.2.4(6) · 5.1.9.3.2') + ' — +20%') : ''}
+      ${pos ? tr('ضغط الخط الرئيسي منخفض', kpsi(r.pLow), (e24 ? '5.1.9.2.4(8)' : '5.1.9.2.4(6)') + ' — −20%') : ''}
+      ${tr('تفريغ منخفض (مركزي ومنطقة)', '≤ 300 mm HgV (12 in.)', e24 ? '5.1.9.2.4(9) · 5.1.9.4.3' : '5.1.9.2.4(7) · 5.1.9.3.3')}
+      ${tr('نقطة ندى الهواء الطبي مرتفعة', e24 ? '> +2°C (+35°F)' : '> +4°C (+39°F)', e24 ? '5.1.9.2.4(11) · 5.1.9.5.3(3)' : '5.1.9.2.4(9) · 5.1.9.4.4(3)')}
+      ${tr('CO مرتفع (محلي)', '≥ 10 ppm', e24 ? '5.1.9.5.3(2)' : '5.1.9.4.4(2)')}
+      ${tr('نقطة ندى هواء الأجهزة مرتفعة', '> −30°C (−22°F)', e24 ? '5.1.9.2.4(13)' : '5.1.9.2.4(11)')}
+      ${tr('ضواغط/مضخات: التشغيل الاحتياطي', e24 ? 'السعة غير المستعملة < سعة وحدة واحدة (إعادة ضبط يدوية)' : 'عند عمل الوحدة الاحتياطية (lag)', e24 ? '5.1.9.5.3(1) و (4)' : '5.1.9.4.4(1) و (4)')}
+      ${tr('شدة صوت الإنذار', '≥ 80 dBA على 0.9 m (3 ft)', e24 ? '5.1.9.1' : '5.1.9.1(3)')}
+      ${tr('لوحات الإنذار المركزي', 'لوحتان على الأقل في موقعين', e24 ? '5.1.9.2.1' : '5.1.9.2.1')}
+    </tbody></table>
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>الدعامات والأحجام والمقاييس</h4>
+    <div class="results-grid">
+      ${item('أكبر تباعد بين الدعامات الأفقية', f0(r.sup), 'mm = ' + f2(r.sup / 304.8) + ' ft لأنبوب ' + MP_SUP[o.size][0] + ' (' + (e24 ? 'الجدول 5.1.10.11.4.6' : 'الجدول 5.1.10.6.4.5') + ')')}
+      ${o.len > 0 ? item('عدد الدعامات لمسار أفقي ' + f1(o.len) + ' m', String(r.nH), 'دعامة على الأقل (⌈L ÷ التباعد⌉) مع دعامة عند كل طرف ثابت 🔴') : ''}
+      ${o.floors > 0 ? item('دعامات الأعمدة الرأسية', String(r.nRisers), 'دعامة في كل طابق وبتباعد لا يتجاوز 4570 mm (15 ft) — ' + o.floors + ' طابقًا بارتفاع ' + f1(o.fh) + ' m') : ''}
+      ${o.gr > 0 && pos ? item('مدى مقياس الضغط التناظري', r.gaugeOk ? 'مناسب' : 'غير مناسب', e24 ? 'يقع الضغط العادي في الثلث الأوسط من التدريج: ' + f0(o.gr / 3) + ' إلى ' + f0(2 * o.gr / 3) + ' kPa (5.1.8.1.3)' : 'يقع الضغط العادي في الـ 50% الوسطى: ' + f0(o.gr / 4) + ' إلى ' + f0(3 * o.gr / 4) + ' kPa', r.gaugeOk ? 'color:#3a9d5d;' : 'color:#D9534F;') : ''}
+      ${pos ? item('مدى التدريج الموصى به', f0(r.gaugeLo) + ' – ' + f0(r.gaugeHi), 'kPa للضغط ' + f0(o.p) + ' kPa (الثلث الأوسط)') : ''}
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-top:8px;"><thead><tr><th style="${th}text-align:start;">أصغر قياس</th><th style="${th}">${e24 ? '2024' : '2002'}</th><th style="${th}">البند</th></tr></thead><tbody>
+      ${tr('خطوط ومتفرعات الغاز الطبي', 'DN15 (1/2 in.)', e24 ? '5.1.10.11.1.3' : '5.1.10.6.1.2')}
+      ${tr('خطوط ومتفرعات التفريغ الطبي الجراحي', 'DN20 (3/4 in.)', e24 ? '5.1.10.11.1.3' : '5.1.10.6.1.3')}
+      ${tr('التنزيلات إلى المآخذ', 'DN15 (1/2 in.)', e24 ? '5.1.10.11.1.3' : '5.1.10.6.1.4')}
+      ${tr('مواسير لوحات الإنذار والمقاييس', 'DN8 (1/4 in.) مسموح', e24 ? '5.1.10.11.1.3' : '5.1.10.6.1.5')}
+      ${e24 ? tr('أصغر Cv للمحابس: ½ · ¾ · 1 · 1¼ · 1½ · 2 · 3 · 4 in. (غاز)', Object.values(MP_CV_P).filter((x, i) => [0, 1, 2, 3, 4, 5, 7, 8].includes(i)).join(' · '), 'الجدول 5.1.4.1.6(a)') : ''}
+      ${e24 ? tr('أصغر Cv للمحابس: ½ · ¾ · 1 · 1¼ · 1½ · 2 · 3 · 4 · 6 · 8 in. (تفريغ)', [17, 31, 60, 110, 169, 357, 302, 600, 1579, 3136].join(' · '), 'الجدول 5.1.4.1.6(b)') : ''}
+    </tbody></table>
+    <div class="note" style="margin-top:8px;">🔴 عدد الدعامات (تقريب للأعلى مع دعامة عند كل طرف ثابت) وعدد المناطق المختبَرة بجسيمات (تقريب للأعلى؛ لا يطبع الكود قاعدة تقريب) والإزاحة 273 بدل 238 المطبوعة في 2002 كلها من عندنا. لا يطبع NFPA 99 معادلة لحساب أقطار التوزيع: الشرط خسارة ضغط محسوبة لا تزيد على 10% من ضغط التشغيل عند صمام المصدر (2024) مع حفظ الحسابات. المثال المطبوع للتفريغ (0.3 mm من 635 mm) لا يساوي 0.5% (≈ 3.2 mm) بينما المثال بالبوصة (0.125 in. من 25 in.) يساويها. جدول 5.1.11 في 2002 مقصوص الأعمدة. الفئتان 2 و 3 والأنابيب تحت الأرض والمواد (النحاس K و L) لم تُبنَ هنا.</div>
+  </div>`;
+}
+function mpHTML() {
+  const fld = (id, label, val, step, unit) => `<div class="field"><label>${label}</label><input id="${id}" type="number" value="${val}" step="${step}">${unit ? `<div class="unit">${unit}</div>` : ''}</div>`;
+  const opt = (k, a, sel) => `<option value="${k}"${sel ? ' selected' : ''}>${a}</option>`;
+  return `
+  <div class="note" style="margin-bottom:10px;"><strong>أنابيب الغازات الطبية والتفريغ (NFPA 99-2024 القسم 5.1 و NFPA 99-2002):</strong> الألوان والضغوط القياسية، وبرنامج اختبارات المركِّب والمدقِّق، وتصحيح الاختبار الثابت لتغير الحرارة، وعتبات الإنذار، وتباعد الدعامات وأصغر الأقطار ومدى المقاييس، مع الفروق بين الإصدارين.</div>
+  <div class="form-section"><h4>الإصدار والخدمة</h4>
+    <div class="fields-grid">
+      <div class="field"><label>إصدار NFPA 99</label><select id="mp_ed">${opt('2024', 'NFPA 99-2024', true)}${opt('2002', 'NFPA 99-2002')}</select></div>
+      <div class="field"><label>الخدمة</label><select id="mp_g">${Object.keys(MP_GAS).map(k => opt(k, MP_GAS[k][0] + ' (' + MP_GAS[k][1] + ')', k === 'o2')).join('')}</select></div>
+      ${fld('mp_p', 'ضغط التشغيل (kPa مقياس)', 350, 5, '💡 345 إلى 380 للغازات القياسية؛ للتفريغ أدخل الحقل التالي')}
+      ${fld('mp_vac', 'مستوى التفريغ (mm HgV)', 460, 10, '💡 يُستعمل عند اختيار التفريغ')}
+      ${fld('mp_zn', 'عدد المناطق (اختبار الجسيمات)', 12, 1, '💡 0 = غير محددة')}
+    </div>
+  </div>
+  <div class="form-section"><h4>الاختبار الثابت وتغير الحرارة</h4>
+    <div class="fields-grid">
+      ${fld('mp_ps', 'ضغط بداية الاختبار الثابت (kPa مقياس)', 420, 5)}
+      ${fld('mp_vs', 'تفريغ بداية الاختبار (kPa)', 54, 1, '💡 للمقارنة فقط')}
+      ${fld('mp_t1', 'حرارة بداية الاختبار (°C)', 27, 1)}
+      ${fld('mp_t2', 'حرارة نهاية الاختبار (°C)', 18, 1)}
+      ${fld('mp_el', 'ارتفاع الموقع (m)', 0, 50, '💡 للضغط الجوي من الجدول A.5.1.12.2.6.5(b)')}
+    </div>
+  </div>
+  <div class="form-section"><h4>الدعامات والمقياس</h4>
+    <div class="fields-grid">
+      <div class="field"><label>قياس الأنبوب</label><select id="mp_sz">${MP_SUP.map((s, i) => opt(String(i), s[0], i === 2)).join('')}</select></div>
+      ${fld('mp_len', 'طول المسار الأفقي (m)', 40, 1, '💡 0 = غير محدد')}
+      ${fld('mp_fl', 'عدد الطوابق للعمود الرأسي', 5, 1, '💡 0 = غير محدد')}
+      ${fld('mp_fh', 'ارتفاع الطابق (m)', 3.5, 0.1)}
+      ${fld('mp_gr', 'تدريج المقياس الكامل (kPa)', 1000, 100, '💡 0 = غير محدد')}
+    </div>
+  </div>
+  <div id="mp_results"></div>`;
+}
+function renderMedPipe() { return mpHTML(); }
+/* ── Medical gas and vacuum sources: cylinder manifolds, storage limits, ventilation, air, vacuum and WAGD sizing (NFPA 99-2024 section 5.1.3 and 9.3.6; NFPA 99-2002 section 5.1.3) ───────────────
+   header connections for one average day's supply but not fewer than two (gas cylinder manifold, each of two equal headers) or three (reserve header); contents of the cylinders from Table A.11.3.5 (2002 Table C.13.5); maximum quantity of oxygen + nitrous oxide connected and in storage (Table 5.1.3.3.2.5): 283 m3 indoors without sprinklers and 566 m3 with sprinklers;
+   natural ventilation: two openings of 155 cm2 per 28.3 m3 of gas and not less than 465 cm2 each, or mechanical exhaust of 1 L/s per 300 L of gas between 24 and 235 L/s (2002: natural when the total volume is under 84.95 m3, otherwise mechanical); relief valves at 1.5 x the operating pressure;
+   medical air compressors, vacuum pumps and WAGD producers: at least two and the peak calculated demand met with the largest unit out of service; dryers, filters and regulators at least duplexed and each sized for 100 % of the peak; dew point alarm +2 C (2002 +4 C), CO 10 ppm, intake 7.6 m from exhausts (2024), vacuum exhaust 7.5 m (2024) / 3.05 m (2002) */
+const MG_CYL = {B: ['B', '8.89 × 33 cm', 1.43, {co2: 370, o2: 200}], D: ['D', '10.8 × 43 cm', 2.88, {air: 375, co2: 940, he: 300, n2: 370, n2o: 940, o2: 400}], E: ['E', '10.8 × 66 cm', 4.80, {air: 625, co2: 1590, he: 500, n2: 610, n2o: 1590, o2: 660}],
+  M: ['M', '17.8 × 109 cm', 21.9, {air: 2850, co2: 7570, he: 2260, n2: 3200, n2o: 7570, o2: 3450}], G: ['G', '21.6 × 130 cm', 38.8, {air: 5050, co2: 12300, he: 4000, n2: 5000, n2o: 13800, o2: 6000}], K: ['H أو K', '23.5 × 130 cm', 43.6, {air: 6550, co2: 15840, he: 6000, n2: 6400, n2o: 15800, o2: 6900}]};
+function mgCalc(o) {
+  const ed = o.ed === '2002' ? '2002' : '2024', cyl = MG_CYL[o.cyl] || MG_CYL.K, content = cyl[3][o.gas] || null, e24 = ed === '2024';
+  const nmin = o.arr === 'hdr' ? 2 : o.arr === 'res' ? 3 : 1, need = content ? o.avg * 1000 / content : null, nHdr = content ? Math.max(nmin, Math.ceil(need - 1e-9)) : null;
+  const connected = nHdr == null ? null : o.arr === 'hdr' ? 2 * nHdr : nHdr, cylTotal = connected == null ? null : connected + o.spare, vStored = cylTotal == null ? null : cylTotal * content / 1000;
+  const ox = o.gas === 'o2' || o.gas === 'n2o', sum = vStored == null ? null : vStored + o.other, lim = o.loc === 'out' ? null : o.loc === 'spr' ? 566 : 283;
+  const vVent = connected == null ? null : e24 ? Math.max(content / 1000, connected * content / 1000) : cylTotal * content / 1000;
+  const aNat = vVent == null ? null : e24 ? Math.max(155 * vVent / 28.3, 465) : 465, qMech = vVent == null ? null : Math.min(235, Math.max(24, vVent * 1000 / 300)), mech2002 = vVent != null && vVent > 84.95;
+  const toLs = x => o.u === 'm3h' ? x * 1000 / 3600 : o.u === 'scfm' ? x * 0.471947 : x, nm1 = (peak, unit) => peak > 0 && unit > 0 ? Math.max(2, Math.ceil(peak / unit - 1e-9) + 1) : 0;
+  const peak = {air: toLs(o.pa), vac: toLs(o.pv), wagd: toLs(o.pw)}, unit = {air: toLs(o.ua), vac: toLs(o.uv), wagd: toLs(o.uw)};
+  const n = {air: nm1(peak.air, unit.air), vac: nm1(peak.vac, unit.vac), wagd: nm1(peak.wagd, unit.wagd)};
+  return {ed, cyl, content, nmin, need, nHdr, connected, cylTotal, vStored, ox, sum, lim, maqOk: !ox || lim == null || sum == null ? null : sum <= lim + 1e-9, vVent, aNat, qMech, mech2002, relief: 1.5 * o.p, peak, unit, n, firm: {air: (n.air - 1) * unit.air, vac: (n.vac - 1) * unit.vac, wagd: (n.wagd - 1) * unit.wagd}};
+}
+function mgUpdate() {
+  const box = document.getElementById('mg_results'); if (!box) return;
+  const g = (id, d) => { const e = document.getElementById(id); return e && e.value !== '' && isFinite(+e.value) ? Math.max(0, +e.value) : d; };
+  const o = {ed: v('mg_ed') === '2002' ? '2002' : '2024', gas: ['o2', 'n2o', 'air', 'co2', 'he', 'n2'].includes(v('mg_g')) ? v('mg_g') : 'o2', cyl: MG_CYL[v('mg_c')] ? v('mg_c') : 'K', avg: g('mg_avg', 0), arr: ['hdr', 'res', 'ibr'].includes(v('mg_a')) ? v('mg_a') : 'hdr', loc: ['out', 'ind', 'spr'].includes(v('mg_l')) ? v('mg_l') : 'ind',
+    other: g('mg_oth', 0), spare: Math.round(g('mg_sp', 0)), p: g('mg_p', 350), u: ['ls', 'm3h', 'scfm'].includes(v('mg_u')) ? v('mg_u') : 'ls', pa: g('mg_pa', 0), ua: g('mg_ua', 0), pv: g('mg_pv', 0), uv: g('mg_uv', 0), pw: g('mg_pw', 0), uw: g('mg_uw', 0)};
+  const r = mgCalc(o), e24 = r.ed === '2024', f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
+  const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.3rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
+  const tr = (a, b, c) => `<tr style="border-top:1px solid var(--border);"><td style="padding:4px 5px;font-size:.72rem;">${a}</td><td style="padding:4px 5px;font-size:.72rem;text-align:center;" dir="ltr">${b}</td><td style="padding:4px 5px;font-size:.62rem;text-align:center;color:var(--subtext);" dir="ltr">${c}</td></tr>`;
+  const th = 'padding:4px 5px;font-size:.62rem;color:var(--subtext);';
+  const gname = MP_GAS[o.gas][0], lsx = x => o.u === 'ls' ? f1(x) + ' L/s' : o.u === 'm3h' ? f1(x * 3.6) + ' m³/h' : f1(x / 0.471947) + ' scfm';
+  const unitsRow = (label, k, clause) => r.n[k] > 0 ? item(label, String(r.n[k]), 'وحدة × ' + lsx(r.unit[k]) + ' — الطلب ' + lsx(r.peak[k]) + ' والمتاح مع خروج أكبر وحدة ' + lsx(r.firm[k]) + ' (' + clause + ')', 'color:var(--orange);') : '';
+  box.innerHTML = `
+  <div class="results-box">
+    <h4>مشعَّب الأسطوانات (${e24 ? '5.1.3.5.10 و 5.1.3.5.13' : '5.1.3.4.9 و 5.1.3.4.13'}) — ${gname}</h4>
+    ${r.content == null ? `<div class="note">لا يتضمن جدول الأسطوانات (${e24 ? 'A.11.3.5' : 'C.13.5'}) هذا الغاز بهذا الحجم؛ اختر حجمًا آخر.</div>` : `
+    <div class="results-grid">
+      ${item('محتوى الأسطوانة ' + r.cyl[0], f0(r.content), 'L عند 21.1°C و 101.325 kPa — ' + r.cyl[1] + ' وحجمها ' + f2(r.cyl[2]) + ' L')}
+      ${item('عدد وصلات ' + (o.arr === 'hdr' ? 'كل رأس (من رأسين متساويين)' : o.arr === 'res' ? 'رأس الاحتياطي' : 'الاحتياطي داخل المبنى'), String(r.nHdr), 'وصلة = max(' + r.nmin + '، ⌈' + f2(r.need) + '⌉) — إمداد يوم متوسط ' + f1(o.avg) + ' m³ على الأقل', 'color:var(--orange);font-size:1.5rem;')}
+      ${item('عدد الأسطوانات الموصولة', f0(r.connected), (o.arr === 'hdr' ? 'رأسان × ' + r.nHdr : r.nHdr + ' على رأس واحد') + (o.spare > 0 ? ' + ' + o.spare + ' غير موصولة في التخزين = ' + f0(r.cylTotal) : ''))}
+      ${item('كمية الغاز الموصولة والمخزنة', f1(r.vStored), 'm³ عند الظروف القياسية (STP)')}
+      ${!e24 ? (o.gas === 'o2' ? item('حد الأكسجين في 2002', '566.3', 'm³ (20,000 ft³ عند STP): عند بلوغه فأكثر يُطبق NFPA 50 على المنظومة (5.1.3.3.1.9) — الموجود ' + f1(r.vStored + o.other) + ' m³', r.vStored + o.other >= 566.3 ? 'color:#D9534F;' : 'color:#3a9d5d;') : o.gas === 'n2o' ? item('حد أكسيد النيتروز في 2002', '1451', 'kg (3200 lb): عند بلوغه فأكثر يُطبق CGA G-8.1 (5.1.3.3.1.10)') : item('حد الكمية', 'غير محدد', 'لا جدول لحد الكمية في الغرفة في 2002')) : r.ox && r.lim != null ? item('الحد الأقصى للأكسجين وأكسيد النيتروز في الغرفة', f0(r.lim), 'm³ مجموع الغازات المؤكسدة (الجدول 5.1.3.3.2.5) — الموجود ' + f1(r.sum) + ' m³: ' + (r.maqOk ? 'ضمن الحد' : 'يتجاوز الحد'), r.maqOk ? 'color:#3a9d5d;' : 'color:#D9534F;') : (r.ox ? item('الحد الأقصى للكمية', 'بلا حد', 'في الحاويات الخارجية للأكسجين وأكسيد النيتروز (الجدول 5.1.3.3.2.5)') : item('الحد الأقصى للكمية', 'بلا حد', 'CO₂ والهيليوم والهواء الطبي والنيتروجين بلا حد في كل المواقع'))}
+      ${item('إعداد صمام التنفيس', f0(r.relief), 'kPa = 1.5 × ' + f0(o.p) + ' (أعلى 50% من ضغط التشغيل) وليس فوق ضغط التشغيل الأقصى لأضعف مكوّن (5.1.3.5.6.1)')}
+    </div>
+    <div class="results-box" style="margin-top:8px;">
+      <h4>تهوية غرفة الأسطوانات (${e24 ? '9.3.6.5' : '5.1.3.3.3.1'})</h4>
+      <div class="results-grid">
+        ${item('حجم التصميم للتهوية', f1(r.vVent), e24 ? 'm³ = الأكبر من أكبر وعاء ومن مجموع الأوعية الموصولة بالمشعب (9.3.6.5.1)' : 'm³ = المجموع الموصول والمخزن')}
+        ${e24 || !r.mech2002 ? item('كل من فتحتين دائمتين مشبَّكتين', f0(r.aNat), 'cm² = ' + (e24 ? 'max(155 × V ÷ 28.3, 465)' : '465 (72 in²)') + (e24 ? '؛ إحداهما خلال 30 cm من الأرض والأخرى خلال 30 cm من السقف (9.3.6.5.2)' : ' للحجوم دون 84.95 m³ (3000 ft³)')) : ''}
+        ${e24 || r.mech2002 ? item('الشفط الميكانيكي', f0(r.qMech), e24 ? 'L/s = V ÷ 300 بين 24 و 235 L/s (9.3.6.5.3.2) ويلزم عند تعذر التهوية الطبيعية' : 'L/s — لا يطبع 2002 معدلًا؛ تهوية ميكانيكية مخصصة مستمرة للحجوم فوق 84.95 m³ (3000 ft³)') : ''}
+      </div>
+    </div>`}
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>عدد الوحدات (الأكبر خارج الخدمة)</h4>
+    <div class="results-grid">
+      ${unitsRow('ضواغط الهواء الطبي', 'air', e24 ? '5.1.3.6.3.9(B)' : '5.1.3.5.11.2')}
+      ${unitsRow('مضخات التفريغ الطبي الجراحي', 'vac', e24 ? '5.1.3.7.1.1(1)' : '5.1.3.6.1.2(1)')}
+      ${unitsRow('منتجات التخلص من غازات التخدير', 'wagd', e24 ? '5.1.3.8.1.6(1)' : '5.1.3.7.1.5(1)')}
+      ${r.n.air > 0 ? item('المجفِّفات والمرشِّحات والمنظِّمات', '≥ 2 × 100%', 'اثنان على الأقل، كلٌّ يخدم 100% من الذروة (' + (e24 ? '5.1.3.6.3.9(E)' : '5.1.3.5.11.5') + ')') : ''}
+      ${r.n.vac > 0 ? item('خزّان التفريغ', '415 kPa', 'يتحمل 415 kPa (60 psi) ومعه 760 mm HgV (' + (e24 ? '5.1.3.7.3' : '5.1.3.6.3') + ')') : ''}
+    </div>
+    ${r.n.air + r.n.vac + r.n.wagd === 0 ? '<div class="note" style="margin-top:6px;">أدخل الطلب الأقصى المحسوب وسعة الوحدة الواحدة للهواء أو التفريغ أو التخلص من غازات التخدير. الحد الأدنى وحدتان في كل حال.</div>' : ''}
+  </div>
+  <div class="results-box" style="margin-top:10px;">
+    <h4>جودة الهواء الطبي والمسافات والإنذارات</h4>
+    <table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr><th style="${th}text-align:start;">البند</th><th style="${th}">${e24 ? '2024' : '2002'}</th><th style="${th}">البند</th></tr></thead><tbody>
+      ${tr('نقطة ندى المجفّف', '< 0°C (32°F) عند أي طلب' + (e24 ? ' وعند 345–380 kPa' : ''), e24 ? '5.1.3.6.3.7(1)' : '5.1.3.5.7(1)')}
+      ${tr('إنذار نقطة الندى', e24 ? '> +2°C (+35°F)' : '> +4°C (+39°F)', e24 ? '5.1.3.6.3.13(1)' : '5.1.3.5.15(1)')}
+      ${tr('إنذار أول أكسيد الكربون', '≥ 10 ppm', e24 ? '5.1.3.6.3.13(2)' : '5.1.3.5.15(2)')}
+      ${tr('الهيدروكربونات', 'لا سائلة؛ غازية < 25 ppm', e24 ? '5.1.3.6.1(3)(4)' : '5.1.3.5.1(3)(4)')}
+      ${tr('الجسيمات (≥ 1 µm)', e24 ? '≤ 1 mg/m³' : '≤ 5 mg/m³', e24 ? '5.1.3.6.1(5)' : '5.1.3.5.1(5)')}
+      ${tr('كفاءة مرشحات الهواء', '≥ 98% عند 1 µm وأكثر', e24 ? '5.1.3.6.3.8' : '5.1.3.5.8')}
+      ${tr('فتحة سحب الهواء من العادم والفتحات', e24 ? '≥ 7.6 m (25 ft) من العوادم والمنافس ومخارج التفريغ؛ ≥ 3.0 m (10 ft) من أي باب أو نافذة' : '≥ 3.05 m (10 ft) من أي باب أو نافذة أو عادم أو فتحة سحب أخرى', e24 ? '5.1.3.6.3.11' : '5.1.3.5.13.2')}
+      ${tr('ارتفاع فتحة السحب', e24 ? '≥ 6 m (20 ft) فوق الأرض' : '≥ 6.1 m (20 ft) فوق الأرض وفوق مستوى السطح', e24 ? '5.1.3.6.3.11(C)' : '5.1.3.5.13.2')}
+      ${tr('عادم مضخات التفريغ', e24 ? '≥ 7.5 m (25 ft) من الأبواب والنوافذ وفتحات السحب' : '≥ 3.05 m (10 ft) من الأبواب والنوافذ وفتحات السحب', e24 ? '5.1.3.7.7.2' : '5.1.3.6.7.2')}
+      ${tr('مرشحات مدخل التفريغ (غير الحلقة السائلية)', e24 ? 'HEPA 0.3 µm و 99.97% مزدوجة بسعة 100%' : 'غير مطلوبة', e24 ? '5.1.3.7.4' : '—')}
+      ${tr('تنبيه السعة الاحتياطية', e24 ? 'السعة غير المستعملة < سعة وحدة واحدة' : 'عمل الوحدة الاحتياطية (lag)', e24 ? '5.1.3.6.3.12(F)' : '5.1.3.5.14.5')}
+      ${tr('مشعَّب الاحتياطي (3 وصلات على الأقل) والاحتياطي داخل المبنى', 'يوم متوسط على الأقل', e24 ? '5.1.3.5.11.4(2) · 5.1.3.5.13.3' : '5.1.3.4.10.4(2) · 5.1.3.4.13.3')}
+      ${tr('درجة حرارة الأسطوانات القصوى', e24 ? '≤ 52°C (125°F)' : '≤ 54°C (130°F)', e24 ? '5.1.3.2.11' : '5.1.3.3.1.7')}
+      ${tr('N₂O و CO₂: أدنى حرارة للمصدر', '−7°C (20°F) أو توصية المصنّع', e24 ? '5.1.3.2.12' : '5.1.3.3.1.8')}
+    </tbody></table>
+    <div class="note" style="margin-top:8px;">🔴 «إمداد اليوم المتوسط» غير محدد عدديًا في الكود: يُدخَل من دراسة الاستهلاك وجداول التوريد والقرب من مصادر بديلة وخطة الطوارئ (الملحق A.5.1.3.5.9(1)). ضع كمية الغاز عند الظروف القياسية. السعتان 3450 و 6900 L للأكسجين من الجدول A.11.3.5 (2024)؛ ملف 2002 مقصوص الأعمدة بعد النيتروجين فلا يحتويها (والأسطوانة H أو K بضغط 2490 psig تسع 7800 L بطلب خاص). الحد الأدنى للوصلات (2 في الرأسين و 3 في الاحتياطي) من نص الكود؛ في 2024 حُذف الحد الأدنى (2) لرأسي السائل ودخلت سعة التبخير. لم تُبنَ الأنظمة السائلة الكبيرة (NFPA 55 و CGA M-1) ولا مكثفات الأكسجين ولا نظام المزج ولا حسابات قطر الأنابيب ولا مضخات هواء الأجهزة.</div>
+  </div>`;
+}
+function mgHTML() {
+  const fld = (id, label, val, step, unit) => `<div class="field"><label>${label}</label><input id="${id}" type="number" value="${val}" min="0" step="${step}">${unit ? `<div class="unit">${unit}</div>` : ''}</div>`;
+  const opt = (k, a, sel) => `<option value="${k}"${sel ? ' selected' : ''}>${a}</option>`;
+  return `
+  <div class="note" style="margin-bottom:10px;"><strong>مصادر الغازات الطبية والتفريغ (NFPA 99-2024 القسم 5.1.3 و NFPA 99-2002):</strong> وصلات رأس الأسطوانات لإمداد يوم متوسط، وحد الكمية في الغرفة، وتهوية غرفة الأسطوانات، وعدد ضواغط الهواء الطبي ومضخات التفريغ ومنتجات التخلص من غازات التخدير بقاعدة الأكبر خارج الخدمة، وجودة الهواء والمسافات والإنذارات.</div>
+  <div class="form-section"><h4>مشعَّب الأسطوانات</h4>
+    <div class="fields-grid">
+      <div class="field"><label>إصدار NFPA 99</label><select id="mg_ed">${opt('2024', 'NFPA 99-2024', true)}${opt('2002', 'NFPA 99-2002')}</select></div>
+      <div class="field"><label>الغاز</label><select id="mg_g">${['o2', 'n2o', 'air', 'co2', 'he', 'n2'].map(k => opt(k, MP_GAS[k][0] + ' (' + MP_GAS[k][1] + ')', k === 'o2')).join('')}</select></div>
+      <div class="field"><label>حجم الأسطوانة</label><select id="mg_c">${Object.keys(MG_CYL).map(k => opt(k, MG_CYL[k][0] + ' — ' + MG_CYL[k][1], k === 'K')).join('')}</select></div>
+      ${fld('mg_avg', 'إمداد يوم متوسط (m³ عند STP)', 40, 1, '💡 🔴 من دراسة الاستهلاك')}
+      <div class="field"><label>الترتيب</label><select id="mg_a">${opt('hdr', 'رأسان متساويان بلا احتياطي (كل رأس ≥ وصلتان)', true)}${opt('res', 'رأس احتياطي (≥ 3 وصلات)')}${opt('ibr', 'احتياطي طوارئ داخل المبنى')}</select></div>
+      <div class="field"><label>الموقع</label><select id="mg_l">${opt('out', 'غلاف خارجي')}${opt('ind', 'غرفة داخلية بلا رشاشات', true)}${opt('spr', 'غرفة داخلية برشاشات')}</select></div>
+      ${fld('mg_sp', 'أسطوانات غير موصولة في التخزين', 4, 1)}
+      ${fld('mg_oth', 'غاز مؤكسد آخر في الغرفة (m³)', 0, 1, '💡 مثلًا أكسيد النيتروز مع الأكسجين')}
+      ${fld('mg_p', 'ضغط التشغيل (kPa مقياس)', 350, 5)}
+    </div>
+  </div>
+  <div class="form-section"><h4>الهواء الطبي والتفريغ والتخلص من غازات التخدير</h4>
+    <div class="fields-grid">
+      <div class="field"><label>وحدة التدفق</label><select id="mg_u">${opt('ls', 'L/s', true)}${opt('m3h', 'm³/h')}${opt('scfm', 'scfm')}</select></div>
+      ${fld('mg_pa', 'الطلب الأقصى للهواء الطبي', 40, 1)}
+      ${fld('mg_ua', 'سعة الضاغط الواحد', 30, 1)}
+      ${fld('mg_pv', 'الطلب الأقصى للتفريغ', 120, 1)}
+      ${fld('mg_uv', 'سعة المضخة الواحدة', 70, 1)}
+      ${fld('mg_pw', 'الطلب الأقصى للتخلص من غازات التخدير', 0, 1, '💡 0 = لا يوجد')}
+      ${fld('mg_uw', 'سعة المنتج الواحد', 0, 1)}
+    </div>
+  </div>
+  <div id="mg_results"></div>`;
+}
+function renderMedGas() { return mgHTML(); }
 function renderSpaceReq() { return joSrHTML(); }
 function renderSpaceHome() { return joHomeHTML(); }
 function renderSpaceStair() { return joSxHTML(); }
@@ -25171,7 +25730,7 @@ function phaseBalResultsHTML(r) {
 
 const _origCalcResult = calcResult;
 calcResult = function(type) {
-  const hvacTypes = ['coolingload','hvacairflow','ductsizing','ventilation','natvent','condensation','shelter','wastechute','sitesafety','accessreq','watersupplyjo','ductnoise','fitouttrack','aptboq','spacereq','spacehome','spacestair','epss','ventsize','combair','gaspipe','harmindex','substationvent','lvtransformer','pfcharm','prmextlight','pvprotect','prmfan','prmchiller','prmsystem','prmenvelope','prmpci','swbinsul','swbdesign','rcdeflect','rccrack','rctorsion','scaffoldtimber','rcwall','rccoef','rcflatslab','prestressend','prestressultimate','prestressstress','prestressloss','scaffoldsafety','scaffoldtower','scaffoldcheck','formworkprop','formworkcheck','formworkpressure','steelweld','steelbolt','steeltension','steelmember','retainwall','bearingcap','rcfooting','rccolumn','rcslab','rcbeam','seismic','windload','liveload','deadload','masonrywall','accessplan','natlight','roomacoustics','chwflow','coolingtower','fcuselection','splitselection','desertcooler','ductweight','parkingvent','uvalue','kitchenhood','diffuserselection','sprinkler','fm200calc','co2calc','stairpress','elevatorpress','lightingcalc','lpgcalc','cablesizing','heatingload','heatingpipes','radiators','floorheating','heatexpansion','chimney','fueltank','airheating','motorcircuit','loadcalc','protcond','faultloop','transformer','pfcorrection','conduitfill','hvacmotor','firepump','alarmbattery','lightning','elevatorfeeder','liftplan','egress','exitparts','fireprot','extinguisher','fadetect','concretefire','septic','sanfix','shortcircuit','earthelectrode','maxdemand','liftmotor','genset','spd','neutral','phasebal'];
+  const hvacTypes = ['coolingload','hvacairflow','ductsizing','ventilation','natvent','condensation','shelter','wastechute','sitesafety','accessreq','watersupplyjo','ductnoise','fitouttrack','aptboq','spacereq','spacehome','spacestair','epss','isopower','essential','medpipe','medgas','ventsize','combair','gaspipe','harmindex','substationvent','lvtransformer','pfcharm','prmextlight','pvprotect','prmfan','prmchiller','prmsystem','prmenvelope','prmpci','swbinsul','swbdesign','rcdeflect','rccrack','rctorsion','scaffoldtimber','rcwall','rccoef','rcflatslab','prestressend','prestressultimate','prestressstress','prestressloss','scaffoldsafety','scaffoldtower','scaffoldcheck','formworkprop','formworkcheck','formworkpressure','steelweld','steelbolt','steeltension','steelmember','retainwall','bearingcap','rcfooting','rccolumn','rcslab','rcbeam','seismic','windload','liveload','deadload','masonrywall','accessplan','natlight','roomacoustics','chwflow','coolingtower','fcuselection','splitselection','desertcooler','ductweight','parkingvent','uvalue','kitchenhood','diffuserselection','sprinkler','fm200calc','co2calc','stairpress','elevatorpress','lightingcalc','lpgcalc','cablesizing','heatingload','heatingpipes','radiators','floorheating','heatexpansion','chimney','fueltank','airheating','motorcircuit','loadcalc','protcond','faultloop','transformer','pfcorrection','conduitfill','hvacmotor','firepump','alarmbattery','lightning','elevatorfeeder','liftplan','egress','exitparts','fireprot','extinguisher','fadetect','concretefire','septic','sanfix','shortcircuit','earthelectrode','maxdemand','liftmotor','genset','spd','neutral','phasebal'];
   if (!hvacTypes.includes(type)) { _origCalcResult(type); return; }
 
   const el = document.getElementById('calc-body');
@@ -25850,6 +26409,10 @@ calcResult = function(type) {
   if (type === 'combair') { caUpdate(); return; }
   if (type === 'ventsize') { vsUpdate(); return; }
   if (type === 'epss') { epUpdate(); return; }
+  if (type === 'isopower') { ipUpdate(); return; }
+  if (type === 'essential') { eeUpdate(); return; }
+  if (type === 'medpipe') { mpUpdate(); return; }
+  if (type === 'medgas') { mgUpdate(); return; }
   if (type === 'spacereq') { joSrUpdate(); return; }
   if (type === 'spacehome') { joHomeUpdate(); return; }
   if (type === 'spacestair') { joSxUpdate(); return; }

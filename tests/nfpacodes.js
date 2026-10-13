@@ -1,4 +1,4 @@
-// NFPA codes added from the library folder `standars` (parts 87 onward): NFPA 54 National Fuel Gas Code (fuel gas pipe sizing, combustion air), NFPA 110 / NFPA 99 items.
+// NFPA codes added from the library folder `standars` (parts 87 onward): NFPA 54 National Fuel Gas Code (fuel gas pipe sizing, combustion air), NFPA 110 emergency power, NFPA 99 health care facilities (2002 and 2024 editions).
 //   node tests/nfpacodes.js
 const { JSDOM, VirtualConsole } = require('jsdom');
 const fs = require('fs');
@@ -158,6 +158,105 @@ setv(w, 'vs_t', '13.1(e)'); setv(w, 'vs_a', 'fan'); w.calcResult('ventsize');
 check('single-wall pipe with a fan-assisted selection shows the draft-hood-only note', [doc.getElementById('vs_results').textContent.includes('13.1(e)')], [true]);
 check('other reference codes open it too', ['jo', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('ventsize'); x.calcResult('ventsize'); return x.document.getElementById('vs_results').textContent.length > 300; }), [true, true, true]);
 }
+
+// ---------- part 89: NFPA 99 isolated power systems and patient-care electrical (`isopower`: 2024 6.3 and 2002 4.3) ----------
+{
+w = boot('intl'); doc = w.document;
+const ip = o => w.eval('ipCalc(' + JSON.stringify(Object.assign({ed: '2024', sp: 'bed2', n: 10, nrec: 20, iso: false, vm: 0, zm: 0, V: 120, kva: 5, imA: 0, rK: 0, cN: 0, f: 60, sup: false}, o)) + ')');
+check('receptacles per bed location 2024: Category 2 bed 8 (at least 4 on the normal or another critical branch), Category 1 bed 14 (7), operating room 36 (12); 10 beds = 80 / 140; 2 rooms = 72 with 24', [ip({}).perLoc, ip({}).alt, ip({}).total, ip({sp: 'bed1'}).perLoc, ip({sp: 'bed1'}).alt, ip({sp: 'bed1'}).total, ip({sp: 'or', n: 2}).perLoc, ip({sp: 'or', n: 2}).total, ip({sp: 'or', n: 2}).altTotal], [8, 4, 80, 14, 7, 140, 36, 72, 24]);
+check('receptacles 2002: general care bed 4, critical care bed 6 (the operating room counted as a critical care bed location), no split between branches', [ip({ed: '2002'}).perLoc, ip({ed: '2002', sp: 'bed1'}).perLoc, ip({ed: '2002', sp: 'or'}).perLoc, ip({ed: '2002'}).alt], [4, 6, 6, 0]);
+check('10 percent of the receptacles are measured, rounded up (no rounding rule is printed): 20 -> 2, 25 -> 3, 1 -> 1, 0 -> 0', [ip({nrec: 20}).nTest, ip({nrec: 25}).nTest, ip({nrec: 1}).nTest, ip({nrec: 0}).nTest], [2, 3, 1, 0]);
+check('grounding limits: 20 mV; 0.1 ohm, or 0.2 ohm with isolated-ground receptacles; accuracy +/-5 % (2024) and +/-20 % (2002)', [ip({}).vLim, ip({}).zLim, ip({iso: true}).zLim, ip({}).tol, ip({ed: '2002'}).tol], [20, 0.1, 0.2, 0.05, 0.2]);
+check('2024 verdicts with the 5 % accuracy added: 12 mV pass (12.6), 19.5 mV marginal (20.475), 21 mV fail; 0.09 ohm pass, 0.098 marginal, 0.11 fail; with isolated ground 0.19 passes against 0.2 (0.1995)', [ip({vm: 12}).vV, ip({vm: 19.5}).vV, ip({vm: 21}).vV, ip({zm: 0.09}).zV, ip({zm: 0.098}).zV, ip({zm: 0.11}).zV, ip({zm: 0.19, iso: true}).zV], ['pass', 'marginal', 'fail', 'pass', 'marginal', 'fail', 'pass']);
+check('2002 accuracy +/-20 %: 16 mV passes (19.2) but 17 mV is marginal (20.4)', [ip({ed: '2002', vm: 16}).vV, ip({ed: '2002', vm: 17}).vV], ['pass', 'marginal']);
+check('line impedance Z = V x 1000 / I: 120 V and 0.45 mA = 266,667 ohm passes; 0.6 mA = 200,000 ohm does not exceed the limit; 0.7 mA = 171,429 fails; the 2002 print (x 100) would give 20,000 ohm', [Math.round(ip({imA: 0.45}).zMeter), ip({imA: 0.45}).zOk, ip({imA: 0.6}).zMeter, ip({imA: 0.6}).zOk, Math.round(ip({imA: 0.7}).zMeter), ip({imA: 0.7}).zOk, ip({imA: 0.6}).zPrint2002], [266667, true, 200000, false, 171429, false, 20000]);
+check('largest acceptable meter reading V / 200 mA: 0.6 at 120 V, 1.04 at 208 V and 1.2 at 240 V (above the 1 mA scale of the prescribed meter)', [ip({}).meterMax, +ip({V: 208}).meterMax.toFixed(2), ip({V: 240}).meterMax], [0.6, 1.04, 1.2]);
+check('LIM acceptance test resistor 200 x V: 24,000 ohm at 120 V (5.0 mA), 41,600 at 208 V, 48,000 at 240 V; high-impedance monitor internal impedance at least V / 1 mA = 120,000 ohm', [ip({}).rTest, ip({V: 208}).rTest, ip({V: 240}).rTest, ip({}).iTest, ip({}).zLimMin], [24000, 41600, 48000, 5, 120000]);
+check('derived R-C limit: a purely capacitive conductor may have at most 13.26 nF at 60 Hz (15.92 nF at 50 Hz); 500 kohm in parallel with 10 nF at 60 Hz gives 234 kohm which still exceeds 200 kohm; 500 kohm with 20 nF gives 128 kohm which does not', [+ip({}).capMax.toFixed(2), +ip({f: 50}).capMax.toFixed(2), Math.round(ip({rK: 500, cN: 10}).zRC / 1000), ip({rK: 500, cN: 10}).zRCok, Math.round(ip({rK: 500, cN: 20}).zRC / 1000), ip({rK: 500, cN: 20}).zRCok], [13.26, 15.92, 234, true, 128, false]);
+check('transformer: 5 kVA at 120 V = 41.7 A; above 10 kVA is flagged (annex: desirable limit); a capacitance suppressor needs at least 1 megohm resistive (1.2 passes, 0.8 fails)', [+ip({}).iRated.toFixed(1), ip({kva: 12}).kvaBig, ip({kva: 10}).kvaBig, ip({sup: true, rK: 1200}).suppOk, ip({sup: true, rK: 800}).suppOk], [41.7, true, false, true, false]);
+w.renderCalc('isopower'); setv(w, 'ip_i', 0.45); w.calcResult('isopower');
+let tt = doc.getElementById('ip_results').textContent;
+check('the page opens with 80 receptacles, the 266667 ohm line impedance, the 24000 ohm test resistor, the edition table and the red note', [tt.includes('266667'), tt.includes('24000'), tt.includes('2002'), tt.includes('🔴'), doc.querySelectorAll('#ip_results table tr').length >= 7], [true, true, true, true, true]);
+setv(w, 'ip_ed', '2002'); w.calcResult('isopower');
+check('2002 shows the 6-month resistor test and no split between branches', [doc.getElementById('ip_results').textContent.includes('6 أشهر'), doc.getElementById('ip_results').textContent.includes('لا يحدد إصدار 2002')], [true, true]);
+check('other reference codes open it too', ['jo', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('isopower'); x.calcResult('isopower'); return x.document.getElementById('ip_results').textContent.length > 300; }), [true, true, true]);
+}
+
+// ---------- part 89: NFPA 99 essential electrical systems (`essential`: 2024 6.7 and 2002 4.4 - 4.6) ----------
+{
+w = boot('intl'); doc = w.document;
+const D = {ed: '2024', fac: 'c1', pf: 0.8, unit: 500, other: false, fpOn: false, ls: 60, lsf: 100, cr: 250, crf: 80, eqa: 150, eqaf: 80, eqm: 200, eqmf: 60, acc: 15, accf: 100, mac: 30, macf: 100, mvp: 30, mvpf: 100, jp: 5, jpf: 100, fp: 90, fpf: 100, opt: 0, optf: 100};
+const ee = o => w.eval('eeCalc(' + JSON.stringify(Object.assign({}, D, o)) + ')');
+check('type by space category (2024): Category 1 -> Type 1; Category 2 -> Type 1 or Type 2 as chosen; Category 3 and 4 -> no essential system and no demand', [ee({fac: 'c1'}).t, ee({fac: 'c2a'}).t, ee({fac: 'c2b'}).t, ee({fac: 'c3'}).t, ee({fac: 'c3'}).demand], [1, 1, 2, 0, 0]);
+check('type by facility (2002): hospital Type 1; ambulatory with life support or critical care Type 1, other ambulatory Type 3; nursing home Type 2; an option of the other edition falls back to the default', [ee({ed: '2002', fac: 'h'}).t, ee({ed: '2002', fac: 'a1'}).t, ee({ed: '2002', fac: 'a3'}).t, ee({ed: '2002', fac: 'n'}).t, ee({ed: '2002', fac: 'c3'}).fk, ee({ed: '2024', fac: 'h'}).fk], [1, 1, 3, 2, 'h', 'c1']);
+let r = ee({});
+check('Type 1: life safety 60 + accessories 15 = 75 kW; critical 250 x 80 % = 200; equipment 150 x 0.8 + 200 x 0.6 + 30 + 30 + 5 = 305; maximum demand 580 kW = 725 kVA at 0.8', [r.ls, r.cr, r.eq, r.ees, r.demand, r.kva], [75, 200, 305, 580, 580, 725]);
+check('500 kW sets: 2 for the demand, installed 1000 kW, reserve 420 kW; three transfer switches (one per branch) because the load exceeds 120 kW', [r.nOp, r.nSets, r.installed, r.reserve, r.oneSwitch, r.nSwitch], [2, 2, 1000, 420, false, 3]);
+r = ee({other: true});
+check('2002 4.4.1.1.8.1 (the sets also serve other purposes): the demand is met with the largest set out of service: 3 sets, 1000 kW firm', [r.nSets, r.firm, r.n1, r.shortfall], [3, 1000, true, false]);
+check('a fire pump on the same generator adds its 90 kW: demand 670 kW; a sub-120 kW system needs one transfer switch (with a bypass-isolation switch)', [ee({fpOn: true}).demand, ee({ls: 20, cr: 20, eqa: 20, eqm: 20, acc: 5, mac: 0, mvp: 0, jp: 0, crf: 100, eqaf: 100, eqmf: 100}).oneSwitch, ee({ls: 20, cr: 20, eqa: 20, eqm: 20, acc: 5, mac: 0, mvp: 0, jp: 0, crf: 100, eqaf: 100, eqmf: 100}).nSwitch], [670, true, 1]);
+r = ee({fac: 'c2b'});
+check('Type 2 (2024): two branches; the critical-branch loads join the equipment branch (120 + 120 + 30 + 30 + 5 + 15 + 200 = 520) and life safety stays 60', [r.branches.length, r.ls, r.eq, r.ees], [2, 60, 520, 580]);
+r = ee({ed: '2002', fac: 'a3'});
+check('Type 3 (2002 only): one branch with the life safety loads (60 kW)', [r.branches.length, r.ees, r.nSwitch], [1, 60, 1]);
+w.renderCalc('essential'); w.calcResult('essential');
+let tt = doc.getElementById('ee_results').textContent;
+check('the page opens with Type 1, the 580 kW demand, 725 kVA, the timing table (12 tests a year, 4 hours, 0.1 s) and the red note', [tt.includes('النوع 1'), tt.includes('580'), tt.includes('725'), tt.includes('12 مرة في السنة'), tt.includes('0.1 s'), tt.includes('🔴')], [true, true, true, true, true, true]);
+setv(w, 'ee_ed', '2002'); setv(w, 'ee_fac', 'a3'); w.calcResult('essential');
+check('2002 Type 3 shows the 1.5 hour minimum and the 10 to 32 degree room rule', [doc.getElementById('ee_results').textContent.includes('1.5 ساعة'), doc.getElementById('ee_results').textContent.includes('10°C')], [true, true]);
+setv(w, 'ee_ed', '2024'); setv(w, 'ee_fac', 'c3'); w.calcResult('essential');
+check('Category 3 only: no essential system required and no demand section', [doc.getElementById('ee_results').textContent.includes('لا يلزم نظام أساسي'), doc.getElementById('ee_results').textContent.includes('الطلب الأقصى وسعة المولدات')], [true, false]);
+check('other reference codes open it too', ['jo', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('essential'); x.calcResult('essential'); return x.document.getElementById('ee_results').textContent.length > 300; }), [true, true, true]);
+}
+
+// ---------- part 89: NFPA 99 medical gas and vacuum distribution (`medpipe`: 2024 5.1.9, 5.1.10, 5.1.12 and 2002 5.1) ----------
+{
+w = boot('intl'); doc = w.document;
+const mp = o => w.eval('mpCalc(' + JSON.stringify(Object.assign({ed: '2024', gas: 'o2', p: 350, vs: 54, ps: 420, t1: 27, t2: 18, elev: 0, size: 2, len: 40, floors: 5, fh: 3.5, zones: 12, gr: 1000}, o)) + ')');
+check('Table 5.1.11: 9 services; oxygen 345 - 380 kPa, nitrogen and instrument air 0 - 2070 kPa, vacuum 380 - 760 mm HgV', [w.eval('Object.keys(MP_GAS).length'), w.eval('MP_GAS.o2.slice(3, 5)'), w.eval('MP_GAS.n2.slice(3, 5)'), w.eval('MP_GAS.ia.slice(3, 5)'), w.eval('MP_GAS.vac.slice(3, 6)')], [9, [345, 380], [0, 2070], [0, 2070], [380, 760, 'v']]);
+check('tests at 350 kPa: initial 1.5 x 350 = 525 but not less than 1035 kPa; 800 kPa -> 1200; standing 1.2 x 350 = 420; relief 525; alarms 420 (+20 %) and 280 (-20 %); distribution loss limit 10 % = 35 kPa', [mp({}).pTest, mp({p: 800}).pTest, mp({}).pStand, mp({}).relief, mp({}).pHigh, mp({}).pLow, mp({}).loss], [1035, 1200, 420, 525, 420, 280, 35]);
+check('allowable leakage 0.5 % of the start pressure in 2024 (420 kPa -> 2.1 kPa; the code example 415 kPa -> 2 kPa), no allowance printed in 2002', [+mp({}).dropAllow.toFixed(2), +(0.005 * 415).toFixed(2), mp({ed: '2002'}).dropAllow], [2.1, 2.08, null]);
+check('2024 annex example: 415 kPa gauge at 27 C falling to 18 C at sea level gives 400 kPa (399.5 with 101.33 kPa)', [+mp({ps: 415}).pg2.toFixed(1)], [399.5], 0.8);
+check('the 2002 print adds 238 instead of 273 to the Celsius temperatures: the same case gives 397.5 kPa (a misprint of the Kelvin offset, flagged)', [+mp({ps: 415, ed: '2002'}).pg2b.toFixed(1)], [397.5], 0.2);
+check('2024 vacuum example: 54 kPa at 18 C rising to 27 C gives 52.5 kPa', [+mp({t1: 18, t2: 27, vs: 54}).vg2.toFixed(1)], [52.5], 0.1);
+check('atmospheric pressure by elevation (Table A.5.1.12.2.6.5(b)): 0 m 101.33 kPa; 1000 m between 3000 and 3500 ft = 89.9 kPa; above 5000 ft the last row', [w.eval('mpAtm(0)'), +w.eval('mpAtm(1000)').toFixed(2), w.eval('mpAtm(3000)')], [101.33, 89.88, 84.33], 0.02);
+check('supports (Table 5.1.10.11.4.6): DN15 1830 mm, DN8 1520, DN25 2440, DN40 and larger 3050; a 40 m run needs 22 / 27 / 17 / 14 supports; five floors of 3.5 m need 5 riser supports and a floor height of 5 m needs 2 per floor = 10', [mp({}).sup, mp({size: 0}).sup, mp({size: 4}).sup, mp({size: 6}).sup, mp({}).nH, mp({size: 0}).nH, mp({size: 4}).nH, mp({size: 6}).nH, mp({}).nRisers, mp({fh: 5}).nRisers], [1830, 1520, 2440, 3050, 22, 27, 17, 14, 5, 10]);
+check('particulate test: 1000 L at 100 Nl/min takes 10 min; 25 % of 12 zones = 3, of 10 zones = 3 (rounded up), no zones -> 0', [mp({}).partMin, mp({}).zonesPart, mp({zones: 10}).zonesPart, mp({zones: 0}).zonesPart], [10, 3, 3, 0]);
+check('analog gauge: the normal pressure must be in the middle third of the range (2024: 0 - 1000 kPa suits 350 kPa but not 700 kPa), the middle 50 % in 2002 (300 kPa suits 0 - 1000 in 2002 but not in 2024); recommended range 1.5 P to 3 P', [mp({}).gaugeOk, mp({p: 700}).gaugeOk, mp({p: 300, ed: '2002'}).gaugeOk, mp({p: 300}).gaugeOk, mp({}).gaugeLo, mp({}).gaugeHi, mp({gr: 1000}).gaugeAcc], [true, false, true, false, 525, 1050, 10]);
+w.renderCalc('medpipe'); w.calcResult('medpipe');
+let tt = doc.getElementById('mp_results').textContent;
+check('the page opens with the Table 5.1.11 colours, 1035 kPa, 420 kPa, the 404.4 kPa correction of the default 420 kPa test, the dew point +2 C alarm and the red note', [tt.includes('أخضر/أبيض'), tt.includes('1035'), tt.includes('420'), tt.includes('404.4'), tt.includes('+2°C'), tt.includes('🔴')], [true, true, true, true, true, true]);
+setv(w, 'mp_ed', '2002'); w.calcResult('medpipe');
+check('2002: dew point alarm +4 C, purity 1 ppm / 2 ppm, 24 hour simulated-load run and the 238 misprint line', [doc.getElementById('mp_results').textContent.includes('+4°C'), doc.getElementById('mp_results').textContent.includes('≤ 1 ppm هيدروكربونات'), doc.getElementById('mp_results').textContent.includes('≥ 24 ساعة'), doc.getElementById('mp_results').textContent.includes('238')], [true, true, true, true]);
+setv(w, 'mp_ed', '2024'); setv(w, 'mp_g', 'vac'); w.calcResult('medpipe');
+check('vacuum: no pressure tests, the standing vacuum test and the 300 mm HgV alarm', [doc.getElementById('mp_results').textContent.includes('اختبار التفريغ الثابت'), doc.getElementById('mp_results').textContent.includes('300 mm HgV')], [true, true]);
+check('other reference codes open it too', ['jo', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('medpipe'); x.calcResult('medpipe'); return x.document.getElementById('mp_results').textContent.length > 300; }), [true, true, true]);
+}
+
+// ---------- part 89: NFPA 99 medical gas sources (`medgas`: 2024 5.1.3 and 9.3.6, 2002 5.1.3) ----------
+{
+w = boot('intl'); doc = w.document;
+const mg = o => w.eval('mgCalc(' + JSON.stringify(Object.assign({ed: '2024', gas: 'o2', cyl: 'K', avg: 40, arr: 'hdr', loc: 'ind', other: 0, spare: 4, p: 350, u: 'ls', pa: 0, ua: 0, pv: 0, uv: 0, pw: 0, uw: 0}, o)) + ')');
+check('cylinder contents (Table A.11.3.5, litres): oxygen H or K 6900, G 6000, M 3450, E 660, D 400, B 200; nitrous oxide K 15800; air K 6550; CO2 K 15840; B has only CO2 and oxygen', [['K', 'o2'], ['G', 'o2'], ['M', 'o2'], ['E', 'o2'], ['D', 'o2'], ['B', 'o2'], ['K', 'n2o'], ['K', 'air'], ['K', 'co2']].map(a => w.eval('MG_CYL.' + a[0] + '[3].' + a[1])), [6900, 6000, 3450, 660, 400, 200, 15800, 6550, 15840]);
+let r = mg({});
+check('manifold of two equal headers for an average day of 40 m3 of oxygen in H cylinders: 40000 / 6900 = 5.8 -> 6 connections per header, 12 connected, 16 with 4 spares = 110.4 m3', [+r.need.toFixed(2), r.nHdr, r.connected, r.cylTotal, +r.vStored.toFixed(1)], [5.80, 6, 12, 16, 110.4]);
+check('minimums: each of two headers at least 2 connections, the reserve header at least 3, the in-building reserve at least one day only; E cylinders at 10 m3: 16 connections', [mg({avg: 1}).nHdr, mg({avg: 2, arr: 'res'}).nHdr, mg({avg: 2, arr: 'ibr'}).nHdr, mg({avg: 10, cyl: 'E'}).nHdr], [2, 3, 1, 16]);
+check('a gas the table does not give for the size (air in B) returns no count', [mg({gas: 'air', cyl: 'B'}).content, mg({gas: 'air', cyl: 'B'}).nHdr], [null, null]);
+check('maximum quantity of oxidizing gas (Table 5.1.3.3.2.5): 283 m3 indoors without sprinklers, 566 m3 with sprinklers, none outdoors; 110.4 + 200 m3 of nitrous oxide = 310.4 fails indoors but passes with sprinklers; air is not limited', [mg({other: 200}).lim, mg({other: 200}).maqOk, mg({other: 200, loc: 'spr'}).maqOk, mg({loc: 'out'}).maqOk, mg({gas: 'air'}).maqOk, mg({}).maqOk], [283, false, true, null, null, true]);
+check('ventilation 2024: V = 12 x 6.9 = 82.8 m3; each of two natural openings max(155 x 82.8 / 28.3, 465) = 465 cm2 (and 453.5 below it); mechanical V / 300 = 276 L/s clamped to 235 L/s; small M-cylinder manifold (2 headers x 2 connections = 13.8 m3): 465 cm2; a 20 m3 reserve of 3 K cylinders (20.7 m3): 69 L/s', [+r.vVent.toFixed(1), r.aNat, r.qMech, +mg({avg: 1, cyl: 'M', gas: 'o2', spare: 0}).vVent.toFixed(1), +mg({avg: 20, cyl: 'K', spare: 0}).aNat.toFixed(1), +mg({avg: 20, cyl: 'K', spare: 0, arr: 'ibr'}).qMech.toFixed(1)], [82.8, 465, 235, 13.8, 465.0, 69.0], 0.1);
+check('large reserve: 15 K cylinders = 103.5 m3 needs max(155 x 103.5 / 28.3 = 566.9, 465) cm2 per opening', [+mg({avg: 100, arr: 'ibr', spare: 0}).aNat.toFixed(1)], [566.9], 0.2);
+check('ventilation 2002: total connected and stored volume (110.4 m3) above 84.95 m3 needs mechanical ventilation; 2002 natural openings 465 cm2', [mg({ed: '2002'}).mech2002, mg({ed: '2002', avg: 10}).mech2002, mg({ed: '2002'}).aNat], [true, false, 465]);
+check('relief valve 1.5 x 350 = 525 kPa', [r.relief], [525]);
+check('N-1 sizing: at least 2 units and the demand met with the largest out: 40 L/s with 30 L/s units -> 3; 30 L/s -> 2; 20 L/s -> 2; no demand -> 0', [mg({pa: 40, ua: 30}).n.air, mg({pa: 30, ua: 30}).n.air, mg({pa: 20, ua: 30}).n.air, mg({pa: 0, ua: 30}).n.air], [3, 2, 2, 0]);
+check('flow units: 144 m3/h = 40 L/s; 100 scfm = 47.19 L/s; vacuum pumps and WAGD producers use the same rule', [mg({u: 'm3h', pa: 144, ua: 108}).n.air, +mg({u: 'scfm', pa: 100, ua: 100}).peak.air.toFixed(2), mg({pv: 120, uv: 70}).n.vac, mg({pw: 10, uw: 10}).n.wagd], [3, 47.19, 3, 2]);
+w.renderCalc('medgas'); w.calcResult('medgas');
+let tt = doc.getElementById('mg_results').textContent;
+check('the page opens with 6 connections per header, 110.4 m3, the 283 m3 limit, 465 cm2, the vacuum receiver and the red note', [tt.includes('110.4'), tt.includes('283'), tt.includes('465'), tt.includes('415 kPa'), tt.includes('🔴')], [true, true, true, true, true]);
+setv(w, 'mg_ed', '2002'); w.calcResult('medgas');
+check('2002 shows +4 C dew point, 5 mg/m3 particulates and the 566.3 m3 oxygen threshold', [doc.getElementById('mg_results').textContent.includes('+4°C'), doc.getElementById('mg_results').textContent.includes('5 mg/m³'), doc.getElementById('mg_results').textContent.includes('566.3')], [true, true, true]);
+check('other reference codes open it too', ['jo', 'ae', 'sa'].map(c => { const x = boot(c); x.renderCalc('medgas'); x.calcResult('medgas'); return x.document.getElementById('mg_results').textContent.length > 300; }), [true, true, true]);
+}
+check('plumbing screen lists the two medical gas calculators (28 cards in all) and the home page says 28; the electrical screen lists the two electrical ones', (() => { const x = boot('intl'); x.showCategory('plumbing'); const p = x.document.getElementById('plumbing-category'); x.showCategory('electrical'); const e = x.document.getElementById('electrical-category'); return [p.innerHTML.includes("showCalc('medgas')"), p.innerHTML.includes("showCalc('medpipe')"), p.querySelectorAll('.calc-card').length, x.document.body.textContent.includes('28 حاسبة متاحة'), e.innerHTML.includes("showCalc('isopower')"), e.innerHTML.includes("showCalc('essential')"), x.document.body.textContent.includes('34 حاسبة متاحة')]; })(), [true, true, 28, true, true, true, true]);
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
