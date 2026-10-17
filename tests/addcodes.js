@@ -616,6 +616,67 @@ let tt = txt(w, 'mss_results');
 check('the page opens with 714.1 kN m, 1231 mm2, 325.4 kN and the 🔴 note', [tt.includes('714.1 kN'), tt.includes('1231 mm'), tt.includes('325.4 kN'), tt.includes('🔴')], [true, true, true, true]);
 check('other reference codes open it too', others('masonshear', 'mss_results'), [true, true, true]);
 }
+// ---------- part 120: Saudi Civil Defense regulation for technical and commercial premises (`sdshop`) ----------
+{
+w = boot('intl'); doc = w.document;
+const sd = o => w.eval('sdsCalc(' + JSON.stringify(Object.assign({At: 600, Af: 600, nf: 1, H: 6, N: 120, type: 0, exitW: 1100, routeW: 1400, doors: 2, ext: 6, reelN: 3, riserN: 1, riserD: 40, hyd: 80, fuel: 0, aisle: 1, head: 1}, o)) + ')');
+let r = sd({});
+check('exit units = persons / (25 x evacuation time): 120 persons at 3 min (type I) = 1.6 -> 2 units; at 2.5 min (type II) = 1.92 -> 2; at 2 min (type III) = 2.4 -> 3 units; a fraction counts as a whole unit', [sd({}).units, sd({type: 1}).units, sd({type: 2}).units, sd({type: 2}).tE], [2, 2, 3, 2]);
+check('the minimum is two units (42 in = 1067 mm, at least 1000 mm): a single person still needs 1067 mm; 8 units need 8 x 533.4 = 4267 mm; width 1066 mm fails and 1067 passes', [sd({N: 10}).unitsReq, Math.round(sd({N: 10}).wReq), Math.round(sd({N: 600}).wReq), sd({exitW: 1066}).exitWOk, sd({exitW: 1067}).exitWOk], [2, 1067, 4267, false, true]);
+check('doors: two units need one exit; three units or more need more than one door = units / 4 + 1 rounded up: 3 units -> 2, 6 units -> 3, 8 units -> 3, 9 units -> 4', [sd({}).doors, sd({N: 150, type: 2}).doors, sd({N: 300, type: 2}).doors, sd({N: 600}).doors, sd({N: 675}).doors], [1, 2, 3, 3, 4]);
+check('escape route at least 1300 mm: 1299 fails and 1300 passes; fewer doors than required fail', [sd({routeW: 1299}).routeOk, sd({routeW: 1300}).routeOk, sd({N: 300, type: 2, doors: 2}).doorsOk, sd({N: 300, type: 2, doors: 3}).doorsOk], [false, true, false, true]);
+check('extinguishers: one per 100 m2 and never fewer than three (two dry powder 12 kg + one CO2 10 kg): 600 m2 -> 6, 120 m2 -> 3, 1000 m2 -> 10, 101 m2 -> 2 rounded to the minimum 3; 5 provided against 6 fails', [sd({}).nExt, sd({At: 120}).nExt, sd({At: 1000}).nExt, sd({At: 101}).nExt, sd({}).powder, sd({ext: 5}).extOk, sd({ext: 6}).extOk], [6, 3, 10, 3, 5, false, true]);
+check('hose reels one per 200 m2: 600 m2 -> 3, 650 m2 -> 4; the hose diameter is at least 20 mm (note)', [sd({}).reels, sd({At: 650}).reels, sd({reelN: 2}).reelOk], [3, 4, false]);
+check('standpipes: none up to 12 m; dry above 12 m and below 60 m; wet from 60 m; one riser per 600 m2 of floor with the farthest point within 50 m of a hose valve', [sd({H: 12}).stand, sd({H: 12.1}).stand, sd({H: 59.9}).stand, sd({H: 60}).stand, sd({H: 30, Af: 600}).risers, sd({H: 30, Af: 601}).risers, sd({H: 30, Af: 1800}).risers, sd({H: 30, riserN: 0}).riserOk, sd({H: 30, riserD: 50}).riserDistOk, sd({H: 30, riserD: 51}).riserDistOk, sd({H: 6, riserN: 0}).riserOk], ['none', 'dry', 'dry', 'wet', 1, 2, 3, false, true, false, true]);
+check('hydrant within 100 m: 100 passes and 101 fails; liquid fuel: up to 10 L portable, up to 50 L in an insulated tank, above 50 L separate tanks (underground at most 5000 L); cladding class A above two floors, class B up to two', [sd({hyd: 100}).hydOk, sd({hyd: 101}).hydOk, sd({fuel: 10}).fuel, sd({fuel: 11}).fuel, sd({fuel: 50}).fuel, sd({fuel: 51}).fuel, sd({nf: 2}).clad, sd({nf: 3}).clad], [true, false, 'portable', 'small tank', 'small tank', 'tank', 'B', 'A']);
+check('storage: aisles at least 1 m (0.99 fails); stacks at least 3 ft = 0.914 m below the ceiling (0.9 fails, 0.92 passes); the default shop complies', [sd({aisle: 0.99}).aisleOk, sd({head: 0.9}).headOk, sd({head: 0.92}).headOk, r.ok], [false, false, true, true]);
+w.renderCalc('sdshop'); w.calcResult('sdshop');
+let tt = txt(w, 'sds_results');
+check('the page opens with 2 units, 1067 mm, 6 extinguishers, 3 hose reels and the 🔴 note', [tt.includes('2 وحدة'), tt.includes('1067 mm'), tt.includes('6'), tt.includes('🔴')], [true, true, true, true]);
+check('other reference codes open it too', others('sdshop', 'sds_results'), [true, true, true]);
+}
+// ---------- part 121: generator set room ventilation (`genroom`: Cummins T-030 6.5.4 steps 1 - 9, 6.5.6, Table 26) ----------
+{
+w = boot('intl'); doc = w.document;
+const gr = o => w.eval('gvCalc(' + JSON.stringify(Object.assign({Qgs: 5530 * 1.055056 / 60, dp: 6, L: 3.048, ins: false, muff: true, dm: 6, Qaux: 0, Tout: 32.222, Troom: 40, Vcomb: 34.7, alt: 1524, Vfan: 642.4, vel: 2.03}, o)) + ')');
+const cf = x => x * 35.3147;
+check('Table 26 (kJ/min per m of pipe, kJ/min of muffler): 127 mm 481 and 1584, 254 mm 928 and 3870, 610 mm 2062 and no muffler value; 17 sizes', [w.eval('GV_T26.length'), w.eval('GV_T26.find(r => r[0] === 127).slice(1)'), w.eval('GV_T26.find(r => r[0] === 254).slice(1)'), w.eval('GV_T26.find(r => r[0] === 610).slice(1)')], [17, [481, 1584], [928, 3870], [2062, null]]);
+let r = gr({});
+check('the manual\'s worked example (5530 Btu/min set, 10 ft of 5 in pipe and a 5 in muffler uninsulated): pipe 24.4 kW + muffler 26.4 kW, total 148.1 kW = 8421 Btu/min; rise 104 F - 90 F = 7.78 K', [+r.QP.toFixed(1), +r.QM.toFixed(1), +r.Q.toFixed(1), Math.round(r.Q * 60 / 1.055056), +r.dT.toFixed(2)], [24.4, 26.4, 148.1, 8421, 7.78], 0.5);
+check('air to remove the heat Q / (rho cp dT) ~ 34200 cfm; plus 1226 cfm of combustion air; at 5000 ft x 1.12 gives 39 680 cfm (the manual), a fan of 22 700 cfm leaves 16 980 cfm to the auxiliary fans; louver area at 400 fpm 99.2 ft2', [Math.round(cf(r.Vroom) / 10) * 10, Math.round(cf(r.Vtot) / 10) * 10, +r.f.toFixed(3), Math.round(cf(r.Vadj) / 100) * 100, Math.round(cf(r.aux) / 100) * 100, +(cf(r.Vadj) / 400).toFixed(0)], [34200, 35430, 1.12, 39700, 17000, 99], 150);
+check('altitude factor 3 % per 305 m above 305 m and never below 1: 0 m and 305 m -> 1.00; 610 m -> 1.03; 1524 m -> 1.12', [gr({alt: 0}).f, gr({alt: 305}).f, +gr({alt: 610}).f.toFixed(3), +gr({alt: 1524}).f.toFixed(2)], [1, 1, 1.03, 1.12], 0.001);
+check('insulated pipe and muffler emit 30 % (24.4 + 26.4 -> 15.2 kW, total 112.5 kW); a muffler outside the room is not counted; a 610 mm muffler has no Table 26 value and is flagged', [+gr({ins: true}).Q.toFixed(1), +gr({muff: false}).QM.toFixed(1), +gr({muff: false}).Q.toFixed(1), gr({dm: 16}).mNone], [112.5, 0, 121.7, true], 0.1);
+check('without a set-mounted fan all the air comes from room fans: auxiliary = total = 1124 m3/min; a fan above the need needs no auxiliary fan and the room flow equals the fan flow', [Math.round(gr({Vfan: 0}).aux), Math.round(gr({Vfan: 0}).thru), gr({Vfan: 2000}).auxNeeded, gr({Vfan: 2000}).aux, gr({Vfan: 2000}).thru, gr({}).auxNeeded], [1124, 1124, false, 0, 2000, true]);
+check('the effective inlet / outlet area = airflow / velocity: 1124 m3/min at 3 m/s = 6.2 m2; the recommended velocity range 2.5 - 3.6 m/s (2.03 m/s, the louver limit of the example, is outside)', [+gr({Vfan: 0, vel: 3}).Ain.toFixed(1), gr({vel: 2.5}).velOk, gr({vel: 3.6}).velOk, gr({vel: 3.7}).velOk, gr({vel: 2.03}).velOk], [6.2, true, true, false, false], 0.1);
+check('a room not warmer than the outside air cannot remove heat: no finite airflow', [gr({Troom: 30}).Vroom === Infinity, gr({Troom: 32.222}).Vroom === Infinity], [true, true]);
+w.renderCalc('genroom'); w.calcResult('genroom');
+let tt = txt(w, 'gv_results');
+check('the page opens with 148.2 kW (97.3 + 24.5 + 26.4), 7.8 K, 1121 m3/min and the 🔴 note', [tt.includes('148.2 kW'), tt.includes('7.8 K'), tt.includes('1121 m'), tt.includes('🔴')], [true, true, true, true]);
+check('other reference codes open it too', others('genroom', 'gv_results'), [true, true, true]);
+}
+// ---------- part 122: SBC 201 minimum plumbing fixtures (`sbcfixtures`: Table 2902.1, 2902.1.1, 2902.6) ----------
+{
+w = boot('intl'); doc = w.document;
+const fx = (lines, pm) => w.eval('sfxCalc(' + JSON.stringify(lines.map(l => Object.assign({row: 'B', N: 100, units: 0}, l))) + ', ' + (pm == null ? 0.5 : pm) + ')');
+const pick = r => [r.wm, r.wf, r.lm, r.lf, r.b, r.d, r.ss];
+check('the table has 25 occupancy rows; the fixed bath of I-4 is 1; factories and storage take their showers from SBC 701 section 411', [w.eval('SFX_ROWS.length'), w.eval('SFX_ROWS.find(r => r.id === "I4").b.fix'), w.eval('SFX_ROWS.find(r => r.id === "F").b'), w.eval('SFX_ROWS.find(r => r.id === "S").b')], [25, 1, 'x', 'x']);
+check('office B, 100 persons (50 per sex): water closets 1 per 25 for the first 50 = 2 each; lavatories 1 per 40 for the first 80 = 1.25 -> 2; drinking fountains 1 per 100 = 1; one service sink', pick(fx([{}])), [2, 2, 2, 2, 0, 1, 1]);
+check('office B, 200 persons (100 per sex): water closets 50/25 + 50/50 = 3; lavatories 80/40 + 20/80 = 2.25 -> 3; drinking fountains 2', pick(fx([{N: 200}])), [3, 3, 3, 3, 0, 2, 1]);
+check('restaurant A-2, 300 persons: water closets 150/75 = 2 each, lavatories 150/200 = 0.75 -> 1, drinking fountain 300/500 -> 1', pick(fx([{row: 'A2', N: 300}])), [2, 2, 1, 1, 0, 1, 1]);
+check('arena A-4, 5000 persons: men 1500/75 + 1000/120 = 28.3 -> 29; women 1520/40 + 980/60 = 54.3 -> 55; lavatories 2500/200 = 12.5 -> 13 and 2500/150 = 16.7 -> 17; drinking fountains 5', pick(fx([{row: 'A4', N: 5000}])), [29, 55, 13, 17, 0, 5, 1]);
+check('theatre A-1 400 persons: men 200/125 -> 2, women 200/65 = 3.1 -> 4; mosque A-3: 600 persons men 300/150 = 2, women 300/75 = 4, lavatories 300/200 -> 2, one drinking fountain', [pick(fx([{row: 'A1', N: 400}])).slice(0, 4), pick(fx([{row: 'A3m', N: 600}]))], [[2, 4, 1, 1], [2, 4, 2, 2, 0, 1, 1]]);
+check('multiple occupancies (2902.1.1): the fractions are added before rounding: B 100 persons + M 200 persons: water closets 2.0 + 0.2 -> 3, lavatories 1.25 + 0.133 -> 2, drinking fountains 1.0 + 0.2 -> 2; rounding each use first would give 4 lavatories', [pick(fx([{}, {row: 'M', N: 200}])).slice(0, 6), pick(fx([{}])).slice(2, 4).reduce((a, b) => a + b) + pick(fx([{row: 'M', N: 200}])).slice(2, 4).reduce((a, b) => a + b)], [[3, 3, 2, 2, 0, 2], 6]);
+check('apartment houses, 40 dwelling units: one water closet, lavatory and bath per unit, one kitchen sink per unit and one clothes washer connection per 20 units; hotels 120 sleeping units: one each, no drinking fountain; one- and two-family dwellings: one washer connection per unit', [pick(fx([{row: 'R2a', N: 0, units: 40}])).slice(0, 5), fx([{row: 'R2a', N: 0, units: 40}]).ks, fx([{row: 'R2a', N: 0, units: 40}]).wc, pick(fx([{row: 'R1', N: 0, units: 120}])), fx([{row: 'R3a', N: 0, units: 10}]).wc], [[40, 40, 40, 40, 40], 40, 2, [120, 120, 120, 120, 120, 0, 1], 10]);
+check('hospital patients: one water closet and lavatory per room (30 rooms), baths 1 per 15 patients (60 -> 4), drinking fountains 1 per 100; employees 1 per 25 and lavatories 1 per 35 (50 persons per sex: 2 and 2); visitors 1 per 75 and 1 per 100', [pick(fx([{row: 'I2p', N: 60, units: 30}])), pick(fx([{row: 'I2e', N: 100}])).slice(0, 4), pick(fx([{row: 'I2v', N: 300}])).slice(0, 6)], [[30, 30, 30, 30, 4, 1, 1], [2, 2, 2, 2], [2, 2, 2, 2, 0, 1]]);
+check('dormitories R-2 and group homes: 1 per 10 and baths 1 per 8: 80 persons -> 4, 4, 4, 4, baths 10, drinking fountains 1; day care I-4: one bath for any number', [pick(fx([{row: 'R2d', N: 80}])), fx([{row: 'I4', N: 60}]).b, fx([{row: 'I4', N: 600}]).b], [[4, 4, 4, 4, 10, 1, 1], 1, 1]);
+check('the percentage of men can be changed when approved data exist: 60 % men in office B of 100: 60 men 2.0 + 0.2 -> 3 closets, 40 women 1.6 -> 2', [fx([{}], 0.6).wm, fx([{}], 0.6).wf], [3, 2]);
+check('an occupant load of 15 or fewer needs no drinking fountain (2902.6) and, for business and mercantile, no service sink; an educational occupancy still needs the service sink', [fx([{N: 15}]).d, fx([{N: 15}]).ss, fx([{row: 'M', N: 15}]).ss, fx([{row: 'E', N: 15}]).ss, fx([{N: 16}]).d, fx([{N: 16}]).ss], [0, 0, 0, 1, 1, 1]);
+check('factory F: water closets and lavatories 1 per 100 each sex (500 persons: 3 and 3), drinking fountains 1 per 400 -> 2, the showers are left to SBC 701', [pick(fx([{row: 'F', N: 500}])).slice(0, 4), fx([{row: 'F', N: 500}]).d, fx([{row: 'F', N: 500}]).notes.indexOf('x') >= 0], [[3, 3, 3, 3], 2, true]);
+w.renderCalc('sbcfixtures'); w.calcResult('sbcfixtures');
+let tt = txt(w, 'sfx_results');
+check('the page opens with the office of 100 persons: 2, 2, 2, 2, one drinking fountain, one service sink and the 🔴 note', [tt.includes('مغسلة خدمة واحدة'), tt.includes('مجموع الكسور 1.25'), tt.includes('🔴')], [true, true, true]);
+check('other reference codes open it too', others('sbcfixtures', 'sfx_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
