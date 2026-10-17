@@ -190,12 +190,12 @@ check('M = 500 kN m is tension-controlled (As = 2835, strain 0.0054), M = 550 kN
 check('shear: Vc = 0.17 lambda sqrt(fc) b d = 148.4 kN; phi Vc = 111.3 kN; Vu = 150 kN -> Vs = 150/0.75 - 148.4 = 51.6 kN; Av/s = max(Vs/(fyt d), 0.062 sqrt(fc) b/fyt, 0.35 b/fyt) = 0.25 mm2/mm; maximum Vs 0.66 sqrt(fc) b d = 576.2 kN', [+(r.Vc / 1000).toFixed(1), +(r.phiVc / 1000).toFixed(1), +(r.Vs / 1000).toFixed(1), +r.AvsReq.toFixed(3), +(r.VsMax / 1000).toFixed(1), r.cat], [148.4, 111.3, 51.6, 0.25, 576.2, 'design'], 0.1);
 check('classification: Vu <= phi Vc / 2 (55.6 kN) = none, up to phi Vc = minimum, above = design; Vs above 0.33 sqrt(fc) b d halves the spacing limit (d/2 = 275 -> d/4 = 137.5)', [ac({V: 50}).cat, ac({V: 100}).cat, ac({V: 150}).cat, ac({V: 150}).sMax, ac({V: 450}).sMax, ac({V: 800}).big], ['none', 'min', 'design', 275, 137.5, true]);
 check('large Vu needs more than the minimum: Vu = 400 kN -> Vs = 384.9 kN -> Av/s = 1.667 mm2/mm', [+ac({V: 400}).AvsReq.toFixed(3)], [1.667], 0.01);
-check('development length (db = 20 mm, spacing and cover satisfied: 1.7): ld = fy psi_t psi_e db / (1.7 lambda sqrt(fc)) = 934 mm; 16 mm with the 2.1 expression: 420 x 16 / (2.1 x 5.2915) = 605 mm; other cases (1.4 for 16 mm = 907 mm, 1.1 for 25 mm = 1804 mm); minimum 300 mm', [Math.round(r.ld), Math.round(ac({db: 16}).ld), Math.round(ac({db: 16, case1: false}).ld), Math.round(ac({db: 25, case1: false}).ld), ac({db: 5}).ld], [934, 605, 907, 1804, 300], 1);
-check('top bars psi_t = 1.3 and epoxy 1.5: the product is limited to 1.7 (db 20: 934 x 1.7 = 1587 mm); bottom bars with epoxy psi_e = 1.2 -> 1121 mm', [Math.round(ac({psit: 1.3, psie: 1.5}).ld), Math.round(ac({psie: 1.2}).ld)], [1587, 1121], 1);
-check('compression: ldc = max(0.24 fy db / (lambda sqrt(fc)), 0.043 fy db, 200) = 381 mm for db 20; light-weight concrete (lambda = 0.75) raises the tension length to 1245 mm', [Math.round(r.ldc), Math.round(ac({lam: 0.75}).ld)], [381, 1245], 1);
+check('development length (spacing and cover satisfied): bars up to 20 mm use 2.1 (SBC 304 Table 25.4.2.2: 420 x 20 / (2.1 x 5.2915) = 756 mm) and 22 mm or more 1.7 (22 mm = 1027 mm); other cases (1.4 for 16 mm = 907 mm, 1.1 for 25 mm = 1804 mm); minimum 300 mm', [Math.round(r.ld), Math.round(ac({db: 16}).ld), Math.round(ac({db: 22}).ld), Math.round(ac({db: 16, case1: false}).ld), Math.round(ac({db: 25, case1: false}).ld), ac({db: 5}).ld], [756, 605, 1027, 907, 1804, 300], 1);
+check('top bars psi_t = 1.3 and epoxy 1.5: the product is limited to 1.7 (db 20: 756 x 1.7 = 1285 mm); bottom bars with epoxy psi_e = 1.2 -> 907 mm', [Math.round(ac({psit: 1.3, psie: 1.5}).ld), Math.round(ac({psie: 1.2}).ld)], [1285, 907], 1);
+check('compression: ldc = max(0.24 fy db / (lambda sqrt(fc)), 0.043 fy db, 200) = 381 mm for db 20; light-weight concrete (lambda = 0.75) raises the tension length to 1008 mm', [Math.round(r.ldc), Math.round(ac({lam: 0.75}).ld)], [381, 1008], 1);
 w.renderCalc('acibeam'); w.calcResult('acibeam');
 let tt = txt(w, 'ac_results');
-check('the page opens with 1017 mm2, 148.43 kN, 934 mm, 381 mm and the 🔴 note', [tt.includes('1017 mm'), tt.includes('148.43 kN'), tt.includes('934 mm'), tt.includes('381 mm'), tt.includes('🔴')], [true, true, true, true, true]);
+check('the page opens with 1017 mm2, 148.43 kN, 756 mm, 381 mm and the 🔴 note', [tt.includes('1017 mm'), tt.includes('148.43 kN'), tt.includes('756 mm'), tt.includes('381 mm'), tt.includes('🔴')], [true, true, true, true, true]);
 setv(w, 'ac_m', 550); w.calcResult('acibeam');
 check('M = 550 kN m warns that the section is not tension-controlled', [txt(w, 'ac_results').includes('أقل من 0.005')], [true]);
 check('other reference codes open it too', others('acibeam', 'ac_results'), [true, true, true]);
@@ -375,6 +375,159 @@ check('the page opens with Fa 1.56, SDC C, V 653.4 kN and the 🔴 note', [tt.in
 w.ssAddRow();
 check('adding a level works', [w.document.querySelectorAll('#ss-tbody tr').length], [5]);
 check('other reference codes open it too', others('sbcseis', 'ss_results'), [true, true, true]);
+}
+// ---------- part 109: SBC 304 column (`acicolumn`: 22.4, 21.2, 25.7, 6.2.5, 6.6.4) ----------
+{
+w = boot('intl'); doc = w.document;
+const cl = o => w.eval('aclCalc(' + JSON.stringify(Object.assign({b: 400, h: 400, cover: 40, tie: 10, db: 20, nb: 3, nl: 3, fc: 28, fy: 420, spiral: false, Pu: 1500, M2: 120, M1: 60, sway: false, lu: 3000, k: 1, bd: 0.6, transv: false, ds: 1, M2s: 0, M2ns: 120}, o)) + ')');
+let r = cl({});
+check('400 x 400 with 8 bars of 20 mm: Ast = 2513 mm2 (rho 1.57 %), Po = 0.85 f\'c (Ag - Ast) + fy Ast = 4804 kN, phi Pn,max = 0.80 x 0.65 Po = 2498 kN', [Math.round(r.cv.Ast), +(r.rho * 100).toFixed(2), Math.round(r.cv.Po / 1000), Math.round(r.cv.phiPnMax / 1000), r.cv.L.length, r.nBars], [2513, 1.57, 4804, 2498, 3, 8], 1);
+check('spiral columns: phi Pn,max = 0.85 x 0.75 Po = 3062 kN', [Math.round(cl({spiral: true}).cv.phiPnMax / 1000)], [3062], 2);
+r = cl({b: 300, h: 500, nb: 2, nl: 2});
+check('300 x 500 with 4 bars of 20 mm (two layers, d\' = 60): the balanced point (eps_t = 0.002, c = 264 mm): Pb = 1600 kN and Mb = 316 kN m (compression steel 420 MPa, tension steel 400 MPa)', [Math.round(r.cv.bal.c), Math.round(r.cv.bal.Pn / 1000), Math.round(r.cv.bal.Mn / 1e6)], [264, 1600, 316], 2);
+check('phi at the balanced point is 0.65 (tied) and 0.75 (spiral); tension-controlled sections reach 0.90', [r.cv.bal.phi, cl({b: 300, h: 500, nb: 2, nl: 2, spiral: true}).cv.bal.phi, Math.max(...r.cv.cap.map(p => p.phi))], [0.65, 0.75, 0.9], 0.001);
+r = cl({});
+check('slenderness: kl/r = 3000 / (0.3 x 400) = 25 against 34 - 12 M1/M2 = 28 is a short column (delta 1, Mc = M2 = 120 kN m); M2,min = Pu (15 + 0.03 h) = 40.5 kN m', [r.klr, r.lim, r.slender, r.delta, Math.round(r.Mc / 1e6), +(r.M2min / 1e6).toFixed(1)], [25, 28, false, 1, 120, 40.5], 0.01);
+r = cl({lu: 6000, M1: -60});
+check('slender column bent in single curvature (kl/r = 50 > 40): EI = 0.4 Ec Ig / (1 + 0.6), Pc = 3635 kN, Cm = 0.8, delta = 0.8 / (1 - 1500 / (0.75 x 3635)) = 1.78, Mc = 1.78 x 120 = 213 kN m', [r.klr, r.lim, r.slender, Math.round(r.Pc / 1000), +r.delta.toFixed(2), Math.round(r.Mc / 1e6)], [50, 40, true, 3635, 1.78, 213], 2);
+check('braced columns: the limit is capped at 40 (single curvature) and at 22 for sway frames; a transverse load takes Cm = 1.0', [cl({M1: -120}).lim, cl({sway: true}).lim, +cl({lu: 6000, M1: -60, transv: true}).delta.toFixed(2)], [40, 22, 2.22], 0.01);
+check('a column close to its buckling load is unstable (Pu of 0.75 Pc): the magnifier is infinite and no capacity ratio is given', [cl({lu: 12000, M1: -60, Pu: 2000}).unstable, cl({lu: 12000, M1: -60, Pu: 2000}).cap], [true, null]);
+check('sway frames: Mc = M2ns + delta_s M2s: 120 + 1.3 x 50 = 185 kN m for a slender sway column', [Math.round(cl({sway: true, lu: 6000, ds: 1.3, M2s: 50}).Mc / 1e6)], [185]);
+r = cl({});
+check('capacity on the ray of the same eccentricity (e = 80 mm): about 1895 kN and 152 kN m; Pu = 1500 gives a demand-to-capacity of 0.79; heavier loads fail', [Math.round(r.cap.P / 1000), Math.round(r.cap.M / 1e6), +(1500000 / r.cap.P).toFixed(2), 3000000 / cl({Pu: 3000}).cap.P > 1], [1895, 152, 0.79, true], 6);
+check('limits: rho must be between 1 % and 8 % (4 bars of 12 mm in 400 x 400 = 0.28 % fails); ties 10 mm for bars up to 32 mm and 12 mm above; tie spacing min(16 db, 48 dtie, least dimension) = 320 mm', [cl({nb: 2, nl: 2, db: 12}).rhoOk, cl({}).rhoOk, cl({}).tieMin, cl({db: 36}).tieMin, cl({tie: 8}).tieOk, cl({}).sMax], [false, true, 10, 12, false, 320]);
+w.renderCalc('acicolumn'); w.calcResult('acicolumn');
+let tt = txt(w, 'acl_results');
+check('the page opens with 1.57 %, 4804 kN, 2498 kN, 0.792 and the 🔴 note', [tt.includes('1.57%'), tt.includes('4804 kN'), tt.includes('2498 kN'), tt.includes('0.792'), tt.includes('🔴')], [true, true, true, true, true]);
+check('the page draws the interaction diagram', [w.document.querySelector('#acl_results svg polyline') != null], [true]);
+check('other reference codes open it too', others('acicolumn', 'acl_results'), [true, true, true]);
+}
+// ---------- part 110: SBC 304 isolated footing (`acifooting`: 22.5, 22.6, 13, 8.6.1.1) ----------
+{
+w = boot('intl'); doc = w.document;
+const ft = o => w.eval('acfCalc(' + JSON.stringify(Object.assign({L: 2500, B: 2500, h: 600, cover: 75, db: 16, c1: 400, c2: 400, PD: 800, PL: 400, qa: 200, fc: 28, fy: 420, lam: 1, combo: 'sbc', pos: 'int'}, o)) + ')');
+let r = ft({});
+check('PD 800 + PL 400 on a 2.5 x 2.5 m footing: Pu = 1.4 x 800 + 1.7 x 400 = 1800 kN (1600 with 1.2D + 1.6L), service pressure 192 kPa, required area 1200 / 200 = 6.0 m2', [r.Pu, ft({combo: 'aci'}).Pu, r.qs, +r.AreqNet.toFixed(2), r.bearOk, ft({qa: 150}).bearOk], [1800, 1600, 192, 6, true, false]);
+check('d = 600 - 75 - 8 = 517 mm; one-way shear at d from the face: Vu = 288 x 2.5 x 0.533 = 383.8 kN against phi Vc = 0.75 x 0.17 x sqrt(28) x 2500 x 517 = 872 kN', [r.d, +r.Vu1.toFixed(1), Math.round(r.Vc1), r.oneOk], [517, 383.8, 872, true], 0.2);
+check('punching: bo = 4 (400 + 517) = 3668 mm, Vu = 1800 - 288 x 0.917^2 = 1558 kN, vu = 0.8215 MPa; vc = least of 0.33 sqrt(f\'c) = 1.746, 0.17 (1 + 2/1) sqrt(f\'c) = 2.699 and 0.083 (2 + 40 x 517 / 3668) sqrt(f\'c) = 3.35; phi vc = 1.31 MPa', [r.bo, +r.Vu.toFixed(0), +r.vu.toFixed(3), +r.vcA.toFixed(3), +r.vcB.toFixed(3), +r.vcC.toFixed(2), +r.phiVc.toFixed(2), r.twoOk], [3668, 1558, 0.821, 1.746, 2.699, 3.35, 1.31, true], 0.6);
+check('a long thin column (800 x 200: beta = 4) is governed by 0.17 (1 + 2/beta) sqrt(f\'c) = 1.35 MPa; an edge column uses alpha_s 30 and a corner column 20 with shorter bo', [+ft({c1: 800, c2: 200}).vc.toFixed(2), ft({c1: 800, c2: 200}).beta, ft({pos: 'edge'}).as, ft({pos: 'corner'}).as, Math.round(ft({pos: 'edge'}).bo), ft({pos: 'corner'}).bo < ft({pos: 'edge'}).bo], [1.35, 4, 30, 20, Math.round(ft({pos: 'edge'}).bo), true], 0.01);
+check('flexure at the column face: Mu = 288 x 2.5 x 1.05^2 / 2 = 396.9 kN m both ways; the steel from Rn is 2068 mm2 and the minimum 0.0018 x 2500 x 600 = 2700 mm2 governs: 14 bars of 16 mm at 181 mm', [+r.MuL.toFixed(1), +r.MuB.toFixed(1), Math.round(r.AsMinL), Math.round(r.AsL), r.nL, Math.round(r.spL)], [396.9, 396.9, 2700, 2700, 14, 181], 1);
+check('a thinner footing is governed by the calculated steel: h = 400 with bars of 20 mm: d = 315 mm, As = 3466 mm2 above the minimum 1800 mm2', [Math.round(ft({h: 400, db: 20}).AsL), ft({h: 400, db: 20}).AsL > ft({h: 400, db: 20}).AsMinL], [3466, true], 25);
+check('the short direction takes gamma_s = 2 / (L/B + 1) of the steel in the central band: L 3.0, B 2.0 -> 0.8', [+ft({L: 3000, B: 2000}).gs.toFixed(2), +ft({}).gs.toFixed(2)], [0.8, 1]);
+check('development: db 16 uses 420 / (2.1 sqrt(f\'c)) x 16 = 605 mm (minimum 300); available (2500 - 400)/2 - 75 = 975 mm', [Math.round(r.ld), r.avail, r.devOk, Math.round(ft({db: 25}).ld)], [605, 975, true, 1167], 1);
+check('minimum depth above the steel 150 mm: h = 200 with 75 mm cover fails (d = 117)', [ft({h: 200}).dOk, r.dOk], [false, true]);
+w.renderCalc('acifooting'); w.calcResult('acifooting');
+let tt = txt(w, 'acf_results');
+check('the page opens with 1800 kN, 192.0 kPa, 872 kN and the 🔴 note', [tt.includes('1800 kN'), tt.includes('192.0 kPa'), tt.includes('872 kN'), tt.includes('🔴')], [true, true, true, true]);
+check('other reference codes open it too', others('acifooting', 'acf_results'), [true, true, true]);
+}
+// ---------- part 111: SBC 304 one-way slab and beam (`acislab1`: Tables 7.3.1.1, 9.3.1.1, 7.6.1.1, 24.3.2, 24.4.3.2) ----------
+{
+w = boot('intl'); doc = w.document;
+const sl = o => w.eval('acsCalc(' + JSON.stringify(Object.assign({kind: 'slab', sup: 2, span: 4000, fy: 420, fc: 28, wc: 0, h: 200, b: 300, cover: 30, db: 12, cc: 25, Mu: 30, Vu: 40, fs: 0, lam: 1}, o)) + ')');
+check('slab minimum thickness (span 4000): simply supported l/20 = 200, one end continuous l/24 = 167, both ends l/28 = 143, cantilever l/10 = 400 mm', [0, 1, 2, 3].map(s => Math.round(sl({sup: s}).hmin)), [200, 167, 143, 400]);
+check('beam minimum depth (span 4000): l/16 = 250, l/18.5 = 216, l/21 = 190, l/8 = 500 mm', [0, 1, 2, 3].map(s => Math.round(sl({kind: 'beam', sup: s}).hmin)), [250, 216, 190, 500]);
+check('fy other than 420 multiplies by 0.4 + fy/700 (520 MPa: 1.143 -> 163 mm); lightweight 1440 - 1840 kg/m3 by 1.65 - 0.0003 wc but at least 1.09 (1500: 1.2 -> 171; 1840: 1.098 -> 157)', [Math.round(sl({fy: 520}).hmin), Math.round(sl({wc: 1500}).hmin), Math.round(sl({wc: 1840}).hmin), sl({fy: 420}).modFy], [163, 171, 157, 1]);
+let r = sl({});
+check('slab strip d = 200 - 30 - 6 = 164 mm; Mu = 30 kN m/m gives As = 497 mm2 (a = 20.9 mm, strain far above 0.005, phi 0.90) above the minimum 0.0018 x 1000 x 200 = 360 mm2', [r.d, Math.round(r.fl.As), r.fl.phi, Math.round(r.AsMin), Math.round(r.AsReq), r.fl.tc], [164, 497, 0.9, 360, 497, true], 1);
+check('a shallow slab with a heavy moment is not tension-controlled: h = 120 with 50 kN m gives eps_t below 0.004 and is flagged', [sl({h: 120, Mu: 50}).fl.ok, sl({h: 120, Mu: 50}).fl.et < 0.004, sl({h: 120, Mu: 500}).AsReq], [false, true, null]);
+check('crack control 24.3.2 with fs = 2/3 fy = 280: s = min(380 - 2.5 cc, 300) = 300 for cc = 25 and 255 for cc = 50; with fs = 350: min(380 x 0.8 - 2.5 x 25 = 241.5, 240) = 240', [sl({}).sCrack, sl({cc: 50}).sCrack, sl({fs: 350}).sCrack], [300, 255, 240], 0.01);
+check('maximum bar spacing in slabs min(3h, 450, crack limit) and the bar spacing from the steel: 12 mm bars at 227 mm for 497 mm2 / m; for beams the crack limit alone; shrinkage steel 0.0020 below 420 MPa', [sl({}).sMax, sl({h: 100}).sMax, Math.floor(sl({}).sReq), sl({kind: 'beam'}).sMax, sl({fy: 350}).AsSt, sl({}).AsSt], [300, 300, 227, 300, 400, 360]);
+check('beam minimum steel max(0.25 sqrt(f\'c)/fy, 1.4/fy) bw d = 0.003333 x 300 x 164 = 164 mm2; the slab one 0.0018 b h; shrinkage spacing at most min(5h, 450) = 450', [Math.round(sl({kind: 'beam'}).AsMin), Math.round(sl({}).AsMin), sl({}).sSt], [164, 360, 450]);
+check('shear: phi Vc = 0.75 x 0.17 x sqrt(28) x 1000 x 164 = 110.6 kN per metre; 40 kN passes, 120 fails', [+r.phiVc.toFixed(1), sl({}).shearOk, sl({Vu: 120}).shearOk], [110.6, true, false], 0.1);
+w.renderCalc('acislab1'); w.calcResult('acislab1');
+let tt = txt(w, 'acs_results');
+check('the page opens with 143 mm, 497 mm2, 360, 300 mm and the 🔴 note', [tt.includes('143 mm'), tt.includes('497 mm²'), tt.includes('360'), tt.includes('300 mm'), tt.includes('🔴')], [true, true, true, true, true]);
+check('other reference codes open it too', others('acislab1', 'acs_results'), [true, true, true]);
+}
+// ---------- part 112: SBC 304 two-way slab (`acislab2`: Tables 8.3.1.1, 8.3.1.2, 22.6.5.2, 8.6.1.1) ----------
+{
+w = boot('intl'); doc = w.document;
+const s2 = o => w.eval('ac2Calc(' + JSON.stringify(Object.assign({beams: false, panel: 'int', drop: false, ln: 6000, fy: 420, fc: 28, afm: 0, beta: 1, h: 220, cover: 25, db: 12, c1: 400, c2: 400, pos: 'int', Vu: 450, Munb: 0, lam: 1}, o)) + ')');
+check('Table 8.3.1.1 (fy 420, ln 6000): interior without drops ln/33 = 182; exterior without edge beams ln/30 = 200; exterior with edge beams ln/33 = 182; with drop panels: interior ln/36 = 167, exterior ln/33 = 182, with edge beams ln/36 = 167', [s2({}), s2({panel: 'ext'}), s2({panel: 'ext-beam'}), s2({drop: true}), s2({drop: true, panel: 'ext'}), s2({drop: true, panel: 'ext-beam'})].map(r => Math.round(r.hmin)), [182, 200, 182, 167, 182, 167]);
+check('other yield strengths: 280 MPa interior ln/36 = 167; 520 MPa ln/31 = 194; 350 MPa by interpolation 174', [280, 520, 350].map(f => Math.round(s2({fy: f}).hmin)), [167, 194, 174]);
+check('slabs with beams (Table 8.3.1.2): afm <= 0.2 uses 8.3.1.1; afm = 1.0 and beta = 1: ln (0.8 + fy/1400) / (36 + 5 beta (afm - 0.2)) = 165; afm above 2.0: ln (0.8 + fy/1400) / (36 + 9 beta) = 147; not under 125 / 90 mm', [Math.round(s2({beams: true, afm: 0.1}).hmin), Math.round(s2({beams: true, afm: 1}).hmin), Math.round(s2({beams: true, afm: 2.5}).hmin), Math.round(s2({beams: true, afm: 1, ln: 3000}).hmin), Math.round(s2({beams: true, afm: 2.5, ln: 3000}).hmin)], [182, 165, 147, 125, 90]);
+let r = s2({});
+check('punching of an interior column 400 x 400, d = 220 - 25 - 12 = 183: bo = 2 (583 + 583) = 2332, vc = 1.746 (0.33 sqrt(f\'c)) against 2.699 and 2.257, phi vc = 1.31 MPa; Vu = 450 kN -> vu = 1.054 MPa passes', [r.d, r.bo, +r.vcA.toFixed(3), +r.vcB.toFixed(3), +r.vcC.toFixed(3), +r.phiVc.toFixed(2), +r.vu.toFixed(3), r.shearOk, r.vcGov], [183, 2332, 1.746, 2.699, 2.257, 1.31, 1.054, true, 'a'], 0.02);
+check('edge column: bo = 2 (400 + d/2) + (400 + d) = 1566 mm with alpha_s 30; corner: 983 mm with alpha_s 20; a heavier load fails', [Math.round(s2({pos: 'edge'}).bo), Math.round(s2({pos: 'corner'}).bo), s2({pos: 'edge'}).as, s2({pos: 'corner'}).as, s2({Vu: 800}).shearOk], [1566, 983, 30, 20, false]);
+check('unbalanced moment in an interior column: gamma_v = 1 - 1 / (1 + 2/3 sqrt(b1/b2)) = 0.4; Munb = 60 kN m adds gamma_v Munb c_AB / Jc = 0.282 MPa', [+r.gv.toFixed(2), +s2({Munb: 60}).vMom.toFixed(3), +s2({Munb: 60}).vu.toFixed(3)], [0.4, 0.282, 1.336], 0.004);
+check('minimum steel 0.0018 x 1000 x 220 = 396 mm2/m (0.0020 below 420 MPa); spacing at most 2h = 440 mm', [Math.round(r.AsMin), Math.round(s2({fy: 350}).AsMin), r.sMax], [396, 440, 440]);
+w.renderCalc('acislab2'); w.calcResult('acislab2');
+let tt = txt(w, 'ac2_results');
+check('the page opens with 182 mm, 2332 mm, 1.054 MPa and the 🔴 note', [tt.includes('182 mm'), tt.includes('2332 mm'), tt.includes('1.054 MPa'), tt.includes('🔴')], [true, true, true, true]);
+check('other reference codes open it too', others('acislab2', 'ac2_results'), [true, true, true]);
+}
+// ---------- part 113: SBC 304 development and splice lengths (`acidev`: 25.4, 25.5) ----------
+{
+w = boot('intl'); doc = w.document;
+const dv = o => w.eval('acdCalc(' + JSON.stringify(Object.assign({db: 20, fy: 420, fc: 28, lam: 1, top: false, coat: 'none', good: true, method: 'simple', cb: 40, Ktr: 0, psic: 1, psir: 1, confd: false, asRatio: 1, pct: 100}, o)) + ')');
+check('tension, Table 25.4.2.2 (good spacing and cover): bars up to 20 mm fy db / (2.1 sqrt(f\'c)) = 756 mm; 22 mm and larger / 1.7: 22 mm 1027, 25 mm 1167; other cases / 1.4 and / 1.1: 20 mm 1134, 25 mm 1804', [dv({}).ld, dv({db: 22}).ld, dv({db: 25}).ld, dv({good: false}).ld, dv({db: 25, good: false}).ld].map(Math.round), [756, 1027, 1167, 1134, 1804]);
+check('modifiers: top bars 1.3 -> 983; epoxy 1.5 -> 1134; both capped at 1.7 -> 1285; epoxy 1.2 -> 907; lightweight 0.75 -> 1008; a minimum of 300 mm; sqrt(f\'c) capped at 8.3 MPa (f\'c 100 -> 482 mm)', [dv({top: true}).ld, dv({coat: 'e15'}).ld, dv({top: true, coat: 'e15'}).ld, dv({coat: 'e12'}).ld, dv({lam: 0.75}).ld, dv({db: 10, fy: 280}).ld, dv({fc: 100}).ld].map(Math.round), [983, 1134, 1285, 907, 1008, 300, 482]);
+check('equation 25.4.2.3a with cb = 40 mm, Ktr = 0: (cb + Ktr)/db = 2.0, psi_s = 0.8 for 20 mm bars: 420 x 0.8 / (1.1 x 5.2915 x 2.0) x 20 = 577 mm; the confinement term is capped at 2.5 (cb 60: 462 mm); 22 mm bars have psi_s = 1.0', [dv({}).ldF, dv({cb: 60}).ldF, dv({db: 22, cb: 44}).ldF, dv({method: 'full'}).ld].map(Math.round), [577, 462, 794, 577]);
+check('standard hook: 0.24 fy psi_e psi_c psi_r db / (lambda sqrt(f\'c)) = 381 mm (minimum 8 db and 150 mm); epoxy 1.2 -> 457; side cover 0.7 x confined 0.8 -> 213', [dv({}).ldh, dv({coat: 'e12'}).ldh, dv({psic: 0.7, psir: 0.8}).ldh].map(Math.round), [381, 457, 213], 1);
+check('headed bar: 0.19 fy psi_e db / sqrt(f\'c) = 302 mm (not permitted above fy 420, 36 mm bars or f\'c 40 MPa)', [Math.round(dv({}).ldt), dv({fy: 500}).ldt, dv({db: 40}).ldt, dv({fc: 45}).ldt], [302, null, null, null], 1);
+check('compression: max(0.24 fy / (lambda sqrt(f\'c)), 0.043 fy) db = 381 mm; confined by a spiral or close ties (0.75) 286 mm; at least 200 mm', [dv({}).ldc, dv({confd: true}).ldc, dv({db: 10, confd: true}).ldc].map(Math.round), [381, 286, 200]);
+check('lap splices in tension (Table 25.5.2.1): class A 1.0 ld when As,provided / As,required >= 2 and at most 50 % spliced (756 mm), class B 1.3 ld otherwise (983 mm); compression 0.071 fy db (596 mm), (0.13 fy - 24) db above 420 MPa (820 mm at 500), 300 mm minimum, one third more for f\'c below 21 MPa', [dv({asRatio: 2.1, pct: 50}).lst, dv({asRatio: 2.1, pct: 100}).lst, dv({}).lst, dv({}).lsc, dv({fy: 500}).lsc, dv({db: 10}).lsc, dv({fc: 20}).lsc].map(Math.round), [756, 983, 983, 596, 820, 300, 795]);
+w.renderCalc('acidev'); w.calcResult('acidev');
+let tt = txt(w, 'acd_results');
+check('the page opens with 756 mm, 381 mm, 983 mm, 596 mm and the 🔴 note', [tt.includes('756 mm'), tt.includes('381 mm'), tt.includes('983 mm'), tt.includes('596 mm'), tt.includes('🔴')], [true, true, true, true, true]);
+check('other reference codes open it too', others('acidev', 'acd_results'), [true, true, true]);
+}
+// ---------- part 114: SBC 304 deflection (`acidefl`: 24.2.3.5, 24.2.4.1.1, Table 24.2.2) ----------
+{
+w = boot('intl'); doc = w.document;
+const df = o => w.eval('acxCalc(' + JSON.stringify(Object.assign({b: 300, h: 500, d: 450, As: 1200, Asc: 0, dc: 50, fc: 28, lam: 1, span: 6000, sup: 0, wD: 15, wL: 8, sus: 0.3, xi: 2, lim: 1}, o)) + ')');
+let r = df({});
+check('Ec = 4700 sqrt(f\'c) = 24870 MPa, fr = 0.62 sqrt(f\'c) = 3.28 MPa, Mcr = fr Ig / yt = 41.0 kN m, n = 8.04, neutral axis of the cracked section 141 mm, Icr = 1202 x 10^6 mm4', [Math.round(r.Ec), +r.fr.toFixed(2), +(r.Mcr / 1e6).toFixed(1), +r.n.toFixed(2), Math.round(r.x), Math.round(r.Icr / 1e6)], [24870, 3.28, 41, 8.04, 141, 1202], 1);
+check('moments (simple span wl2/8): dead 67.5 kN m, total 103.5 kN m; Ie = (Mcr/Ma)3 Ig + [1 - (Mcr/Ma)3] Icr: 1633 and 1321 x 10^6 mm4', [+r.Ma.D.toFixed(1), +r.Ma.T.toFixed(1), Math.round(r.IeD / 1e6), Math.round(r.IeT / 1e6), r.cracked], [67.5, 103.5, 1633, 1321, true], 1);
+check('immediate deflections 5 w l4 / (384 Ec Ie): dead 6.2 mm, dead + live 11.8 mm, live 5.6 mm; sustained load (D + 30 % of L): 8.0 mm', [+r.dD.toFixed(1), +r.dT.toFixed(1), +r.dL.toFixed(1), +r.dS.toFixed(1)], [6.2, 11.8, 5.6, 8], 0.1);
+check('long term: lambda = xi / (1 + 50 rho\') = 2.0, additional 2.0 x 8.0 = 16.0 mm; total 27.8 mm; after attachment of non-structural elements 16.0 + (11.8 - 8.0) = 19.8 mm', [r.lam, +r.dLong.toFixed(1), +r.dTot.toFixed(1), +r.dAfter.toFixed(1)], [2, 16, 27.8, 19.8], 0.2);
+check('compression steel reduces lambda: 600 mm2 -> rho\' = 0.444 % -> lambda = 2 / 1.222 = 1.64; xi = 1.2 for six months; the sustained duration table 1.0 / 1.2 / 1.4 / 2.0', [+df({Asc: 600}).lam.toFixed(2), df({xi: 1.2}).lam], [1.64, 1.2], 0.01);
+check('limits of Table 24.2.2: floors l/360 = 16.7 mm on the live deflection passes; elements likely to be damaged l/480 = 12.5 mm on the part after attachment (19.8 mm) fails; not likely to be damaged l/240 = 25 mm passes; flat roofs l/180 = 33.3 mm', [df({lim: 1}).ok, df({lim: 2}).ok, df({lim: 3}).ok, df({lim: 0}).ok, +df({lim: 2}).allow.toFixed(1), +df({lim: 3}).allow.toFixed(1)], [true, false, true, true, 12.5, 25]);
+check('an uncracked beam (small loads: Ma below Mcr) uses Ig: wD 2, wL 1 -> 0.65 mm; cantilever 1/8: a 3 m cantilever with 10 kN/m deflects wl4/8EI = 0.13 mm', [+df({wD: 2, wL: 1}).dT.toFixed(2), df({wD: 2, wL: 1}).cracked, +df({sup: 3, span: 3000, wD: 1, wL: 0}).dD.toFixed(2)], [0.65, false, 0.13], 0.01);
+w.renderCalc('acidefl'); w.calcResult('acidefl');
+let tt = txt(w, 'acx_results');
+check('the page opens with Mcr 41.0, 6.2 mm, 5.6 mm, 27.8 mm and the 🔴 note', [tt.includes('41.0 kN'), tt.includes('6.2 mm'), tt.includes('5.6 mm'), tt.includes('27.8 mm'), tt.includes('🔴')], [true, true, true, true, true]);
+check('other reference codes open it too', others('acidefl', 'acx_results'), [true, true, true]);
+}
+// ---------- part 115: SBC 303 foundations (`sbcfound`: Table 4-1, 4.3, 5.2, 5.4, 5.5, Tables 5-1 and 5-2) ----------
+{
+w = boot('intl'); doc = w.document;
+const fd = o => w.eval('sfdCalc(' + JSON.stringify(Object.assign({soil: 3, third: false, L: 2.5, B: 2.5, D: 1.5, P: 600, M: 0, DL: 450, V: 0, H: 0, Pv: 0, Ph: 0, mat: false, settT: 0, settD: 0, span: 0, dist: 2, perm: true, Pole: {P: 0, h: 2, b: 0.4, dbl: false}}, o)) + ')');
+check('Table 4-1 (vertical kPa / lateral kPa per m / friction / cohesion): crystalline bedrock 600 / 200 / 0.70; sedimentary rock 200 / 60 / 0.35; gravel 150 / 30 / 0.35; sand 100 / 25 / 0.25; clay 75 / 15 / - / 6', [0, 1, 2, 3, 4].map(s => { const x = fd({soil: s}).s; return [x[1], x[2], x[3], x[4]].join('/'); }), ['600/200/0.7/0', '200/60/0.35/0', '150/30/0.35/0', '100/25/0.25/0', '75/15/0/6']);
+let r = fd({});
+check('sand, 600 kN on 2.5 x 2.5 m: pressure 96 kPa under the 100 kPa; with the one-third increase for wind or earthquake 133 kPa; required area 6.0 m2; fails at 700 kN', [r.qmax, r.bearOk, +fd({third: true}).qa.toFixed(1), +r.AreqAdm.toFixed(2), fd({P: 700}).bearOk], [96, true, 133.3, 6, false], 0.05);
+check('eccentricity: e = M/P: 60 / 600 = 0.1 m (e/L 0.04): qmax = 96 (1 + 6 e / L) = 119 kPa; 0.5 m exceeds L/6 and is flagged; effective length L - 2e', [+fd({M: 60}).e.toFixed(2), +fd({M: 60}).qmax.toFixed(1), fd({M: 60}).eOk, fd({M: 300}).eOk, +fd({M: 60}).Beff.toFixed(2)], [0.1, 119, true, false, 2.3], 0.1);
+check('minimum depth below natural ground: rock 0.6 m, cohesionless soil 1.2 m, silt and clay 1.5 m; minimum width 0.30 m', [fd({soil: 0}).minD, fd({soil: 3}).minD, fd({soil: 4}).minD, fd({soil: 3, D: 1.1}).depthOk, fd({soil: 4, D: 1.5}).depthOk, fd({B: 0.25}).widthOk], [0.6, 1.2, 1.5, false, true, false]);
+check('lateral bearing grows with depth by the tabular value per metre (25 kPa/m x 1.5 m = 37.5 kPa) up to 15 times the value; passive resistance 0.5 x 37.5 x 1.5 x 2.5 = 70 kN; sliding 0.25 x 450 = 112.5 kN', [r.pAt, fd({D: 20}).pAt, Math.round(r.Hpass), r.slideCap], [37.5, 375, 70, 112.5], 0.5);
+check('clay: sliding = cohesion 6 kPa x 6.25 m2 = 37.5 kN, never above half of the dead load (225 kN); friction soils have no such limit', [fd({soil: 4}).slideCap, fd({soil: 4, DL: 50}).slideCap, fd({soil: 3, DL: 450}).slideCap], [37.5, 25, 112.5]);
+check('inclined loads V/Pv + H/Ph < 1: 100 / 200 + 20 / 60 = 0.83 passes, 30 / 60 gives 1.0 and fails', [+fd({V: 100, Pv: 200, H: 20, Ph: 60}).Vv.toFixed(2), fd({V: 100, Pv: 200, H: 20, Ph: 60}).incOk, fd({V: 100, Pv: 200, H: 30, Ph: 60}).incOk], [0.83, true, false]);
+check('settlement: spread footings 60 mm on clay and 40 mm on sand, mats 80 and 60; angular distortion by structure type (0.0015 mat concrete, 0.008 steel frames, 0.002 cladding, 0.003 lift rails)', [fd({soil: 3, settT: 40}).settOk, fd({soil: 3, settT: 41}).settOk, fd({soil: 4, settT: 60}).settOk, fd({soil: 4, mat: true, settT: 80}).settOk, fd({soil: 3, mat: true, settT: 61}).settOk, fd({settD: 10, span: 5000}).distOk, fd({settD: 11, span: 5000}).distOk, [0, 1, 2, 6].map(k => fd({dist: k}).dist)], [true, false, true, true, false, true, false, [0.0015, 0.008, 0.002, 0.003]], 0.0001);
+let pl = fd({Pole: {P: 10, h: 2, b: 0.4, dbl: false}});
+check('embedded pole 10 kN at 2 m, 0.4 m diameter, sand (25 kPa/m): nonconstrained d = 0.5 A {1 + [1 + 4.36 h / A]^0.5} with A = 2.34 P / (S1 b) ~ 3.4 m; constrained d2 = 4.25 P h / (S3 b) ~ 2.04 m; doubling the pressure (4.3.5) shortens both', [+pl.dNon.toFixed(2), +pl.dCon.toFixed(2), fd({Pole: {P: 10, h: 2, b: 0.4, dbl: true}}).dNon < pl.dNon, fd({Pole: {P: 10, h: 2, b: 0.4, dbl: true}}).dCon < pl.dCon, fd({}).dNon], [3.4, 2.04, true, true, null], 0.08);
+w.renderCalc('sbcfound'); w.calcResult('sbcfound');
+let tt = txt(w, 'sfd_results');
+check('the page opens with 100 kPa, 96.0 kPa, 1.20 m and the 🔴 note', [tt.includes('100 kPa'), tt.includes('96.0 kPa'), tt.includes('1.20 m'), tt.includes('🔴')], [true, true, true, true]);
+check('other reference codes open it too', others('sbcfound', 'sfd_results'), [true, true, true]);
+}
+// ---------- part 116: SBC 303 retaining wall (`sbcretain`: 7.2 - 7.5, Table 7-2, equation 7-1) ----------
+{
+w = boot('intl'); doc = w.document;
+const rw = o => w.eval('srwCalc(' + JSON.stringify(Object.assign({Hs: 3, hb: 0.5, tt: 0.3, tb: 0.5, Lt: 0.8, Lh: 2.0, Df: 1.0, gam: 18, phi: 30, beta: 0, q: 10, rest: false, hw: 0, gsat: 20, tand: 0.5, phib: 30, cb: 0, qa: 150, cohesive: false, rock: false, kh: 0, kv: 0}, o)) + ')');
+check('Rankine Ka = (1/3) at phi 30, 0.271 at 35, 0.350 at 30 with a 10 degree slope; at-rest K0 = 1 - sin phi = 0.5', [w.eval('srwKa(30, 0)'), w.eval('srwKa(35, 0)'), w.eval('srwKa(30, 10)')].map(x => +x.toFixed(3)).concat([rw({rest: true}).K]), [0.333, 0.271, 0.35, 0.5], 0.001);
+let r = rw({});
+check('H = 3.5 m, gamma 18, surcharge 10: Pa = 1/2 Ka gamma H2 + Ka q H = 36.75 + 11.67 = 48.4 kN/m acting 1.307 m above the base', [+r.Pa.toFixed(1), +r.ha.toFixed(3), +r.K.toFixed(3)], [48.4, 1.307, 0.333], 0.05);
+check('the vertical forces: base 39.6, stem rectangle 21.6 and triangle 7.2, heel soil 108, surcharge 20, toe soil 7.2 kN/m -> V = 203.6; stabilizing moment 394.2 kN m about the toe', [r.items.map(x => +x[1].toFixed(1)).slice(0, 6), +r.V.toFixed(1), +r.Mr.toFixed(1)], [[39.6, 21.6, 7.2, 108, 0, 20], 203.6, 394.2], 0.1);
+check('overturning FS = 394.2 / 63.3 = 6.23 (needs 1.5); sliding FS = V tan(delta) / Pa with tan delta limited to tan(2/3 phi) = 0.364: 74.1 / 48.4 = 1.53 (needs 1.5)', [+r.FSot.toFixed(2), +r.tand.toFixed(3), +r.FSsl.toFixed(2), r.otOk, r.slOk], [6.23, 0.364, 1.53, true, true], 0.03);
+check('resultant 1.625 m from the toe: e = 0.025 m within B/6 = 0.55 m; pressures 64.5 / 58.9 kPa under the 150 kPa allowed; a rock site uses the middle half (B/4)', [+r.x.toFixed(3), +r.e.toFixed(3), +r.lim.toFixed(2), +r.qmax.toFixed(1), +r.qmin.toFixed(1), r.midOk, rw({rock: true}).lim], [1.625, 0.025, 0.55, 64.5, 58.9, true, 0.825], 0.05);
+check('cohesive backfill requires a sliding factor of 2.0 (the wall fails: 1.53); a shorter heel fails the 1.5 limit; an earthquake with kh = 0.15 lowers the limits to 1.1', [rw({cohesive: true}).slOk, rw({cohesive: true}).fsSL, rw({Lh: 1}).slOk, rw({kh: 0.15}).fsSL, rw({kh: 0.15}).fsOT], [false, 2, false, 1.1, 1.1]);
+check('Mononobe-Okabe: phi 30, kh 0.15 -> psi 8.53 degrees, Kae = 0.433, PAE = 1/2 gamma H2 (1 - kv) Kae = 47.7, dynamic increment 11.0 kN/m acting at 0.6 H', [+rw({kh: 0.15}).Kae.toFixed(3), +rw({kh: 0.15}).dPae.toFixed(1), rw({}).dPae, rw({kh: 0.15}).FSsl < r.FSsl], [0.433, 11, 0, true], 0.1);
+check('groundwater (1.5 m of water behind the wall) adds hydrostatic pressure and base uplift: sliding and overturning drop', [rw({hw: 1.5}).Pa > r.Pa, rw({hw: 1.5}).U > 0, rw({hw: 1.5}).FSsl < r.FSsl, rw({hw: 1.5}).FSot < r.FSot], [true, true, true, true]);
+check('stem base: service Ps = 37 kN/m and Ms = 42 kN m/m; factored 1.6 H: 59.2 and 67.2; minimum top thickness 0.30 m and base depth 1.0 m in front of the wall', [+r.Ps.toFixed(1), +r.Ms.toFixed(1), +r.Vus.toFixed(1), +r.Mus.toFixed(1), rw({tt: 0.25}).topOk, rw({Df: 0.8}).depthOk], [37, 42, 59.2, 67.2, false, false], 0.1);
+w.renderCalc('sbcretain'); w.calcResult('sbcretain');
+let tt = txt(w, 'srw_results');
+check('the page opens with K 0.333, Pa 48.4, FS 6.23 and 1.53 and the 🔴 note', [tt.includes('0.333'), tt.includes('48.4 kN/m'), tt.includes('6.23'), tt.includes('1.53'), tt.includes('🔴')], [true, true, true, true, true]);
+check('other reference codes open it too', others('sbcretain', 'srw_results'), [true, true, true]);
 }
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
