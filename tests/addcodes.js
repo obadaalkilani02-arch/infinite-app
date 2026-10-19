@@ -3319,6 +3319,138 @@ set('sj_m', '4'); w.calcResult('syrmat'); tt = txt(w, 'sj_results');
 check('the test page shows 9.0 bar, the medium-pressure class and the 2000 Pa test pressure for 600 Pa', [/9\.0 bar/.test(tt), tt.includes('تصنيف مجرى الهواء')], [true, true]);
 check('other reference codes open syrmat too', others('syrmat', 'sj_results'), [true, true, true]);
 }
+// ---------- part 196: Dubai Building Code 2021, Part F structure (`dbcseis`: seismic parameters and liquefaction, `dbcstr`: wind, loads and serviceability, `dbcgeo`: concrete, ground investigation, piles and shoring) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const dq = o => J('dqCalc(' + JSON.stringify(o) + ')');
+const fq = o => J('fqCalc(' + JSON.stringify(o) + ')');
+const fz = o => J('fzCalc(' + JSON.stringify(o) + ')');
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+// ----- dbcseis -----
+check('Table F.13 Ss 0.51, S1 0.18, TL 24 and PGA 0.13 (Table F.20); Fa A-E 0.80, 0.90, 1.296, 1.392, 1.684; Fv 0.80, 0.80, 1.50, 2.24, site-specific for E; FPGA 0.80, 0.90, 1.27, 1.54, 2.25; damping rows 0.5 / 2 / 5 / 10 / 20 % with (0.47, 0.54), (0.72, 0.78), (1, 1), (1.4, 1.3), (1.9, 1.7)', [J('DQ_P'), J('DQ_SITE').map(x => x.slice(1)), J('DQ_DAMP')], [{ss: 0.51, s1: 0.18, tl: 24, pga: 0.13}, [[0.8, 0.8, 0.8], [0.9, 0.8, 0.9], [1.296, 1.5, 1.27], [1.392, 2.24, 1.54], [1.684, null, 2.25]], [[0.5, 0.47, 0.54], [2, 0.72, 0.78], [5, 1, 1], [10, 1.4, 1.3], [20, 1.9, 1.7]]]);
+const sd = (v, tbl, r4) => w.eval('dqSdc(' + v + ', ' + tbl + ', ' + r4 + ')');
+check('Table F.15 boundaries: SDS 0.1669 A, 0.167 B (risk I-III) / C (IV), 0.33 C / D, 0.50 D; SD1 0.0669 A, 0.067 B / C, 0.133 C / D, 0.20 D', [sd(0.1669, 'DQ_SDS', false), sd(0.167, 'DQ_SDS', false), sd(0.167, 'DQ_SDS', true), sd(0.33, 'DQ_SDS', false), sd(0.33, 'DQ_SDS', true), sd(0.5, 'DQ_SDS', false), sd(0.0669, 'DQ_SD1', false), sd(0.067, 'DQ_SD1', false), sd(0.067, 'DQ_SD1', true), sd(0.133, 'DQ_SD1', false), sd(0.133, 'DQ_SD1', true), sd(0.2, 'DQ_SD1', false)], ['A', 'B', 'C', 'C', 'D', 'D', 'A', 'B', 'C', 'C', 'D', 'D']);
+const dd = z => J('dqDamp(' + z + ')');
+check('damping factors: 5 % gives (1, 1); 10 % (1.4, 1.3); 3.5 % interpolates linearly to (0.86, 0.89); 0.5 % (0.47, 0.54); below 0.5 % and above 20 % are clamped and flagged', [dd(5), dd(10), dd(3.5), dd(0.5), dd(0.2), dd(25)].map(x => [x.bs, x.b1, x.out]), [[1, 1, false], [1.4, 1.3, false], [0.86, 0.89, false], [0.47, 0.54, false], [0.47, 0.54, true], [1.9, 1.7, true]], 1e-9);
+const base = {mode: 0, site: 3, risk4: false, T: 1, zeta: 5};
+{
+  const r = dq(base);
+  check('site class D, 5 % damping: SMS = 1.392 x 0.51 = 0.70992; SDS = 0.47328; SM1 = 2.24 x 0.18 = 0.4032; SD1 = 0.2688; T0 = 0.2 SD1 / SDS = 0.11359; Ts = 0.56795', [r.fa, r.fv, r.sms, r.sds, r.sm1, r.sd1, r.T0, r.Ts], [1.392, 2.24, 0.70992, 0.47328, 0.4032, 0.2688, 0.2 * 0.2688 / 0.47328, 0.2688 / 0.47328], 1e-9);
+  check('seismic design category of class D: short period C (0.33 <= 0.473 < 0.50), long period D (SD1 >= 0.20), governing D; design Sa at 1 s = SD1 = 0.2688 and MCER 1.5 times = 0.4032', [r.sdcS, r.sdc1, r.sdc, r.sa, r.saMce], ['C', 'D', 'D', 0.2688, 0.4032], 1e-9);
+  const sa = T => dq(Object.assign({}, base, {T})).sa;
+  check('spectrum: Sa(0) = 0.4 SDS = 0.18931; Sa(0.05) = SDS (0.4 + 0.6 x 0.05 / T0); plateau 0.47328 at 0.3 s; SD1 / T at 2 s = 0.1344; at TL 24 s = 0.0112 and beyond TL SD1 TL / T2 (30 s: 0.007168)', [sa(0), sa(0.05), sa(0.3), sa(2), sa(24), sa(30)], [0.4 * 0.47328, 0.47328 * (0.4 + 0.6 * 0.05 / (0.2 * 0.2688 / 0.47328)), 0.47328, 0.1344, 0.0112, 0.2688 * 24 / 900], 1e-9);
+  check('table of the spectrum points is sorted and includes 0, T0, Ts and TL; the continuity at the plateau ends holds', [r.pts[0].T, r.pts[r.pts.length - 1].T, r.pts.every((p, i) => i === 0 || p.T > r.pts[i - 1].T), r.pts.length, Math.abs(r.pts.find(p => Math.abs(p.T - r.Ts) < 1e-12).sa - 0.47328) < 1e-9], [0, 24, true, 11, true]);
+  const b = dq(Object.assign({}, base, {site: 1})), bi = dq(Object.assign({}, base, {site: 1, risk4: true}));
+  check('class B: SDS = 2/3 x 0.9 x 0.51 = 0.306 -> B (risk I-III) or C (IV); SD1 = 2/3 x 0.8 x 0.18 = 0.096 -> B or C; governing B / C', [b.sds, b.sd1, b.sdcS, b.sdc1, b.sdc, bi.sdcS, bi.sdc1, bi.sdc], [0.306, 0.096, 'B', 'B', 'B', 'C', 'C', 'C'], 1e-9);
+  const a = dq(Object.assign({}, base, {site: 0})), c = dq(Object.assign({}, base, {site: 2})), ci = dq(Object.assign({}, base, {site: 2, risk4: true}));
+  check('class A: SDS = 0.272 and SD1 = 0.096 -> B; class C: SDS = 0.44064 -> C, SD1 = 2/3 x 1.5 x 0.18 = 0.18 -> C (0.133 to 0.20); risk IV makes C into D', [a.sds, a.sd1, a.sdc, c.sds, c.sd1, c.sdcS, c.sdc1, c.sdc, ci.sdc], [0.272, 0.096, 'B', 0.44064, 0.18, 'C', 'C', 'C', 'D'], 1e-9);
+  const e = dq(Object.assign({}, base, {site: 4})), f = dq(Object.assign({}, base, {site: 5}));
+  check('class E: only the short period (SDS = 2/3 x 1.684 x 0.51 = 0.57256, category D); Fv requires a site response study, so no SD1, spectrum or final category; class F: nothing computed (site-specific)', [e.sds, e.sdcS, e.longSpecific, e.sd1 === undefined, e.sdc === undefined, f.siteF, f.sds === undefined], [0.57256, 'D', true, true, true, true, true], 1e-9);
+  const z = dq(Object.assign({}, base, {zeta: 10}));
+  check('10 % damping on class D: Ss / 1.4 = 0.364286, S1 / 1.3 = 0.138462 -> SDS = 0.338057, SD1 = 2/3 x 2.24 x 0.138462 = 0.206769; Sa at 1 s = SD1', [z.bs, z.b1, z.ss, z.s1, z.sds, z.sd1, z.sa], [1.4, 1.3, 0.51 / 1.4, 0.18 / 1.3, 2 / 3 * 1.392 * 0.51 / 1.4, 2 / 3 * 2.24 * 0.18 / 1.3, 2 / 3 * 2.24 * 0.18 / 1.3], 1e-9);
+}
+{
+  const lq = {mode: 1, site: 3, z: 6, sv: 110, svp: 70, crr: 0.2, ks: 1};
+  const r = dq(lq);
+  check('liquefaction (class D): FPGA 1.54 -> PGAM = 0.2002 g; rd at 6 m for M = 6.2 = 0.9028; CSR = 0.65 x 0.2002 x (110 / 70) x rd = 0.18462; MSF = 6.9 exp(-6.2 / 4) - 0.058 = 1.4065; CRR = 0.2 x MSF = 0.2813; FS = 1.5237 >= 1.5', [r.fpga, r.pgaM, r.rd, r.csr, r.msf, r.crr, r.fs, r.ok], [1.54, 0.2002, 0.9028253035679547, 0.18461874632661107, 1.406511019404527, 0.2813022038809054, 1.5236925256942788, true], 1e-9);
+  const q = dq(Object.assign({}, lq, {crr: 0.19689011722578564 * 0.999})), q2 = dq(Object.assign({}, lq, {crr: 0.19689011722578564 * 1.001}));
+  check('FS just under 1.5 fails and just over passes; Ksigma scales the resistance (0.8 gives FS 1.219); a small CSR (zero effective ratio) is not a failure', [q.ok, q2.ok, dq(Object.assign({}, lq, {ks: 0.8})).fs, dq(Object.assign({}, lq, {sv: 0})).ok], [false, true, 1.5236925256942788 * 0.8, true], 1e-9);
+  check('PGAM by class: A 0.8 x 0.13 = 0.104, B 0.117, C 0.1651, E 0.2925; class F has no PGAM; rd is capped at 1 at the surface and decreases with depth (10 m 0.8115, 20 m 0.597); deeper than 34 m is flagged', [0, 1, 2, 4].map(s => dq(Object.assign({}, lq, {site: s})).pgaM), [0.104, 0.117, 0.1651, 0.2925], 1e-9);
+  check('rd: 0 m -> 1; 10 m -> 0.8115; 20 m -> 0.5970; 34 m not flagged; 35 m flagged; site F has no liquefaction values', [0, 10, 20].map(z => dq(Object.assign({}, lq, {z})).rd).concat([dq(Object.assign({}, lq, {z: 34})).deep, dq(Object.assign({}, lq, {z: 35})).deep, dq(Object.assign({}, lq, {site: 5})).siteF]), [1, 0.8115141096924869, 0.5969811727281105, false, true, true], 1e-9);
+}
+let tt;
+w.renderCalc('dbcseis'); w.calcResult('dbcseis');
+tt = txt(w, 'dq_results');
+check('the default page (class D, 1 s) shows SDS 0.473, SD1 0.269, the category D and the spectrum; the liquefaction group is hidden', [/0\.473 g/.test(tt), /0\.269 g/.test(tt), tt.includes('فئة التصميم الزلزالي'), tt.includes('T = 24.00 s'), tt.includes('🔴'), w.document.getElementById('dq_g0').style.display, w.document.getElementById('dq_g1').style.display], [true, true, true, true, true, '', 'none']);
+set('dq_z', '10'); w.calcResult('dbcseis'); tt = txt(w, 'dq_results');
+check('10 % damping adds the factors line (beta_S 1.400 and beta_1 1.300)', [tt.includes('βS = 1.400'), tt.includes('β1 = 1.300')], [true, true]);
+set('dq_s', '5'); w.calcResult('dbcseis'); tt = txt(w, 'dq_results');
+check('class F shows the site-specific message and no coefficients', [tt.includes('يلزم تحليل استجابة الموقع'), tt.includes('SDS = 2/3 SMS')], [true, false]);
+set('dq_s', '3'); set('dq_m', '1'); w.calcResult('dbcseis'); tt = txt(w, 'dq_results');
+check('the liquefaction page shows PGAM 0.200 g, rd 0.903, FS 1.52 passing, and only its group is visible', [/0\.200 g/.test(tt), /0\.903/.test(tt), /1\.52/.test(tt), tt.includes('✔'), w.document.getElementById('dq_g0').style.display, w.document.getElementById('dq_g1').style.display], [true, true, true, true, 'none', '']);
+check('other reference codes open dbcseis too', others('dbcseis', 'dq_results'), [true, true, true]);
+// ----- dbcstr -----
+check('Table F.10: MRI 1, 10, 50, 300, 700, 1700, 3000 years with 22, 30, 38, 44, 47, 51, 53 m/s; Table F.12 damping concrete 1-2 / 1.5-2.5 %, steel 0.75-1 / 1-1.5 %', [J('FQ_V').map(x => x[0]), J('FQ_V').map(x => x[1]), J('FQ_DMP').map(x => x.slice(1))], [[1, 10, 50, 300, 700, 1700, 3000], [22, 30, 38, 44, 47, 51, 53], [[1, 2, 1.5, 2.5], [0.75, 1, 1, 1.5]]]);
+check('Table F.7 densities 25, 18, 20, 7, 78, 20, 25 kN/m3; Table F.9 19, 22, 10, 10.3; Table F.8 walls 4.5, 5.5, 4.0 kN/m2; allowances 0.75, 0.50, 0.30; thermal ranges 20, 15, 25; ACI divisors 180, 360, 480, 240; incremental deflection 20 mm', [J('FQ_DEN').map(x => x[1]), J('FQ_FLU').map(x => x[1]), J('FQ_WALL').map(x => x[1]), J('FQ_ALW').map(x => x[1]), J('FQ_TH').map(x => x[1]), J('FQ_DEF').map(x => x[1]), J('FQ_INC')], [[25, 18, 20, 7, 78, 20, 25], [19, 22, 10, 10.3], [4.5, 5.5, 4], [0.75, 0.5, 0.3], [20, 15, 25], [180, 360, 480, 240], 20]);
+const wd = o => fq(Object.assign({mode: 0, mri: 1, H: 80, B: 30, Hs: 3.5, dH: 120, dS: 7, p: 1.2, dm: 0}, o));
+{
+  const r = wd({});
+  check('wind page (MRI 10 years): 30 m/s; 80 m with H/B = 2.667 needs no tunnel test; overall limit H/500 = 160 mm met by 120; storey limits 3500 / 400 = 8.75 and / 600 = 5.833 mm: 7 mm meets the upper only; 1.2 kN/m2 >= 1', [r.v, r.tunnel, r.ar, r.limH, r.okH, r.limS, r.okS, r.okS6, r.pOk], [30, false, 80 / 30, 160, true, [8.75, 3500 / 600], true, false, true], 1e-9);
+  check('wind tunnel testing: H = 121 m (> 120) or H / B = 5.263 (> 5) requires it; exactly 120 m and exactly 5 do not', [wd({H: 121}).tunnel, wd({H: 100, B: 19}).tunnel, wd({H: 120}).tunnel, wd({H: 100, B: 20}).tunnel, wd({H: 100, B: 0}).tunnel], [true, true, false, false, false]);
+  check('limits are inclusive: 160 mm passes, 160.1 fails; 8.75 passes the storey limit and 8.76 does not; 5.8333 meets the stricter one; pressure 0.99 fails, 1.0 passes', [wd({dH: 160}).okH, wd({dH: 160.1}).okH, wd({dS: 8.75}).okS, wd({dS: 8.76}).okS, wd({dS: 3500 / 600}).okS6, wd({p: 0.99}).pOk, wd({p: 1}).pOk], [true, false, true, false, true, false, true]);
+  check('speeds per use: 1 year 22, 50 years 38, category IV 3000 years 53; steel damping 0.75 - 1 % for serviceability', [wd({mri: 0}).v, wd({mri: 2}).v, wd({mri: 6}).v, wd({dm: 1}).dmp.slice(1)], [22, 38, 53, [0.75, 1, 1, 1.5]]);
+}
+const ld = o => fq(Object.assign({mode: 1, mat: 0, t: 250, wall: 1, wh: 3, alw: 0, flu: 2, fd: 3, ex: 0, len: 60, alpha: 10, near: false, wt: 0.5, found: -4}, o));
+{
+  const r = ld({});
+  check('loads page: slab 25 x 0.25 = 6.25 kN/m2; normal block wall 5.5 x 3 = 16.5 kN/m; allowance 0.75; water 10 x 3 = 30 kPa; thermal 10e-6 x 20 = 200 microstrain -> 12 mm over 60 m', [r.sw, r.wallLine, r.alw, r.pf, r.eps, r.dL], [6.25, 16.5, 0.75, 30, 2e-4, 12], 1e-9);
+  check('steel 78 x 0.02 = 1.56; brackish water 2 m = 20.6 kPa; planter soil 19; protected steel +-25 with 12e-6 over 100 m = 30 mm; basement +-15', [ld({mat: 4, t: 20}).sw, ld({flu: 3, fd: 2}).pf, ld({flu: 0, fd: 1}).pf, ld({ex: 2, alpha: 12, len: 100}).dL, ld({ex: 1}).dT], [1.56, 20.6, 19, 30, 15], 1e-9);
+  check('design water table: near water bodies +1.0 m DMD regardless of the entered level; away: 0.5 + 1.0 = 1.5; uplift = 10.3 x (1.5 - (-4)) = 56.65 kPa; foundation above the level gives zero', [ld({near: true}).wt, r.wt, r.head, r.up, ld({found: 3}).up, ld({found: 3}).head], [1, 1.5, 5.5, 56.65, 0, -1.5], 1e-9);
+}
+const sv = o => fq(Object.assign({mode: 2, span: 6000, cant: false, lim: 1, cdiv: 250, de: 14, di: 10, cr: 1, hD: 6, hw: 400, wk: 0.15, cd1: 5, dm1: 40, ie1: 1, cd2: 5, dm2: 30, ie2: 1, gap: 300}, o));
+{
+  const r = sv({});
+  check('serviceability page: L / 360 on 6000 mm = 16.67 mm, 14 passes; incremental 10 <= 20; dry crack limit 0.3 with 0.15; dM1 = 5 x 40 = 200, dM2 = 150, dMT = 250 and a 300 mm gap passes', [r.limD, r.okD, r.okInc, r.wk, r.okW, r.d1, r.d2, r.dMT, r.okGap], [6000 / 360, true, true, 0.3, true, 200, 150, 250, true], 1e-9);
+  check('limits: L/180, L/480, L/240 and custom L/250; 16.7 fails the floor limit while 16.6 passes; a cantilever of 2000 mm is checked as a span of 4000 mm', [0, 2, 3, 4].map(l => sv({lim: l}).limD), [6000 / 180, 6000 / 480, 6000 / 240, 6000 / 250], 1e-9);
+  check('floor limit boundaries and the cantilever span; incremental 20 passes and 20.1 fails', [sv({de: 16.6}).okD, sv({de: 16.7}).okD, sv({cant: true, span: 2000}).L, sv({cant: true, span: 2000}).limD, sv({di: 20}).okInc, sv({di: 20.1}).okInc], [true, false, 4000, 4000 / 360, true, false], 1e-9);
+  check('groundwater cracks: hD / hw = 15 -> 0.15 mm; ratio 5 and below 0.2; 20 -> 0.125; 35 and above 0.05; piles under permanent tension 0.1; wall thickness zero -> ratio 0', [sv({cr: 0}).wk, sv({cr: 0, hD: 2}).wk, sv({cr: 0, hD: 1.96}).wk, sv({cr: 0, hD: 8}).wk, sv({cr: 0, hD: 14}).wk, sv({cr: 0, hD: 16}).wk, sv({cr: 2}).wk, sv({cr: 0, hw: 0}).ratio], [0.15, 0.2, 0.2, 0.125, 0.05, 0.05, 0.1, 0], 1e-9);
+  check('crack check is inclusive (0.3 passes dry, 0.31 fails); separation: 250 mm passes, 249 fails; importance 1.25 cuts the displacements to 160 and 120', [sv({wk: 0.3}).okW, sv({wk: 0.31}).okW, sv({gap: 250}).okGap, sv({gap: 249}).okGap, sv({ie1: 1.25}).d1, sv({ie2: 1.25}).d2, sv({ie1: 1.25, ie2: 1.25}).dMT], [true, false, true, false, 160, 120, 200], 1e-9);
+}
+w.renderCalc('dbcstr'); w.calcResult('dbcstr');
+tt = txt(w, 'fq_results');
+check('the default wind page shows 30 m/s, the 160.0 mm limit and the damping row; only its group is visible', [tt.includes('30 m/s'), tt.includes('160.0 mm'), tt.includes('الجدول F.12'), tt.includes('🔴'), w.document.getElementById('fq_g0').style.display, w.document.getElementById('fq_g1').style.display, w.document.getElementById('fq_g2').style.display], [true, true, true, true, '', 'none', 'none']);
+set('fq_m', '1'); w.calcResult('dbcstr'); tt = txt(w, 'fq_results');
+check('the loads page shows 6.25 kN/m2, 16.50 kN/m, 12.0 mm of thermal movement and the 56.65 kPa uplift', [/6\.25 kN\/m²/.test(tt), /16\.50 kN\/m/.test(tt), /12\.0 mm/.test(tt), /56\.65 kPa/.test(tt)], [true, true, true, true]);
+set('fq_m', '2'); w.calcResult('dbcstr'); tt = txt(w, 'fq_results');
+check('the serviceability page shows 16.7 mm, the 0.300 mm crack limit and the 250.0 mm separation', [/16\.7 mm/.test(tt), /0\.300 mm/.test(tt), /250\.0 mm/.test(tt)], [true, true, true]);
+check('other reference codes open dbcstr too', others('dbcstr', 'fq_results'), [true, true, true]);
+// ----- dbcgeo -----
+check('Table F.3: 14 options with maximum w/c 0.45, 0.40, 0.35, 0.35, 0.35, 0.35, 0.35, 0.40, 0.40, 0.45, 0.50, 0.50, 0.55, 0.55 and minimum contents 360, 380 x 6 (options 2 to 7), 380, 380, 360, 340, 340, 202, 202', [J('FZ_MIX').map(x => x[3]), J('FZ_MIX').map(x => x[4])], [[0.45, 0.40, 0.35, 0.35, 0.35, 0.35, 0.35, 0.40, 0.40, 0.45, 0.50, 0.50, 0.55, 0.55], [360, 380, 380, 380, 380, 380, 380, 380, 380, 360, 340, 340, 202, 202]]);
+check('Table F.3 compositions: option 1 GGBS 66 - 80, option 2 fly ash 36 - 55, option 3 GGBS 36 - 65 or fly ash 26 - 35, option 4 GGBS 26 - 35, option 5 fly ash 16 - 20, option 8 GGBS 66 - 80, option 12 fly ash 36 - 55, option 14 fly ash 26 - 35', [0, 1, 2, 3, 4, 7, 11, 13].map(k => J('FZ_MIX')[k][5]), [[['GGBS', 66, 80]], [['FA', 36, 55]], [['GGBS', 36, 65], ['FA', 26, 35]], [['GGBS', 26, 35]], [['FA', 16, 20]], [['GGBS', 66, 80]], [['FA', 36, 55]], [['FA', 26, 35]]]);
+const dsT = J('FZ_DS');
+check('Table F.25: 14 rows; the totals 280, 360, 380, 400, 410, 420, 430, 440, 450, 460, 470, 490, 500, 510; w/c 0.55, 0.44, 0.42, 0.38, 0.37, 0.36, 0.35, 0.34, 0.33, 0.33, 0.32, 0.31, 0.30, 0.29; the printed OPC of every row but C44/55 equals total - GGBS - silica fume (179, 230, 243, 256, 262, 269, 303, 306, 312, 315, 329, 330, 336), C44/55 is 297', [dsT.length, dsT.map(x => x[1]), dsT.map(x => x[4]), dsT.map(x => x[1] - x[2] - x[3])], [14, [280, 360, 380, 400, 410, 420, 430, 440, 450, 460, 470, 490, 500, 510], [0.55, 0.44, 0.42, 0.38, 0.37, 0.36, 0.35, 0.34, 0.33, 0.33, 0.32, 0.31, 0.30, 0.29], [179, 230, 243, 256, 262, 269, 297, 303, 306, 312, 315, 329, 330, 336]]);
+check('Table F.25 supplementary materials: GGBS about 36 % up to C40/50 and 26 % above; silica fume 5 % (C44/55, C48/60), 6 %, 7 %, 8 %', [dsT.slice(0, 6).map(x => Math.round(100 * x[2] / x[1])), dsT.slice(6).map(x => Math.round(100 * x[2] / x[1])), dsT.slice(6).map(x => Math.round(100 * x[3] / x[1]))], [[36, 36, 36, 36, 36, 36], [26, 26, 26, 26, 26, 26, 26, 26], [5, 5, 6, 6, 7, 7, 8, 8]]);
+const mx = o => fz(Object.assign({mode: 0, opt: 5, cem: 240, scm: 160, type: 'GGBS', water: 140, ds: 5, vol: 100, use: 0, fcu: 40, cov: 0, cover: 40, aps: 140, ns: 12}, o));
+{
+  const r = mx({});
+  check('mix on option 6 (C40/50): 240 + 160 = 400 kg/m3, w/c = 0.35 (limit 0.35, max water 140), 40 % GGBS within 36 - 65 -> complies', [r.total, r.wc, r.maxWater, r.pct, r.okWc, r.okTot, r.okPct, r.okMix], [400, 0.35, 140, 40, true, true, true, true], 1e-9);
+  check('failures: water 141 gives w/c 0.3525; 379 kg/m3 fails the content; GGBS 25 % (300 + 100) or 66 % (136 + 264) outside 36 - 65; fly ash is not allowed on option 6', [mx({water: 141}).okWc, mx({cem: 239, scm: 140}).okTot, mx({cem: 300, scm: 100}).okPct, mx({cem: 136, scm: 264}).okPct, mx({type: 'FA'}).okPct, mx({type: 'FA'}).alt], [false, false, false, false, false, null]);
+  check('option 3 accepts GGBS 50 % or fly ash 30 %, rejects fly ash 40 %; the percentage limits are inclusive (36 and 65)', [mx({opt: 2, cem: 200, scm: 200}).okPct, mx({opt: 2, type: 'FA', cem: 280, scm: 120}).okPct, mx({opt: 2, type: 'FA', cem: 240, scm: 160}).okPct, mx({cem: 256, scm: 144}).okPct, mx({cem: 140, scm: 260}).okPct], [true, true, false, true, true]);
+  check('blinding option 13: w/c 0.55 and 202 kg/m3 (water 111.1 max at 202); zero cementitious content gives w/c 0', [mx({opt: 12, cem: 120, scm: 82, water: 111}).okMix, mx({opt: 12, cem: 120, scm: 82}).maxWater, mx({cem: 0, scm: 0}).wc], [true, 0.55 * 202, 0], 1e-9);
+  const d = mx({ds: 6});
+  check('DSCB C44/55: 430 = 297 + 112 + 21, water 0.35 x 430 = 150.5; 100 m3 -> 43000 kg total, 29700 OPC, 11200 GGBS, 2100 silica fume, 15050 kg water', [d.ds.total, d.ds.opc, d.ds.ggbs, d.ds.sf, d.ds.water, d.q.total, d.q.opc, d.q.ggbs, d.q.sf, d.q.water], [430, 297, 112, 21, 150.5, 43000, 29700, 11200, 2100, 15050], 1e-9);
+  check('strength minima: structural fcu 35 / f\'c 28 (34.9 fails), prestressed 40 / 32, blinding and screed 20; cover 30, 50, 75 mm (inclusive)', [mx({fcu: 35}).okFcu, mx({fcu: 34.9}).okFcu, mx({use: 1}).minFcu, mx({use: 1}).minFc, mx({use: 1, fcu: 39.9}).okFcu, mx({use: 2}).minFcu, mx({use: 2}).minFc, mx({cov: 1}).minCover, mx({cov: 2}).minCover, mx({cov: 2, cover: 74}).okCover, mx({cov: 2, cover: 75}).okCover], [true, false, 40, 32, false, 20, null, 50, 75, false, true]);
+  check('tendons: 80 % of 1860 = 1488 MPa; 12 strands of 140 mm2 -> 2499.84 kN jacking and a duct of at least 3360 mm2', [r.jack, r.Pmax, r.duct], [1488, 2499.84, 3360], 1e-9);
+}
+const gt = o => fz(Object.assign({mode: 1, n: 15, area: 2400, L: 150, W: 100, B: 6, D: 1000, P: 4000, Pu: 11000, fc: 40, Ls: 3.5, sp: 2800, nb: 12, db: 25, dt: 10}, o));
+{
+  const r = gt({});
+  check('boreholes: above G+12 -> at least 5; 2400 / 750 -> 4 by area; 5000 m2 -> 7; G+12 itself counts as the lower class (3): 1000 m2 -> 3; G+13 -> 5; 750 m2 -> 1 and 751 -> 2; area 3750 -> 5, 3751 -> 6 at G+13', [r.high, r.minBh, r.byArea, r.nb, gt({area: 5000}).nb, gt({n: 12, area: 1000}).nb, gt({n: 12, area: 1000}).high, gt({n: 13}).minBh, gt({area: 750}).byArea, gt({area: 751}).byArea, gt({n: 12, area: 3750}).nb, gt({n: 12, area: 3751}).nb], [true, 5, 4, 5, 7, 3, false, 5, 1, 2, 5, 6]);
+  check('large structure grid of 60 m: 150 x 100 -> (3 + 1) x (2 + 1) = 12; 60 x 60 -> 4; 61 x 60 -> 6; investigation depth 3 x 6 = 18 m', [r.grid, gt({L: 60, W: 60}).grid, gt({L: 61, W: 60}).grid, r.depth], [12, 4, 6, 18]);
+  check('pile of 1000 mm with 4000 kN: Ac = 785398 mm2, stress 5.093 N/mm2 within 25 % of 40 = 10; FoS = 11000 / 4000 = 2.75 >= 2.5; socket 3 m min (3.5 given); spacing 2.5 m min (2.8 given); 12 bars of 25 -> 0.75 %', [r.Ac, r.stress, r.maxStress, r.okStress, r.fos, r.okFos, r.socketMin, r.okSocket, r.spMin, r.okSp, r.okBars, r.okTie, r.rho], [Math.PI * 250000, 4000000 / (Math.PI * 250000), 10, true, 2.75, true, 3, true, 2500, true, true, true, 0.75], 1e-3);
+  check('limits are inclusive: FoS 2.5 passes (Pu 10000), 2.49 fails; socket 3.0 passes, 2.99 fails; spacing 2500 passes, 2499 fails; stress exactly 10 N/mm2 passes; 5 bars or 10 mm bars fail; stirrup 8 fails; zero load gives infinite FoS', [gt({Pu: 10000}).okFos, gt({Pu: 9960}).okFos, gt({Ls: 3}).okSocket, gt({Ls: 2.99}).okSocket, gt({sp: 2500}).okSp, gt({sp: 2499}).okSp, gt({P: 7853.98163397448, Pu: 30000}).okStress, gt({nb: 5}).okBars, gt({db: 10}).okBars, gt({dt: 8}).okTie, gt({P: 0}).fos], [true, false, true, false, true, false, true, false, false, false, null]);
+  check('minimum horizontal force 5 % of 4000 = 200 kN; moment for the 75 mm eccentricity 4000 x 0.075 = 300 kN.m; verticality 1/75 gives 53.33 kN; confinement length 3 x 1 m', [r.hMin, r.mEcc, r.hVert, r.conf], [200, 300, 4000 / 75, 3], 1e-9);
+}
+const sh = o => fz(Object.assign({mode: 2, H: 8, adj: false, gw: false, wb: false, ka: 0.33, sa: 1.5, la: 8, dl: 25, anch: true, Hw: 8, ha: 3, pi: 8, size: 60, pass: 15, org: 1, salt: 3, lift: 200, comp: 96}, o));
+{
+  const r = sh({});
+  check('Table F.18: up to 5 m all types (5 inclusive); 5 to 9 m without neighbouring buildings -> all except soldier piles with lagging (9 inclusive); beyond 9 m or with buildings beyond 5 m -> outside the table', [sh({H: 5}).depthOk, sh({H: 5.1}).depthOk, r.depthOk, sh({H: 9}).depthOk, sh({H: 9.1}).depthOk, sh({H: 6, adj: true}).depthOk, sh({H: 4, adj: true}).depthOk], [0, 1, 1, 1, -1, -1, 0]);
+  check('watertight shoring when buildings are adjacent, the groundwater is high or water bodies are near; otherwise not', [r.watertight, sh({adj: true}).watertight, sh({gw: true}).watertight, sh({wb: true}).watertight], [false, true, true, true]);
+  check('Table F.19: surcharge 20 kN/m2 gives 0.33 x 20 = 6.6 kPa; anchors 1.2 m apart (1.19 fails); length 3 to 10 m (2.9 and 10.1 fail); movement 40 mm (41 fails)', [r.dp, sh({sa: 1.2}).spOk, sh({sa: 1.19}).spOk, sh({la: 3}).lenOk, sh({la: 10}).lenOk, sh({la: 2.9}).lenOk, sh({la: 10.1}).lenOk, sh({dl: 40}).dispOk, sh({dl: 41}).dispOk], [6.6, true, false, true, true, false, false, true, false], 1e-9);
+  check('unplanned excavation: 10 % of the distance from the lowest anchor (3 m -> 0.3, min 0.5; 8 m -> 0.8); without anchors 10 % of the wall (8 m -> 0.8; 4 m -> 0.5)', [r.unplanned, sh({ha: 8}).unplanned, sh({anch: false}).unplanned, sh({anch: false, Hw: 4}).unplanned], [0.5, 0.8, 0.8, 0.5], 1e-9);
+  check('backfill: all limits inclusive (PI 10, 75 mm, 20 %, 2 %, 5 %, 150 and 250 mm layers, 95 %) and each one fails just outside', [sh({pi: 10, size: 75, pass: 20, org: 2, salt: 5, lift: 150, comp: 95}).okFill, sh({lift: 250}).okFill, sh({pi: 10.1}).okPI, sh({size: 76}).okSize, sh({pass: 21}).okPass, sh({org: 2.1}).okOrg, sh({salt: 5.1}).okSalt, sh({lift: 149}).okLift, sh({lift: 251}).okLift, sh({comp: 94.9}).okComp], [true, true, false, false, false, false, false, false, false, false]);
+}
+w.renderCalc('dbcgeo'); w.calcResult('dbcgeo');
+tt = txt(w, 'fz_results');
+check('the default concrete page shows option 6, w/c 0.350 compliant, the DSCB C40/50 mix 420 kg/m3 and the 🔴 note; only its group is visible', [tt.includes('الخيار 6 من الجدول F.3'), tt.includes('0.350'), tt.includes('مطابقة'), tt.includes('420 kg/m³'), tt.includes('🔴'), w.document.getElementById('fz_g0').style.display, w.document.getElementById('fz_g1').style.display, w.document.getElementById('fz_g2').style.display], [true, true, true, true, true, '', 'none', 'none']);
+set('fz_m', '1'); w.calcResult('dbcgeo'); tt = txt(w, 'fz_results');
+check('the pile page shows 5 boreholes, the 18.0 m depth, FoS 2.75 and the 300 kN.m moment', [/عدد الجسات الدنيا5/.test(tt), tt.includes('18.0 m'), tt.includes('2.75'), tt.includes('300 kN·m')], [true, true, true, true]);
+set('fz_m', '2'); w.calcResult('dbcgeo'); tt = txt(w, 'fz_results');
+check('the shoring page shows the allowed systems for 8 m, the 6.6 kPa extra pressure and the compliant backfill', [tt.includes('كل الأنواع عدا الركائز مع التخشيب'), tt.includes('6.6 kPa'), tt.includes('مواد الردممطابقة')], [true, true, true]);
+check('other reference codes open dbcgeo too', others('dbcgeo', 'fz_results'), [true, true, true]);
+}
+
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
