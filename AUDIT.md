@@ -1378,3 +1378,49 @@ The remaining quantitative chapters of SBC 301-CR-18 that had no calculator (sno
 `sbcdead` (SDL-01) - SBC 301-CR-18 chapter 3: Table 3-1 minimum design dead loads (87 component rows in 7 groups: ceilings, roof and wall coverings, floor fill, floors and finishes, wood-joist floors, frame partitions and walls; per-mm rows take the thickness), the clay brick and hollow / solid concrete masonry wythe tables (densities 16.5 / 19.5 / 21.0 kN/m3, grout spacing 1200 - 400 mm and full grout, plaster 0.24 kN/m2 per face), Table 3-2 (108 material densities), 3.2.1 and Table 3-3 (design lateral soil load by USCS class, 9.5 and 16 kN/m2 per m for rigid walls, unsuitable classes OL, MH, CH, OH), submerged soil with full hydrostatic pressure, 3.2.2 uplift. `sbcrain` (SRN-01) - chapter 8: Equation 8-1 R = 0.0098 (ds + dh), Equation 8-2 Q = 0.278 x 10^-6 A i with i not less than 180 mm/h, Table 8-1 (drains 100 / 150 / 200 mm, channel and closed scuppers 150 and 600 mm wide interpolated), 8.3.5 overflow edge dh = 0, 8.4 ponding below 1.2 degrees.
 
 🔴 Flagged: (1) the text of Tables 3-1 and 3-2 was transcribed from the text layer (two-column table of densities) and the grout rows of the hollow masonry wythes were checked against the x positions of the printed numbers (the 100 mm column has no grouted value); (2) the lateral soil load of Table 3-3 is for moist soil at optimum density; the buoyancy of submerged soil has no stated formula in the code: the soil weight is reduced by the ratio of the entered submerged to moist unit weights (defaults 9.5 and 19 kN/m3 of Table 3-2 for sand and gravel) and the full water pressure of 10 kN/m3 is added; a surcharge needs an engineer's coefficient and is not built; (3) Table 3-3 values of OL, MH, CH and OH are footnoted "unsuitable as backfill" and give no number; CL carries 15.75 without a footnote letter; (4) Table 8-1 prints no value at 65, 90 and 115 mm for the scuppers (note a: interpolation is appropriate) and the code says nothing below the first printed head: 25 mm is used as a precaution; beyond the last printed flow the result reports that the table is exceeded; (5) the design rainfall intensity comes from Figure 8-1 (a map) and is entered by the user with the 180 mm/h minimum; (6) not built: flood loads (chapter 5), snow (not applicable in KSA), ice, the consensus standards cited.
+
+
+## Code sweep 2026-10-17 → 2026-10-18 (73 calculators added after commit 53864fb)
+Rule for this batch: the app follows the code text only (no office-specific options). Every number was typed from the standard's text or from a page image and checked in `tests/addcodes.js` (parts 127–195, worked examples where the standard prints one). **🔴 = an uncertain reading of the code itself**, shown in the calculator's own note. Status: Done (numbers) for all unless a row says otherwise. i18n: all 30,780 distinct Arabic phrases now have an English entry (`i18n/en/part-135.json` covers the last 10,831).
+
+### Fire (31)
+| Calc | Standard | Notes / 🔴 |
+|---|---|---|
+| ugmain | NFPA 24 | thrust-block bearing, restrained joints, hydro test, flushing |
+| nfpa101 | NFPA 101-2018 ch.7 | egress capacity, travel distance, dead end, new-occupancy tables |
+| uaeegress, uaecomp, uaeaccess, uaedetect, uaemisc | UAE Fire & Life Safety Code 2011 ch.1–8, 11, 12, 14 | 🔴 several table cells read from page images (Table 3.1A, 1.6); Table 9.7 hazard classes read from images |
+| uaesprink, uaefp, uaestore, uaeinst, uaespray, uaegas | UAE code ch.9 (Tables 9.1–9.49) | 🔴 Figure 9.13 digitised; Figure 9.14 image blank so assumed equal to 9.13; Tables 9.13/9.14 printed rows with typos kept as printed; texts of 9.29–9.33 differ slightly between rows (taken as printed) |
+| uaesmoke, smokemgmt | UAE ch.10 + NFPA 92 | validated with the handbook ch.16 examples; atrium/plugholing/makeup air |
+| uaespec, uaerisk, uaecons | UAE ch.10 §2–22, 13, 17, 18, 12 | 🔴 ch.18 clause 18.1.5 and 7.2 reading; warehouse F&EI/TI tables (grades printed 1–45 differ from Dow) |
+| nfpa20, nfpa14, nfpa22, nfpa10, nfpa13h, nfpa13s | NFPA 20 / 14 / 22 / 10 / 13 | spacing, obstruction (3x rule), hangers, spares, riser demand |
+| nfpa15, nfpa11, nfpa16, nfpa17 | NFPA 15 / 11 / 16 / 17 | 🔴 NFPA 17 is a 37-page scanned excerpt read by local OCR: check numbers against the original |
+| nfpa50, nfpa58, nfpa72 | NFPA 50 / 58 / 72 | NFPA 58 tables verified from page images; NFPA 72 low-mounting enlarges the room size |
+
+### HVAC (16)
+| Calc | Standard | Notes / 🔴 |
+|---|---|---|
+| thermalcomfort | ASHRAE 55 | SET two-node validated against the manual's example (26.3 °C / 2.4 °C) |
+| cleanroom, rclimit, ashrae170 | ISO 14644, ASHRAE 15/34, ASHRAE 170-2021 | 🔴 ASHRAE 170 Tables 8-1/8-2/9-1 not built (text layout broken) |
+| syrac, syrload, syrins, syrvent, syrmat | Syrian Arab Code (HVAC, thermal insulation) | 🔴 scanned volumes read by OCR/page images; bidi-reversed numbers; Table 9/3 7.5 kW misprint; Table 14/3 unreadable rows skipped; CLTD labels read by pattern; Table 12 misprint (8 °C/45 % printed +2.69); Tables 9/7, 11/7, 2/8 water/ground-source rows not built |
+| egac, egcold, egmat, egpipe, egeff, egequip | Egyptian HVAC / refrigeration codes | 🔴 equations 3.5, 3.13/3.15/3.16, 3.18 garbled (ASHRAE forms used); Table 7/1 (product properties) missing so the user enters c_pa, c_pb, W_f; misprints kept (Sharm el Sheikh Sept min 36, Tanta May max 21, Halayeb Apr min 8, Damanhour Jul/Aug min 27, Beni Suef Nov RH 28); Tables 22-2, 8-3, 4-6, 8-6 and chapter 7 refrigerant tables not built |
+| dbchvac | Dubai Building Code Part H | design conditions, ventilation/ERV/DCV, leakage, condensate |
+
+### Plumbing (5)
+| Calc | Standard | Notes / 🔴 |
+|---|---|---|
+| htmgas, iso7396 | HTM 02-01, EN ISO 7396-1 | diversity tables 13–21, pipe loss tables A2–A5 |
+| upcdrain, upcwater | UPC 2021 | code misprint: example 1014.3.6 prints 750 gal = 2389 L (true 2839 L); Table 422.1 (minimum fixtures) not built |
+| dbcplumb | Dubai Building Code Part H.5–H.14 | 🔴 Tables H.5/H.8 identical, H.7 and clauses H.5.9 read from text |
+
+### Electrical (13) · Heating (1) · Structural (3) · Architect (4)
+| Calc | Standard | Notes / 🔴 |
+|---|---|---|
+| asmea17 | ASME A17.1-2019 | tables 2.4.2.2 / 2.18.2.1 / 2.22.3.1 / 2.22.4.1 verified from page images |
+| necbox, necev, necpool, necwork, necwiring, necpv, necocpd, neccap, necheat | NEC 2008 Arts. 314, 625, 680, 110, 300, 690, 240, 460, 422/424/426/427 | 🔴 NEC 2008 edition: check against the adopted edition; PV temperature-correction estimate of the minimum string is engineering (flagged) |
+| eigq, eigh | Schneider Electrical Installation Guide ch.Q, H | product guidance (derating, Icu/Icm, discrimination rules of thumb) – confirm with the manufacturer |
+| dbcelec | Dubai Building Code Part G | 🔴 Table G.4 60 A row read as 25/35 mm² (bidi), "10/15" taken as 10 A |
+| boilernz | NZ boiler code of practice | safety valves, feed pumps, drowning time |
+| ec3member, ec8lat, ec2serv | EN 1993-1-1, EN 1998-1, EN 1992-1-1 | NA values editable; Table 7.2N/7.3N, punching, columns, slab detailing |
+| dbcarch, dbcenv, dbcvt, dbcacc | Dubai Building Code Parts B, E, D, C | 🔴 Table B.13 parking details, VT charts D.13–D.23 not built (columns unreadable); occupant-load table printed with overlapping columns |
+
+Not built (documented): Egyptian scanned fire / sanitary / pipelines codes and elevator code (no readable text), DBC Part F/J/K/telecom and E.9/E.10, payment-certificate tool, other book folders (`كتب التلغرام`, `كورسات`, `NRAKE DOWN`, `اكسلات العمل`), irrigation specs / SMACNA / Dubai universal-design guide (largely duplicates DBC Part C).

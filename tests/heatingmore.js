@@ -197,7 +197,7 @@ check('old snapshot: fuel tank still opens', +doc.getElementById('ft_qh').value,
 w.showCategory('heating');
 const cards = doc.getElementById('heating-category').textContent;
 check('heating screen lists the four new calculators', ['خزان التمدد', 'فحص مدخنة', 'خزانات المازوت', 'التدفئة بالهواء'].every(s => cards.includes(s)), true);
-check('heating screen has 8 calculator cards', doc.querySelectorAll('#heating-category .calc-card').length, 8);
+check('heating screen has 9 calculator cards', doc.querySelectorAll('#heating-category .calc-card').length, 9);
 
 check('no page errors', errors.length, 0);
 if (errors.length) console.log(errors.slice(0, 3));
