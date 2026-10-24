@@ -66,7 +66,7 @@ function check(name, got, want, tol) {
   // over-measurement warning
   w.ipcItem(0, 1, 'qty', 11);
   t = w.ipcTotals();
-  check('a cumulative quantity above the contract quantity is flagged', [t.sections[0].items[1].over, t.sections[0].items[1].pct, /⚠️/.test(w.document.getElementById('ipc_totals').textContent)], [true, 110, true]);
+  check('a cumulative quantity above the contract quantity is flagged', [t.sections[0].items[1].over, +t.sections[0].items[1].pct.toFixed(6), /⚠️/.test(w.document.getElementById('ipc_totals').textContent)], [true, 110, true]);
   w.ipcItem(0, 1, 'qty', 4);
 
   // next certificate
@@ -117,7 +117,7 @@ function check(name, got, want, tol) {
   check('non-numeric entries count as zero', [w.ipcTotals().cumSum, w.ipcTotals().progress], [0, null]);
   w.ipcItem(0, 0, 'cqty', 10); w.ipcItem(0, 0, 'price', 100); w.ipcItem(0, 0, 'pqty', 8); w.ipcItem(0, 0, 'qty', -3);
   t = w.ipcTotals();
-  check('a negative quantity (omission) reduces the cumulative value: (8 - 3) x 100 = 500', [t.cumSum, t.curSum, t.progress], [500, -300, 5]);
+  check('a negative quantity (omission) reduces the cumulative value: (8 - 3) x 100 = 500', [t.cumSum, t.curSum, t.progress], [500, -300, 50]);
   w.ipcMeta('retention', 10); w.ipcMeta('retCap', 0); w.ipcMeta('advance', 1000);
   t = w.ipcTotals();
   check('retention is never negative and the advance recovery follows the progress (1000 x 500 / 1000 = 500)', [t.retention, t.advRec], [50, 500]);

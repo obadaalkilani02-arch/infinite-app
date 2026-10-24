@@ -3974,6 +3974,163 @@ set('en_m', '4'); w.calcResult('egnet'); tt = txt(w, 'en_results');
 check('the public buildings page shows 100 l, 10 m3/day and 0.12 l/s', [tt.includes('100 L/فرد/يوم'), tt.includes('10.0 m³/يوم'), tt.includes('0.12 L/s')], [true, true, true]);
 check('other reference codes open egnet too', others('egnet', 'en_results'), [true, true, true]);
 }
+// ---------- part 206: psychrometrics and air processes (`psychro`: ASHRAE Fundamentals chapter 1 properties, coil, mixing, humidifier, room supply air) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const ws = t => J('pycPws(' + t + ')') / 1000;
+check('saturation pressure: 0 C 0.6112, 20 C 2.3388, 50 C 12.350, 100 C 101.42 kPa; over ice -10 C 0.2599 kPa', [ws(0), ws(20), ws(50), ws(100), ws(-10)], [0.6112, 2.3388, 12.35, 101.42, 0.2599], 0.006);
+check('the two branches meet at 0 C (continuity within 0.2 %) and pressure rises with temperature', [Math.abs(ws(0.0001) / ws(-0.0001) - 1) < 0.002, ws(30) > ws(29)], [true, true]);
+check('atmospheric pressure: 0 m 101.325, 1000 m 89.88, 1500 m 84.556 kPa', [J('pycPressure(0)'), J('pycPressure(1000)'), J('pycPressure(1500)')], [101.325, 89.88, 84.556], 0.02);
+const P0 = 101.325;
+const pst = (t, k, v, p) => J('pycState(' + [t, k, v, p || P0].join(',') + ')');
+{
+  const s = pst(25, 0, 50);
+  check('25 C and 50 %: W = 9.88 g/kg, h = 50.32 kJ/kg, v = 0.858 m3/kg, dew point 13.86 C, wet-bulb 17.89 C, density 1.177 kg/m3', [s.W * 1000, s.h, s.v, s.dp, s.wb, s.rho], [9.88, 50.32, 0.858, 13.86, 17.89, 1.177], 0.03);
+  check('degree of saturation below the relative humidity: 49.2 %; vapour pressure 1.585 kPa; not over-saturated', [+s.mu.toFixed(1), +s.pw.toFixed(3), s.over], [49.2, 1.585, false], 0.15);
+  const w1 = pst(25, 1, s.wb), w2 = pst(25, 2, s.dp), w3 = pst(25, 3, s.W * 1000);
+  check('the four ways of fixing the second property give the same state (round trip from wet-bulb, dew point and humidity ratio)', [w1.rh, w2.rh, w3.rh], [50, 50, 50], 0.05);
+  const sat = pst(30, 0, 100);
+  check('saturated air: wet-bulb = dew point = dry-bulb; W = Ws; RH 120 is limited to 100', [sat.wb, sat.dp, sat.W, pst(30, 0, 120).rh], [30, 30, sat.Wsat, 100], 1e-4);
+  check('wet-bulb above the dry-bulb is limited to the dry-bulb (saturation); dew point above the dry-bulb likewise', [pst(25, 1, 40).rh, pst(25, 2, 40).rh], [100, 100], 1e-6);
+  const dry = pst(25, 0, 0);
+  check('dry air has zero humidity ratio and its dew point is very low', [dry.W, dry.dp < -90, dry.h, dry.v], [0, true, 25.15, 0.8441], 0.003);
+  const hi = pst(25, 0, 50, J('pycPressure(1500)'));
+  check('at 1500 m the same RH has a higher humidity ratio (11.9 g/kg) and a larger specific volume', [+(hi.W * 1000).toFixed(1), hi.v > s.v], [11.9, true], 0.1);
+  const ice = pst(-5, 0, 80);
+  check('below zero the ice branch is used: -5 C and 80 %: pws 0.4018, W 1.98 g/kg, dew point -7.6 C', [+(ice.pws).toFixed(4), +(ice.W * 1000).toFixed(2), +ice.dp.toFixed(1)], [0.4018, 1.98, -7.6], 0.05);
+  check('negative wet-bulb uses the ice equation: 0 C dry with -1 C wet-bulb gives a humidity below saturation', [pst(0, 1, -1).rh > 0 && pst(0, 1, -1).rh < 100], [true]);
+}
+const calc = o => J('pycCalc(' + JSON.stringify(Object.assign({mode: 0, p: P0, t1: 28, k1: 0, v1: 50, q: 1000}, o)) + ')');
+{
+  const r = calc({mode: 1, t2: 14});
+  check('sensible cooling at constant W: 28 C 50 % cooled to 14 C needs the dew point (16.7 C) crossed: over-saturated flag, and the load is m (h2 - h1)', [r.sat, +r.Q.toFixed(2), Math.abs(r.s2.W - r.s1.W) < 1e-12], [true, +(r.m * (r.s2.h - r.s1.h)).toFixed(2), true]);
+  const h = calc({mode: 1, t2: 40});
+  check('sensible heating 28 -> 40 C at 1000 L/s: about 14.2 kW (1.15 kg/s x 1.028 x 12), no saturation, RH falls to 25.6 %', [+h.Q.toFixed(1), h.sat, +(h.s2.rh).toFixed(1)], [14.2, false, 25.6], 0.1);
+  check('mass flow of dry air: 1000 L/s at v = 0.8706 gives 1.1486 kg/s', [calc({}).m], [1000 / 1000 / calc({}).s1.v], 1e-9);
+}
+{
+  const c = calc({mode: 2, t1: 28, v1: 60, method: 0, adp: 8, bf: 0.15});
+  const sa = pst(8, 0, 100);
+  check('coil by ADP 8 C and BF 0.15: leaving 28 -> 11.0 C; W2 = Wadp + 0.15 (W1 - Wadp)', [c.s2.t, c.s2.W], [8 + 0.15 * 20, sa.W + 0.15 * (c.s1.W - sa.W)], 1e-9);
+  check('coil loads: total = m (h1 - h2), sensible + latent = total, SHR = Qs / Q, condensate = m (W1 - W2)', [c.Q, c.Qs + c.Ql, c.shr, c.cond], [c.m * (c.s1.h - c.s2.h), c.Q, c.Qs / c.Q, c.m * (c.s1.W - c.s2.W)], 1e-9);
+  check('the example: total 38.8 kW (11.0 TR), SHR 0.51, condensate 26.6 kg/h, leaving RH 95.5 %', [+c.Q.toFixed(1), +(c.Q * 0.2843).toFixed(1), +c.shr.toFixed(2), +(c.cond * 3600).toFixed(1), +c.s2.rh.toFixed(1)], [38.8, 11, 0.51, 26.6, 95.5], 0.06);
+  const b = calc({mode: 2, t1: 28, v1: 60, method: 1, t2: c.s2.t, v2: c.s2.rh});
+  check('coil by leaving state recovers the ADP 8 C and the bypass factor 0.15', [b.adp.t, b.bf], [8, 0.15], 0.002);
+  check('leaving state equal to the ADP gives BF 0; an impossible bypass factor above 1 is limited by the user input range and a state above saturation raises the flag', [calc({mode: 2, t1: 28, v1: 60, method: 0, adp: 8, bf: 0}).s2.t, calc({mode: 2, t1: 28, v1: 60, method: 1, t2: 20, v2: 100}).bad], [8, false]);
+  check('a coil that heats (leaving above entering) has a negative load and the flag', [calc({mode: 2, t1: 28, v1: 50, method: 1, t2: 35, v2: 30}).bad, calc({mode: 2, t1: 28, v1: 50, method: 1, t2: 35, v2: 30}).Q < 0], [true, true]);
+}
+{
+  const m = calc({mode: 3, t1: 35, v1: 40, q: 1000, t2: 24, k2: 0, v2: 50, q2: 3000});
+  const a = m.s1, b = m.s2, ma = m.m, mb = m.m2;
+  check('mixing: dry-air balance of W and h; fresh fraction = m1 / (m1 + m2)', [m.mix.W, m.mix.h, m.fresh], [(ma * a.W + mb * b.W) / (ma + mb), (ma * a.h + mb * b.h) / (ma + mb), ma / (ma + mb) * 100], 1e-6);
+  check('mixing example: 1000 L/s at 35 C 40 % with 3000 L/s at 24 C 50 % -> 26.7 C, 10.47 g/kg, 53.5 kJ/kg, 24.2 % of the first stream', [+m.mix.t.toFixed(1), +(m.mix.W * 1000).toFixed(2), +m.mix.h.toFixed(1), +m.fresh.toFixed(1)], [26.7, 10.47, 53.5, 24.2], 0.06);
+  check('the mixed temperature lies between the two streams and the mixed flow is the sum of the dry masses at the mixed volume', [m.mix.t > 24 && m.mix.t < 35, m.flow], [true, (ma + mb) * m.mix.v * 1000], 1e-6);
+  check('a second stream of zero flow leaves the first state unchanged', [calc({mode: 3, t1: 35, v1: 40, q: 1000, t2: 24, k2: 0, v2: 50, q2: 0}).mix.t], [35], 1e-6);
+}
+{
+  const a = calc({mode: 4, t1: 35, v1: 20, hm: 0, eta: 85});
+  check('adiabatic humidifier: constant enthalpy, adiabatic saturation temperature 18.7 C, 85 % efficiency leaves at 21.1 C and 80 % RH, water 22.7 kg/h', [Math.abs(a.s2.h - a.s1.h) < 1e-6, +a.tas.toFixed(1), +a.s2.t.toFixed(1), +a.s2.rh.toFixed(0), +a.steam.toFixed(1)], [true, 18.7, 21.1, 80, 22.7], 0.1);
+  check('the 100 % efficiency humidifier saturates the air at the adiabatic saturation temperature (it equals the wet-bulb)', [calc({mode: 4, t1: 35, v1: 20, hm: 0, eta: 100}).s2.rh, calc({mode: 4, t1: 35, v1: 20, hm: 0, eta: 100}).s2.t], [100, a.s1.wb], 0.2);
+  const s = calc({mode: 4, t1: 20, v1: 20, hm: 1, rh2: 50});
+  const tgt = pst(20, 0, 50);
+  check('steam humidifier to 50 % at the entering temperature: W2 = target, steam kg/h = m (W2 - W1) x 3600, the air warms slightly (below 1 K)', [s.s2.W, s.steam, s.s2.t > 20 && s.s2.t < 21], [tgt.W, s.m * (tgt.W - s.s1.W) * 3600, true], 1e-6);
+  check('a target below the present humidity needs no steam', [calc({mode: 4, t1: 20, v1: 80, hm: 1, rh2: 50}).steam], [0], 1e-9);
+}
+{
+  const r = calc({mode: 5, t1: 24, v1: 50, q: 0, ts: 13, Qs: 10, Ql: 2, vol: 300});
+  const cp = 1.006 + 1.86 * r.s1.W;
+  check('supply air: m = Qs / (cp x dT) = 10 / (1.0197 x 11) = 0.8915 kg/s... supply W = Wr - Ql / (m x 2501)', [r.ms, r.Ws], [10 / (cp * 11), r.s1.W - 2 / (10 / (cp * 11) * 2501)], 1e-9);
+  check('room SHR 0.833; the supply state is below saturation (RH 90 %), flow about 730 L/s and 8.8 air changes in 300 m3', [+r.shr.toFixed(3), r.bad, +r.supply.rh.toFixed(0), Math.round(r.flow), +r.ach.toFixed(1)], [0.833, false, 90, 730, 8.8], 0.6);
+  check('too large a latent load for the airflow gives a negative humidity ratio: no supply state', [calc({mode: 5, t1: 24, v1: 50, ts: 13, Qs: 10, Ql: 40}).supply], [null]);
+  check('a supply temperature not below the room has no solution', [calc({mode: 5, t1: 24, v1: 50, ts: 24, Qs: 10, Ql: 2}).ms], [null]);
+  check('a supply state over saturation raises the flag: 12 C supply with no latent removal carries the room humidity 9.3 g/kg above the saturation 8.7 g/kg at 12 C; 18 C supply is fine', [calc({mode: 5, t1: 24, v1: 50, ts: 18, Qs: 10, Ql: 0}).bad, calc({mode: 5, t1: 24, v1: 50, ts: 12, Qs: 10, Ql: 0}).bad], [false, true]);
+}
+let tt;
+w.renderCalc('psychro'); w.calcResult('psychro');
+tt = txt(w, 'pyc_results');
+check('the default page shows the point properties at sea level (28 C, 50 %: W 11.8 g/kg), the 🔴 note and only the first group', [tt.includes('خواص الهواء الرطب عند نقطة'), tt.includes('101.3'), /11\.8\d g\/kg/.test(tt), tt.includes('🔴'), w.document.getElementById('pyc_g0') === null || w.document.getElementById('pyc_g0').style.display === ''], [true, true, true, true, true]);
+set('pyc_m', '2'); w.calcResult('psychro'); tt = txt(w, 'pyc_results');
+check('the coil page shows the ADP, the bypass factor and the condensate; the coil group is visible', [tt.includes('نقطة ندى الجهاز ADP8.0'), tt.includes('معامل المرور BF'), tt.includes('الماء المتكثف'), w.document.getElementById('pyc_g2').style.display], [true, true, true, '']);
+set('pyc_m', '3'); w.calcResult('psychro'); tt = txt(w, 'pyc_results');
+check('the mixing page shows the mixed state and the first-stream percentage', [tt.includes('الخليط'), tt.includes('نسبة التيار الأول')], [true, true]);
+set('pyc_m', '5'); w.calcResult('psychro'); tt = txt(w, 'pyc_results');
+check('the supply page shows the SHR and the supply flow', [tt.includes('نسبة الحمل المحسوس SHR'), tt.includes('تصرف التغذية')], [true, true]);
+set('pyc_m', '1'); set('pyc_t2', '10'); w.calcResult('psychro'); tt = txt(w, 'pyc_results');
+check('sensible cooling below the dew point warns', [tt.includes('تحت نقطة الندى')], [true]);
+set('pyc_k', '1'); set('pyc_v1', '20'); set('pyc_m', '0'); w.calcResult('psychro'); tt = txt(w, 'pyc_results');
+check('the wet-bulb input shows the relative humidity of 28 C / 20 C wet-bulb: 49 %', [/الرطوبة النسبية.*?4[89]\.\d %/.test(tt)], [true]);
+set('pyc_z', '1500'); w.calcResult('psychro'); tt = txt(w, 'pyc_results');
+check('the altitude changes the pressure shown (84.56 kPa)', [tt.includes('84.56')], [true]);
+check('other reference codes open psychro too', others('psychro', 'pyc_results'), [true, true, true]);
+}
+// ---------- part 207: centrifugal pumps (`pumphead`: total dynamic head and power, NPSH available, affinity laws and the operating point) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+check('water density (Tanaka): 4 C 999.97, 20 C 998.20, 60 C 983.2 kg/m3; vapour pressure: 20 C 2.339, 60 C 19.95, 100 C 101.42 kPa; pressure at 1000 m 89.88 kPa', [J('pnpRho(4)'), J('pnpRho(20)'), J('pnpRho(60)'), J('pnpPv(20)'), J('pnpPv(60)'), J('pnpPv(100)'), J('pnpPatm(1000)')], [999.97, 998.2, 983.2, 2.339, 19.95, 101.42, 89.88], 0.08);
+const run = (Q, D, L, C, K) => J('pnpRun(' + [Q, D, L, C, K].join(',') + ')');
+{
+  const r = run(20, 150, 10, 140, 2);
+  const v = 0.02 / (Math.PI * 0.15 * 0.15 / 4);
+  check('pipe run 20 L/s in 150 mm: velocity 1.132 m/s, velocity head 0.0653 m, fittings 2 x 0.0653 = 0.1306 m', [r.v, r.hv, r.hm], [v, v * v / 19.6133, 2 * v * v / 19.6133], 1e-9);
+  check('friction equals equation 41 of the Egyptian pipelines code: 6.78 L / D^1.165 (V / C)^1.85', [r.hf], [6.78 * 10 / Math.pow(0.15, 1.165) * Math.pow(v / 140, 1.85)], r.hf * 0.004);
+  check('slope per km and total', [r.J, r.loss], [r.hf / 10 * 1000, r.hf + r.hm], 1e-9);
+  check('no diameter or no length gives no friction (D = 0 -> no loss; L = 0 -> slope 0)', [run(20, 0, 10, 140, 0).hf, run(20, 150, 0, 140, 0).J], [0, 0], 1e-12);
+}
+const calc = o => J('pnpCalc(' + JSON.stringify(o) + ')');
+const m0 = Object.assign({mode: 0, Q: 20, rho: 998, zs: -1.5, zd: 30, ps: 0, pd: 0, Ds: 150, Ls: 10, Ks: 2, Dd: 100, Ld: 120, Kd: 8, C: 140, margin: 10, eta: 65, etaM: 92, mm: 10});
+{
+  const r = calc(m0), s = run(20, 150, 10, 140, 2), d = run(20, 100, 120, 140, 8);
+  check('TDH = static 31.5 + suction loss + discharge loss + velocity-head difference', [r.stat, r.tdh], [31.5, 31.5 + s.loss + d.loss + (d.hv - s.hv)], 1e-9);
+  check('the example: discharge velocity 2.55 m/s, TDH about 41.8 m (31.5 static + 0.21 suction + 9.78 discharge + 0.27 velocity head), with 10 % margin 46.0 m', [+d.v.toFixed(2), +r.tdh.toFixed(1), +r.tdhM.toFixed(1)], [2.55, 41.8, 46.0], 0.06);
+  check('power: hydraulic = rho g Q H; shaft = hydraulic / 0.65; motor input = shaft / 0.92; standard motor above shaft x 1.1', [r.phDesign, r.shaft, r.motor], [998 * 9.80665 * 0.02 * r.tdhM / 1e6 * 1000, 998 * 9.80665 * 0.02 * r.tdhM / 1e6 * 1000 / 0.65, 998 * 9.80665 * 0.02 * r.tdhM / 1e6 * 1000 / 0.65 / 0.92], 1e-9);
+  check('the selected motor is the smallest standard size not below shaft x 1.1', [r.sel >= r.shaft * 1.1, [0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3, 4, 5.5, 7.5, 11, 15, 18.5, 22, 30, 37, 45, 55, 75, 90, 110, 132, 160, 200, 250, 315, 355].filter(x => x < r.sel).every(x => x < r.shaft * 1.1)], [true, true]);
+  check('terminal pressure of 2 bar adds 2 x 100 / (998 x 9.80665 / 1000) = 20.44 m; static pressure on the suction side subtracts it', [+(calc(Object.assign({}, m0, {pd: 2})).tdh - r.tdh).toFixed(2), +(calc(Object.assign({}, m0, {ps: 1})).tdh - r.tdh).toFixed(2)], [20.44, -10.22], 0.01);
+  check('a larger suction line lowers the loss; a discharge point below the pump gives negative static head', [calc(Object.assign({}, m0, {Ds: 200})).s.loss < r.s.loss, calc(Object.assign({}, m0, {zd: -5})).stat], [true, -3.5]);
+  check('motor above 355 kW is reported (no standard size)', [calc(Object.assign({}, m0, {Q: 600, Ds: 500, Dd: 400, zd: 90, Ld: 100})).sel], [null]);
+}
+{
+  const n0 = Object.assign({mode: 1, Q: 20, liquid: 0, T: 20, rho: 998, pvIn: 2.34, alt: true, z: 0, patm: 101.325, zs: -2, D: 150, L: 10, K: 2, C: 140, npshr: 3, req: 0.6});
+  const r = calc(n0), s = run(20, 150, 10, 140, 2);
+  check('NPSHa at 20 C sea level: (101.325 - 2.339) / 9.789 = 10.11 m; with a lift of 2 m and the line loss', [+r.head.toFixed(2), r.loss, r.npsha], [10.11, s.loss, r.head - 2 - s.loss], 0.01);
+  check('margin and flags: NPSHa - NPSHr, requirement 0.6 m, ratio, no cavitation', [r.margin, r.ok, r.ratio, r.cav], [r.npsha - 3, true, r.npsha / 3, false], 1e-9);
+  check('the greatest lift that still leaves the margin: head - loss - NPSHr - 0.6', [r.maxLift], [r.head - s.loss - 3 - 0.6], 1e-9);
+  const hot = calc(Object.assign({}, n0, {T: 60}));
+  check('hot water: 60 C gives head (101.325 - 19.95) / 9.642 = 8.44 m, a smaller NPSHa than cold water by 1.67 m', [+hot.head.toFixed(2), +(r.head - hot.head).toFixed(2)], [8.44, 1.67], 0.02);
+  const hi = calc(Object.assign({}, n0, {z: 1500}));
+  check('altitude 1500 m reduces the atmospheric part to 84.56 kPa: NPSHa smaller by about 1.7 m', [+hi.pa.toFixed(2), +(r.npsha - hi.npsha).toFixed(1)], [84.56, 1.7], 0.06);
+  check('a pump needing 12 m cannot run: margin negative, flagged cavitation, max lift negative', [calc(Object.assign({}, n0, {npshr: 12})).ok, calc(Object.assign({}, n0, {npshr: 12})).cav, calc(Object.assign({}, n0, {npshr: 12})).maxLift < 0], [false, true, true]);
+  check('another liquid uses its own density and vapour pressure; a given atmospheric pressure replaces the altitude', [calc(Object.assign({}, n0, {liquid: 1, rho: 800, pvIn: 20})).rho, calc(Object.assign({}, n0, {alt: false, patm: 90})).pa], [800, 90]);
+  check('flooded suction raises NPSHa one-to-one', [+(calc(Object.assign({}, n0, {zs: 3})).npsha - r.npsha).toFixed(6)], [5]);
+}
+{
+  const a0 = Object.assign({mode: 2, n1: 1450, n2: 1200, d1: 250, d2: 225, Q1: 20, H1: 36, P1: 10, q0: 0, h0: 40, qa: 20, ha: 36, qb: 30, hb: 28, hst: 10, qs: 20, hs: 36});
+  const r = calc(a0), n = 1200 / 1450;
+  check('speed change 1450 -> 1200 rpm: Q x 0.8276 = 16.55, H x 0.6849 = 24.66, P x 0.5668 = 5.67', [r.byN.Q, r.byN.H, r.byN.P], [20 * n, 36 * n * n, 10 * n * n * n], 1e-9);
+  check('impeller trim 250 -> 225 mm (10 %): Q 18, H 29.16, P 7.29', [r.byD.Q, r.byD.H, r.byD.P, r.byD.trim], [18, 29.16, 7.29, 10], 1e-9);
+  check('the curve through (0, 40), (20, 36), (30, 28): H = 40 + 0.2 Q - 0.02 Q2', [r.curve.A, r.curve.B, r.curve.C], [40, 0.2, -0.02], 1e-9);
+  check('a system through the design point: K = (36 - 10) / 400 = 0.065, operating point 20 L/s at 36 m (inside the curve range)', [r.K, r.Q, r.H, r.inRange], [0.065, 20, 36, true], 1e-9);
+  const s2 = calc(Object.assign({}, a0, {hst: 15, hs: 35}));
+  check('static 15 m and design point (20, 35): K = 0.05; the intersection of 40 + 0.2 Q - 0.02 Q2 with 15 + 0.05 Q2 is 20.38 L/s at 35.77 m', [s2.K, +s2.Q.toFixed(2), +s2.H.toFixed(2), +s2.Hpump.toFixed(2)], [0.05, 20.38, 35.77, 35.77], 0.005);
+  check('a system static head above the shut-off head has no operating point; one beyond the last curve point is flagged', [calc(Object.assign({}, a0, {hst: 45, hs: 60})).Q, calc(Object.assign({}, a0, {hst: 2, hs: 5, qs: 100})).inRange], [null, false]);
+  check('three points with equal flows cannot define a curve', [calc(Object.assign({}, a0, {qa: 20, qb: 20, ha: 36, hb: 28})).curve], [null]);
+  check('a trim above 20 % is flagged in the page (see below)', [calc(Object.assign({}, a0, {d2: 190})).byD.trim], [24], 1e-9);
+}
+let tt;
+w.renderCalc('pumphead'); w.calcResult('pumphead');
+tt = txt(w, 'pnp_results');
+check('the default page shows TDH, the shaft power, the standard motor and the 🔴-free note; only the first group is visible', [tt.includes('الارتفاع الكلي TDH'), tt.includes('قدرة العمود'), tt.includes('المحرك القياسي المقترح'), w.document.getElementById('pnp_g0').style.display, w.document.getElementById('pnp_g1').style.display], [true, true, true, '', 'none']);
+set('pnp_m', '1'); w.calcResult('pumphead'); tt = txt(w, 'pnp_results');
+check('the NPSH page shows NPSHa, the margin with ✔ and the maximum lift', [tt.includes('NPSH المتاح'), tt.includes('✔'), tt.includes('أقصى رفع للسحب')], [true, true, true]);
+set('pnp_nr2', '12'); w.calcResult('pumphead'); tt = txt(w, 'pnp_results');
+check('a large NPSHr shows ✘ and the cavitation warning', [tt.includes('✘'), tt.includes('تكهف محتمل')], [true, true]);
+set('pnp_m', '2'); w.calcResult('pumphead'); tt = txt(w, 'pnp_results');
+check('the affinity page shows the operating point 20.00 L/s at 36.00 m and the trimming percentage', [tt.includes('نقطة التشغيل20.00 L/s'), tt.includes('36.00 m'), tt.includes('10.0 %')], [true, true, true]);
+check('other reference codes open pumphead too', others('pumphead', 'pnp_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
