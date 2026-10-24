@@ -3900,6 +3900,80 @@ set('eo_m', '3'); w.calcResult('egegress'); tt = txt(w, 'eo_results');
 check('the stairs page shows 6 ✔ marks and no ✘', [(tt.match(/✔/g) || []).length, tt.includes('✘')], [5, false]);
 check('other reference codes open egegress too', others('egegress', 'eo_results'), [true, true, true]);
 }
+// ---------- part 204: Egyptian code for water and sewer pipelines (`egnet`: Tables 1-2 to 1-7, 2-1 to 2-4; demand, peak flows, sewage flows, pipe fill and velocity, friction losses) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const en = o => J('enCalc(' + JSON.stringify(o) + ')');
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+check('Table 1-2: four uses (180 / 150 / 125 / 280 l/c/d with losses 20 - 40, 15 - 30, 10 - 25, 0 - 20); Table 1-4: three building types 50 - 150, 500 - 1000, 180 - 500; Table 1-7: six surface classes', [J('EN_U').map(x => x.slice(1)), J('EN_B').map(x => x.slice(2)), J('EN_C').map(x => x.slice(1))], [[[180, 20, 40], [150, 15, 30], [125, 10, 25], [280, 0, 20]], [[50, 150], [500, 1000], [180, 500]], [[0.7, 0.95], [0.1, 0.2], [0.3, 0.5], [0.5, 0.7], [0.55, 0.65], [0.6, 0.8]]]);
+check('Table 2-1: nine pipe kinds, concrete ks 0.06 / 0.15 / 0.3, asbestos cement 0.015 / 0.03, GRP 0.003 / 0.03, vitrified clay 0.6; Table 2-2: 16 temperatures with 1.007 at 20 C and 0.366 at 80 C; Table 2-3: eight kinds, concrete 130 - 140, plastic 150 - 155', [J('EN_K').length, J('EN_K[4]').slice(1), J('EN_K[0]').slice(1), J('EN_K[2]').slice(1), J('EN_K[8]')[2], J('EN_V').length, J('EN_V.find(x => x[0] === 20)')[1], J('EN_V[15]')[1], J('EN_H').length, J('EN_H[4]').slice(1), J('EN_H[1]').slice(1)], [9, [0.06, 0.15, 0.3], [0.015, 0.03, null], [0.003, 0.03, null], 0.6, 16, 1.007, 0.366, 8, [130, 140], [150, 155]]);
+const pop = (m, P1, par, n) => J('enPop(' + [m, P1, JSON.stringify(par), n].join(',') + ')');
+check('population: arithmetic 50000 + 1000 x 30 = 80000; geometric 50000 e^(0.02 x 30) = 91106; decreasing 200000 - 150000 e^(-0.9) = 139015', [pop(0, 50000, [1000, 0, 0, 0], 30), pop(1, 50000, [0, 0.02, 0, 0], 30), pop(2, 50000, [0, 0, 200000, 0.03], 30)].map(x => Math.round(x)), [80000, 91106, 139015]);
+check('fire flow: 10000 -> 20, 10001 -> 25, 25000 -> 25, 50000 -> 30, 100000 -> 40, 100001 -> 50', [10000, 10001, 25000, 50000, 100000, 100001].map(p => J('enFire(' + p + ')')), [20, 25, 25, 30, 40, 50]);
+const pk = (p, r) => J('enPeak(' + p + ',' + r + ')');
+check('peak factor urban: 50000 -> 2.25, 50001 -> 2, 100001 -> 1.8, 500000 -> 1.8, 500001 -> 1.4 - 1.6, 1000001 -> 1.2 - 1.4; rural: 50000 -> 2, 100000 -> 1.8, 500000 -> 1.6, 500001 -> none', [pk(50000, false).lo, pk(50001, false).lo, pk(100001, false).lo, pk(500000, false).lo, pk(500001, false).lo + '-' + pk(500001, false).hi, pk(1000001, false).lo + '-' + pk(1000001, false).hi, pk(50000, true).lo, pk(100000, true).lo, pk(500000, true).lo, pk(500001, true).ok], [2.25, 2, 1.8, 1.8, '1.4-1.6', '1.2-1.4', 2, 1.8, 1.6, false]);
+const m0 = o => en(Object.assign({mode: 0, use: 0, m: 0, P1: 50000, n: 30, par: [1000, 0.02, 200000, 0.03], meters: false, useInc: false, r: 0, loss: 30, fm: 1.4, fd: 1.8, fh: 2.5, rural: false, ind: 0}, o));
+{
+  const r = m0({});
+  check('capital city 50000 growing to 80000: consumption 180 + loss 30 = 210 l/c/d, Qav = 80000 x 210 / 86400 = 194.44 l/s; max month 1.4 x 180 + 30 = 282, max day 354, max hour 480 l/c/d -> 261.11, 327.78, 444.44 l/s', [r.Pn, r.total, +r.qav.toFixed(2), r.pm, r.pd, r.ph, +r.Qm.toFixed(2), +r.Qd.toFixed(2), +r.Qh.toFixed(2)], [80000, 210, 194.44, 282, 354, 480, 261.11, 327.78, 444.44]);
+  check('the worked example of the code: new city 280 + loss 20: 1.4 x 280 + 20 = 412, 1.8 x 280 + 20 = 524, 2.5 x 280 + 20 = 720', [m0({use: 3, loss: 20}).pm, m0({use: 3, loss: 20}).pd, m0({use: 3, loss: 20}).ph], [412, 524, 720]);
+  check('design flows: fire 40 l/s and P = 2 at 80000; tree Qdes = 194.44 x 2 = 388.89; grid: transmission 327.78 + 40 = 367.78; mains max(367.78, 444.44) = 444.44; minor 40; services 444.44', [r.fire, r.peak.lo, +r.treeHi.toFixed(2), +r.g1.toFixed(2), +r.g2.toFixed(2), r.g3, +r.g4.toFixed(2)], [40, 2, 388.89, 367.78, 444.44, 40, 444.44]);
+  check('consumption growth: (80000 / 50000)^0.125 - 1 = 6.05 % without meters, ^0.11 = 5.31 % with meters; population growth 1 % over 30 years = 34.78 %; applying it raises 180 to 190.89', [+r.pcInc.toFixed(2), +m0({meters: true}).pcInc.toFixed(2), +m0({r: 1}).rInc.toFixed(2), +m0({useInc: true}).q.toFixed(2)], [6.05, 5.31, 34.78, 190.89]);
+  check('rural areas have no peak factor above 500000; industry: 10 ha in a new city = 30 l/s, in a village 25', [m0({P1: 600000, par: [0, 0, 0, 0], n: 0, rural: true}).peak.ok, m0({ind: 10, use: 3}).ind, m0({ind: 10, use: 2}).ind], [false, 30, 25]);
+}
+const m1 = o => en(Object.assign({mode: 1, pop: 50000, cons: 200, ratio: 0.85, len: 1000, dmm: 300, h: 2, alpha: 10, infm: 0, fb: 24, L: 300, te: 3, C: 0.6, A: 5}, o));
+{
+  const r = m1({});
+  check('sewage: Qav = 50000 x 200 x 0.85 / 86400 = 98.38 l/s; minimum 0.2 x 50^(1/6) = 0.3838 -> 37.77; maximum 1 + 14 / (4 + 7.071) = 2.2645 -> 222.79 and 5 / 50^0.167 = 2.6017 -> 255.95; the larger governs', [+r.qav.toFixed(2), +r.qmin.toFixed(2), +r.f15.toFixed(2), +r.f16.toFixed(2), +r.qmax.toFixed(2)], [98.38, 37.77, 222.79, 255.95, 255.95]);
+  check('infiltration: 10 x 300 x 2^(2/3) = 4762 l/h per km = 1.3228 l/s per 1000 m; the alternative takes the larger of 24 m3/d/km and 0.46 per cm of diameter: 300 mm -> 24 (0.2778 l/s), 600 mm -> 27.6 (0.3194 l/s)', [+r.infEq.toFixed(4), +m1({infm: 1}).inf.toFixed(4), +m1({infm: 1, dmm: 600}).inf.toFixed(4)], [1.3228, 0.2778, 0.3194]);
+  check('rain: tc = 300 / 45 + 3 = 9.67 min is below 10, so i uses 10 min: 750 / 20 = 37.5 mm/h; Qrain = 0.6 x 37.5 x 5 x 2.7778 = 312.5 l/s; L = 450 -> tc 13 -> i = 750 / 23 = 32.61; L = 900 -> tc 23 -> i = 1000 / 43 = 23.26', [+r.tc.toFixed(2), r.tcEff, r.i, +r.rain.toFixed(2), +m1({L: 450}).i.toFixed(2), +m1({L: 900}).i.toFixed(2), r.rainOk, m1({L: 450}).rainOk], [9.67, 10, 37.5, 312.5, 32.61, 23.26, false, true]);
+  check('design flows: max dry + infiltration 255.95 + 1.32 = 257.27; with rain 569.77; minimum dry 37.77', [+r.des[0].toFixed(2), +r.des[1].toFixed(2), +r.des[2].toFixed(2)], [257.27, 569.77, 37.77]);
+}
+const geo = y => J('enGeo(' + y + ')');
+check('circular section: full a = pi / 4 and r = 1 / 4; half depth gives half the area and the same radius; y = 0 gives zero', [+geo(1).a.toFixed(5), geo(1).r, +geo(0.5).a.toFixed(5), +geo(0.5).r.toFixed(5), geo(0).a], [0.7854, 0.25, 0.3927, 0.25, 0]);
+check('depth from flow ratio: 0.5 -> half depth; 0 -> 0; 1 -> 0.8 of the diameter (0.82 within 0.01); above the maximum (1.08) there is no solution', [+J('enDepth(0.5)').toFixed(5), J('enDepth(0)'), Math.abs(J('enDepth(1)') - 0.82) < 0.01, J('enDepth(1.08)')], [0.5, 0, true, null]);
+check('Manning full flow: D 0.4 m, 3 per mille, n 0.013 -> 114.07 l/s at 0.9077 m/s; half-full pipe gives half of it with the same velocity', [+(J('enManning(0.4, 0.003, 0.013)') * 1000).toFixed(2), +J('enPartial(0.05703, 0.4, 0.003, 0.013)').v.toFixed(4), +(J('enManning(0.4, 0.003, 0.013)') / (Math.PI * 0.04)).toFixed(4)], [114.07, 0.9077, 0.9077], 1e-3);
+const lm = (s, b, c) => J('enLimits(' + [s, b, c].join(',') + ')');
+check('fill and velocity limits: separate small 2/3 and 0.75, separate big 3/4 and 1.0; combined small without rain 1/2 and 0.6, with rain 2/3 and 0.75; big combined 3/4 and 1.0; minimum dry flow 0.5 (small) and 0.6 (big)', [lm(0, false, 0), lm(0, true, 0), lm(1, false, 0), lm(1, false, 1), lm(1, true, 1), lm(0, false, 2), lm(1, true, 2)].map(x => [x.fill === null ? null : +x.fill.toFixed(4), x.vmin]), [[0.6667, 0.75], [0.75, 1], [0.5, 0.6], [0.6667, 0.75], [0.75, 1], [null, 0.5], [null, 0.6]]);
+const m2 = o => en(Object.assign({mode: 2, sys: 0, cs: 0, Q: 50, D: 400, S: 3, n: 0.013}, o));
+{
+  const r = m2({});
+  check('50 l/s in 400 mm at 3 per mille: q = 0.44 of the full flow, depth 0.46 D, velocity 0.88 m/s; passes 2/3 and 0.75; smallest pipe is 350 mm (depth 0.57 D); its minimum slope is about 2.0 per mille', [+r.pt.q.toFixed(2), +r.pt.y.toFixed(2), +r.pt.v.toFixed(2), r.okFill, r.okV, r.rec.d, +r.rec.y.toFixed(2), +r.sMin.toFixed(1)], [0.44, 0.46, 0.88, true, true, 350, 0.57, 2]);
+  check('a flat pipe fails the velocity (1 per mille: 0.54 m/s < 0.75); a 700 mm class is chosen above it; a flow above the capacity has no depth', [m2({S: 1}).okV, m2({S: 1, D: 700}).big, m2({Q: 300}).pt.y === null, m2({Q: 300}).okFill], [false, false, true, false]);
+  check('minimum dry flow: no fill limit and 0.5 m/s: 10 l/s in 400 mm at 3 per mille has v about 0.51 and passes; at 2 per mille it fails', [m2({cs: 2, Q: 10}).okFill, m2({cs: 2, Q: 10}).okV, m2({cs: 2, Q: 10, S: 2}).okV], [true, true, false]);
+  check('a large pipe (800 mm) follows the 3/4 rule with 1 m/s: 300 l/s in 800 mm at 3 per mille passes; the combined system with rain allows 2/3 only below 700 mm', [m2({Q: 300, D: 800}).lim.fill, m2({Q: 300, D: 800}).okFill, m2({sys: 1, cs: 1, Q: 200, D: 600}).lim.fill], [0.75, true, 2 / 3]);
+}
+const vis = T => J('enVisc(' + T + ')') * 1e6;
+check('viscosity: 20 C -> 1.007, 22.5 C -> 0.952 (linear), 2 C -> 1.521, 90 C -> 0.366, 80 C -> 0.366', [vis(20), vis(22.5), vis(2), vis(90), vis(80)].map(x => +x.toFixed(3)), [1.007, 0.952, 1.521, 0.366, 0.366]);
+const cb = J('enColebrook(0.00003, 0.2, 189658)');
+check('Colebrook: f for ks 0.03 mm, D 0.2 m, Re 189658 satisfies 1 / sqrt(f) = -2 log10(ks / 3.71 D + 2.51 / (Re sqrt(f))); laminar 64 / Re; zero Reynolds gives 0', [Math.abs(1 / Math.sqrt(cb) + 2 * Math.log10(0.00003 / (3.71 * 0.2) + 2.51 / (189658 * Math.sqrt(cb)))) < 1e-8, +cb.toFixed(4), J('enColebrook(0.00003, 0.2, 1000)'), J('enColebrook(0.00003, 0.2, 0)')], [true, 0.0169, 0.064, 0]);
+const m3 = o => en(Object.assign({mode: 3, Q: 30, D: 200, L: 1000, hw: 6, useHi: false, n: 0.013, T: 20, kk: 6, kc: 1}, o));
+{
+  const r = m3({});
+  check('30 l/s in 200 mm: V = 0.955 m/s; Hazen-Williams (C 140, equation 41) = 4.35 m and equals the SI form 10.67 L Q^1.852 / (C^1.852 D^4.871); Manning (n 0.013, equation 43) = 8.36 m; Darcy with ks 0.03 mm and f = 0.017 gives 3.93 m', [+r.V.toFixed(3), +r.hHW.toFixed(2), Math.abs(r.hHW / (10.67 * 1000 * Math.pow(0.03, 1.852) / (Math.pow(140, 1.852) * Math.pow(0.2, 4.871))) - 1) < 0.002, +r.hM.toFixed(2), +r.f.toFixed(3), +r.hD.toFixed(2)], [0.955, 4.35, true, 8.36, 0.017, 3.93]);
+  check('the upper C of a range is used on request: ductile iron 145 gives less loss than 140; plastic 155 less again; steel pipe has ks 0.03; vitrified clay normal ks 0.6; a blank entry (PVC good) gives no Darcy loss', [m3({useHi: true}).hHW < r.hHW, m3({hw: 1, useHi: true}).C, m3({kk: 7}).ks, m3({kk: 8}).ks, m3({kk: 1, kc: 0}).ks, m3({kk: 1, kc: 0}).hD === undefined], [true, 155, 0.03, 0.6, null, true]);
+  check('velocity ranges: 0.95 m/s fits only sewers (0.6 - 1.5); 1.2 m/s fits mains and force mains; 1.8 m/s only service pipes (1.5 - 2); boundaries 1.5 and 1.0 are included', [m3({}).vOk, m3({Q: 37.7}).vOk, m3({Q: 56.5}).vOk], [[false, false, true, false], [false, true, true, true], [true, false, false, false]]);
+  check('Reynolds regimes: 20 C and 0.955 m/s gives 189658 (turbulent); 5 l/s in 200 mm at 20 C has Re about 31600; tiny flow in a wide pipe is laminar (Re below 2000)', [Math.round(r.Re), Math.round(m3({Q: 5}).Re), m3({Q: 0.2, D: 300}).Re < 2000], [189658, 31610, true], 1);
+}
+const m4 = o => en(Object.assign({mode: 4, use: 0, bt: 0, lv: 0.5, cnt: 100}, o));
+check('Table 1-4: offices at the middle of the range 100 l x 100 persons = 10 m3/day = 0.1157 l/s; hospital 500 beds at the low end 250 m3/day, at the top end 500; hotel 180 - 500', [m4({}).qd, +m4({}).qs.toFixed(4), m4({bt: 1, lv: 0, cnt: 500}).qd, m4({bt: 1, lv: 1, cnt: 500}).qd, m4({bt: 2, lv: 0}).rate, m4({bt: 2, lv: 1}).rate], [10, 0.1157, 250, 500, 180, 500]);
+let tt;
+w.renderCalc('egnet'); w.calcResult('egnet');
+tt = txt(w, 'en_results');
+check('the default page shows 80000 persons, 194.44 l/s, 261.11 / 327.78 / 444.44 l/s, fire 40 l/s, P 2.00 and the 🔴 note; only the first group is visible', [tt.includes('80000'), tt.includes('194.44 L/s'), tt.includes('261.11 L/s'), tt.includes('327.78 L/s'), tt.includes('444.44 L/s'), tt.includes('40 L/s'), tt.includes('2.00'), tt.includes('🔴'), w.document.getElementById('en_g0').style.display, w.document.getElementById('en_g1').style.display], [true, true, true, true, true, true, true, true, '', 'none']);
+set('en_m', '1'); w.calcResult('egnet'); tt = txt(w, 'en_results');
+check('the sewage page shows 98.38, 37.77, 255.95, 312.50 l/s and the 10 minute note', [tt.includes('98.38 L/s'), tt.includes('37.77 L/s'), tt.includes('255.95 L/s'), tt.includes('312.50 L/s'), tt.includes('استُخدم 10.0')], [true, true, true, true, true]);
+set('en_m', '2'); w.calcResult('egnet'); tt = txt(w, 'en_results');
+check('the pipe-check page shows 114.1 l/s, 350 mm, 2.02 per mille and two ✔ marks without ✘', [tt.includes('114.1 L/s'), tt.includes('350 mm'), tt.includes('2.02'), (tt.match(/✔/g) || []).length >= 2, tt.includes('✘')], [true, true, true, true, false]);
+set('en_m', '3'); w.calcResult('egnet'); tt = txt(w, 'en_results');
+check('the losses page shows 4.35 m, 8.36 m, 3.93 m, Reynolds 189658 and the turbulent regime', [tt.includes('4.35 m'), tt.includes('8.36 m'), tt.includes('3.93 m'), tt.includes('189658'), tt.includes('مضطرب')], [true, true, true, true, true]);
+set('en_hk', '1'); set('en_hs', '0'); w.calcResult('egnet'); tt = txt(w, 'en_results');
+check('a blank ks entry says it is not available', [tt.includes('غير متاح')], [true]);
+set('en_m', '4'); w.calcResult('egnet'); tt = txt(w, 'en_results');
+check('the public buildings page shows 100 l, 10 m3/day and 0.12 l/s', [tt.includes('100 L/فرد/يوم'), tt.includes('10.0 m³/يوم'), tt.includes('0.12 L/s')], [true, true, true]);
+check('other reference codes open egnet too', others('egnet', 'en_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);

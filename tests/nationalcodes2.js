@@ -747,7 +747,7 @@ setv(w, 'sp_dw', 3); w.calcResult('septic');
 const spText = doc.getElementById('sp_results').textContent;
 check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
 w = boot('intl'); w.renderCalc('septic');
-check('the septic calculator is available with every code and the plumbing screen counts 27 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('33 حاسبة متاحة')], [true, true]);
+check('the septic calculator is available with every code and the plumbing screen counts 27 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('34 حاسبة متاحة')], [true, true]);
 
 // ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
