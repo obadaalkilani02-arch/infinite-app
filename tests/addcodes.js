@@ -3688,6 +3688,218 @@ set('tq_m', '3'); set('tq_dp', '500'); w.calcResult('dbctele'); tt = txt(w, 'tq_
 check('the pathway page shows ✘ for a 500 mm burial depth and the BEP tray', [tt.includes('✘'), tt.includes('300 × 100 mm HDRF')], [true, true]);
 check('other reference codes open dbctele too', others('dbctele', 'tq_results'), [true, true, true]);
 }
+// ---------- part 201: Arab Unified Elevator Code (Egyptian code 2009), electric lifts (`egelev`: Tables 8/1/1, 8/2/1, 9/1, D/4/2/1, Annex C; clearances, machine room, governor and buffers, traction) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const ey = o => J('eyCalc(' + JSON.stringify(o) + ')');
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+check('Table 8/1/1: 28 rows from 100 kg (0.37 m2) to 2500 kg (5.00 m2); checksum of the areas 61.79; Table 8/2/1: 20 areas 0.28 - 3.13, sum 35.39', [J('EY_Q').length, J('EY_Q')[0], J('EY_Q')[27], +J('EY_Q').reduce((s, x) => s + x[1], 0).toFixed(2), J('EY_P').length, J('EY_P')[0], J('EY_P')[19], +J('EY_P').reduce((s, x) => s + x, 0).toFixed(2)], [28, [100, 0.37], [2500, 5], 61.79, 20, 0.28, 3.13, 35.39]);
+const am = q => J('eyAreaMax(' + q + ')'), an = n => J('eyAreaMin(' + n + ')');
+check('maximum car area: 630 kg 1.66, 1000 kg 2.40, 100 kg 0.37, 2500 kg 5.00, 3000 kg = 5 + 0.16 x 5 = 5.80; between two rows the lower row governs (700 kg -> 1.75 of 675)', [630, 1000, 100, 2500, 3000, 700].map(am), [1.66, 2.4, 0.37, 5, 5.8, 1.75], 1e-9);
+check('minimum area for passengers: 1 -> 0.28, 8 -> 1.45, 20 -> 3.13, 21 -> 3.245, 30 -> 4.28, 0 -> 0', [1, 8, 20, 21, 30, 0].map(an), [0.28, 1.45, 3.13, 3.245, 4.28, 0], 1e-9);
+const m0 = o => ey(Object.assign({mode: 0, Q: 630, use: 0, cw: 1100, cd: 1400, ch: 2200, dw: 800, dh: 2000, ct: 1000, cf: 400}, o));
+{
+  const r = m0({});
+  check('630 kg lift 1100 x 1400: 8 passengers (630 / 75 = 8.4), area 1.54 between 1.45 and 1.66, heights 2000 and above pass', [r.n, +r.area.toFixed(2), r.okMax, r.okMin, r.okH, r.okEH], [8, 1.54, true, true, true, true]);
+  check('too large a car for the load (1200 x 1500 = 1.80 > 1.66) fails the maximum; too small (1000 x 1300 = 1.30 < 1.45) fails the minimum; heights 1999 mm fail', [m0({cw: 1200, cd: 1500}).okMax, m0({cw: 1000, cd: 1300}).okMin, m0({ch: 1999}).okH, m0({dh: 1999}).okEH], [false, false, false, false]);
+  check('1000 kg: 13 passengers, area limits 2.15 - 2.40; 1600 x 1400 = 2.24 passes; 2000 kg: 26 passengers, 4.20 maximum', [m0({Q: 1000, cw: 1600}).n, +m0({Q: 1000, cw: 1600}).minArea.toFixed(2), +m0({Q: 1000, cw: 1600}).maxArea.toFixed(2), m0({Q: 1000, cw: 1600}).okMax && m0({Q: 1000, cw: 1600}).okMin, m0({Q: 2000}).n, m0({Q: 2000}).maxArea], [13, 2.15, 2.4, true, 26, 4.2]);
+  check('accessible lift: door 800 passes (799 fails); car 1100 x 1400 passes (1099 or 1399 fails); control 900 - 1200 mm and 400 mm from the wall (899, 1201, 399 fail)', [m0({dw: 800}).okAccDoor, m0({dw: 799}).okAccDoor, m0({}).okAccCar, m0({cw: 1099}).okAccCar, m0({cd: 1399}).okAccCar, m0({ct: 900}).okAccCtl, m0({ct: 1200}).okAccCtl, m0({ct: 899}).okAccCtl, m0({ct: 1201}).okAccCtl, m0({cf: 399}).okAccCtl], [true, false, true, false, false, true, true, false, false, false]);
+  check('fire lift: car 1100 x 2100 (2099 fails), rated load 1000 kg (999 fails), door 800 mm', [m0({Q: 1000, cd: 2100}).okFireCar, m0({cd: 2099}).okFireCar, m0({Q: 1000}).okFireLoad, m0({Q: 999}).okFireLoad, m0({dw: 800}).okFireDoor, m0({dw: 799}).okFireDoor], [true, false, true, false, true, false]);
+}
+const m1 = o => ey(Object.assign({mode: 1, v: 1.6, reduced: false, c: [0.25, 1.3, 0.5, 0.3, 0.3], pd: 1.7, pb: 0.6, pa: 0.2, fd: 0.6, fh: 2.5}, o));
+{
+  const r = m1({});
+  check('clearances at 1.6 m/s: 0.035 v2 = 0.0896; required 0.1896, 1.0896, 0.3896, 0.1896, 0.1896 m', [+r.t.toFixed(4)].concat(r.req.map(x => +x.toFixed(4))), [0.0896, 0.1896, 1.0896, 0.3896, 0.1896, 0.1896]);
+  check('default values pass all five clearances; each fails just below its limit (0.18, 1.08, 0.38, 0.18, 0.18)', [r.ok.every(x => x), m1({c: [0.18, 1.3, 0.5, 0.3, 0.3]}).ok[0], m1({c: [0.25, 1.08, 0.5, 0.3, 0.3]}).ok[1], m1({c: [0.25, 1.3, 0.38, 0.3, 0.3]}).ok[2], m1({c: [0.25, 1.3, 0.5, 0.18, 0.3]}).ok[3], m1({c: [0.25, 1.3, 0.5, 0.3, 0.18]}).ok[4]], [true, false, false, false, false, false]);
+  check('half value 0.0175 v2 for speeds up to 4 m/s: 0.0448 at 1.6; not allowed at 4.5 m/s', [+m1({reduced: true}).t.toFixed(4), m1({reduced: true, v: 4}).redOk, m1({reduced: true, v: 4.5}).redOk, m1({reduced: false, v: 4.5}).redOk], [0.0448, true, false, true]);
+  check('pit: 0.5 m to the lowest car part (0.49 fails), 0.15 m to the apron (0.14 fails); pit door when deeper than 2.5 m (2.5 no, 2.51 yes)', [m1({pb: 0.5}).okPitB, m1({pb: 0.49}).okPitB, m1({pa: 0.15}).okPitA, m1({pa: 0.14}).okPitA, m1({pd: 2.5}).pitDoor, m1({pd: 2.51}).pitDoor], [true, false, true, false, false, true]);
+  check('fence height by horizontal distance: 0.5 m -> 2.5; 1.25 m -> 1.8; 2 m and more -> 1.1; below 0.5 m not allowed', [0.5, 1.25, 2, 3].map(d => +m1({fd: d}).hreq.toFixed(4)).concat([m1({fd: 0.4, fh: 3}).okFence, m1({fd: 1.25, fh: 1.8}).okFence, m1({fd: 1.25, fh: 1.79}).okFence]), [2.5, 1.8, 1.1, 1.1, false, true, false]);
+}
+const m2 = o => ey(Object.assign({mode: 2, fw: 0.5, fl: 0.6, ps: 0.5, rh: 2.2, hr: 0.3, dl: 0, t0: 10, t1: 35, lx: 200, dw: 0.7, dh: 2, hw: 0.8, hh: 0.8, nz: 55, sl: 70, lh: 1.2}, o));
+{
+  const r = m2({});
+  check('machine room: defaults pass; free area 0.5 x 0.6 (0.49 or 0.59 fail); passage 0.5; height 2 m (1.99 fails); headroom 0.3 (0.29 fails)', [Object.values(r).filter(x => typeof x === 'boolean' && x === false).length, m2({fw: 0.49}).okFree, m2({fl: 0.59}).okFree, m2({ps: 0.49}).okPass, m2({rh: 2}).okH, m2({rh: 1.99}).okH, m2({hr: 0.29}).okHead], [1, false, false, false, true, false, false]);
+  check('level difference above 0.5 m needs steps (0.5 no, 0.51 yes); temperature 5 - 40 (4 or 41 fail); 200 lux (199 fails); door 0.6 x 2 (0.59 fails, 1.99 fails); hatch 0.8 x 0.8 (0.79 fails)', [m2({dl: 0.5}).needSteps, m2({dl: 0.51}).needSteps, m2({t0: 5, t1: 40}).okTemp, m2({t0: 4}).okTemp, m2({t1: 41}).okTemp, m2({lx: 199}).okLux, m2({dw: 0.6}).okDoor, m2({dw: 0.59}).okDoor, m2({dh: 1.99}).okDoor, m2({hw: 0.79}).okHatch], [false, true, true, false, false, false, true, false, false, false]);
+  check('noise 60 dB passes (61 fails); ladder 65 - 75 degrees (64, 76 fail) and 1.5 m (1.51 fails)', [m2({nz: 60}).okNoise, m2({nz: 61}).okNoise, m2({sl: 65}).okSlope, m2({sl: 75}).okSlope, m2({sl: 64}).okSlope, m2({sl: 76}).okSlope, m2({lh: 1.5}).okLadder, m2({lh: 1.51}).okLadder], [true, false, true, true, false, false, true, false]);
+}
+const m3 = o => ey(Object.assign({mode: 3, v: 1.6, gt: 3, trip: 2, bt: 2, bs: 200, vi: 1.1}, o));
+{
+  check('Table 9/1 rows as printed: 1 + 3 + 1 + 6 rows', J('EY_G91').map(x => x.length), [1, 3, 1, 6]);
+  check('governor limits: minimum 115 % (1.84 at 1.6 m/s); progressive 1.6 m/s -> table 2.15 (formula 2.156); progressive 1.4 m/s -> 1.25 x 1.4 + 0.25 / 1.4 = 1.9286; 1.0 m/s progressive -> 1.5', [+m3({}).min.toFixed(3), m3({}).max, +m3({v: 1.4}).max.toFixed(4), m3({v: 1}).max], [1.84, 2.15, 1.9286, 1.5]);
+  check('instantaneous types: 0.8 m/s (type 0), captive roller 1.0 or the table row 0.85 at 0.70 m/s, buffered 1.5; the trip speed must lie between 115 % and the maximum (2.15 passes, 2.16 fails, 1.83 fails)', [m3({v: 0.63, gt: 0}).textMax, m3({v: 0.7, gt: 1}).max, m3({v: 0.63, gt: 1}).max, m3({v: 1, gt: 2}).max, m3({trip: 2.15}).okTrip, m3({trip: 2.16}).okTrip, m3({trip: 1.83}).okTrip], [0.8, 0.85, 0.8, 1.5, true, false, false]);
+  check('gear type by rated speed: instantaneous up to 0.63 m/s, buffered between 0.63 and 1 m/s, progressive for anything; counterweight governor up to 10 % higher (2.15 -> 2.365)', [m3({v: 0.63, gt: 0}).allowed, m3({v: 0.7, gt: 0}).allowed, m3({v: 0.7, gt: 2}).allowed, m3({v: 1, gt: 2}).allowed, m3({v: 1.2, gt: 2}).allowed, m3({v: 2.5, gt: 3}).allowed, +m3({}).cwMax.toFixed(3)], [true, false, true, true, false, true, 2.365]);
+  check('buffer stroke: accumulation 0.135 v2 (65 mm minimum): 1 m/s -> 0.135, 0.4 m/s -> 0.065; dissipating 0.067 v2: 2.5 m/s -> 0.41875, 1.6 m/s -> 0.17152', [m3({bt: 0, v: 1}).s, m3({bt: 0, v: 0.4}).s, m3({bt: 2, v: 2.5}).s, +m3({bt: 2}).s.toFixed(5)], [0.135, 0.065, 0.41875, 0.17152], 1e-9);
+  check('reduced stroke with monitoring: 0.42 m governs up to 4 m/s, 0.54 m above; at 5 m/s with vi = 3: max(0.603, 0.8375, 0.54) = 0.8375', [m3({bt: 3, v: 3, vi: 1.5}).s, m3({bt: 3, v: 2}).s, +m3({bt: 3, v: 5, vi: 3}).s.toFixed(4), m3({bt: 3, v: 4.5, vi: 0.5}).s > 0.54], [0.42, 0.42, 0.8375, true]);
+  check('buffer type by speed: accumulation up to 1 m/s (1.2 fails), with buffered return up to 1.6 (1.7 fails), dissipating any; stroke 200 passes 0.17 but not 0.42', [m3({bt: 0, v: 1}).okBufV, m3({bt: 0, v: 1.2}).okBufV, m3({bt: 1, v: 1.6}).okBufV, m3({bt: 1, v: 1.7}).okBufV, m3({bt: 2, v: 5}).okBufV, m3({}).okStroke, m3({bt: 3, v: 3, bs: 200}).okStroke], [true, false, true, false, true, true, false]);
+}
+const m4 = o => ey(Object.assign({mode: 4, kind: 0, beta: 90, gamma: 30, al: 170, nr: 6, d: 10, D: 800, fb: 50, P: 1000, Q: 630, W: 1315, r: 1, v: 1.6, a: 0.5, ra: 0, rb: 0, cb: 0, cw: 0, cc: 0, ns: 0, nrv: 0, Dp: 400}, o));
+{
+  const R = Math.PI / 180;
+  check('Table D/4/2/1: V groove 35 -> 18.5, 40 -> 7.1, 45 -> 4.0; undercut 75 -> 2.5, 90 -> 5.0, 105 -> 15.2; 41 is not listed', [J('EY_NV').length, J('EY_NU').length, J('eyNeq(1, 40)'), J('eyNeq(1, 35)'), J('eyNeq(1, 45)'), J('eyNeq(0, 75)'), J('eyNeq(0, 90)'), J('eyNeq(0, 105)'), J('eyNeq(1, 41)')], [6, 7, 7.1, 18.5, 4, 2.5, 5, 15.2, null]);
+  const f = (k, b, g, mu, cs) => J('eyF(' + [k, b, g, mu, cs].join(',') + ')');
+  check('groove friction: undercut 90 / 30 degrees mu 0.1 -> 0.1892; V groove (no undercut) 0.1 x 4 / pi = 0.12732 for loading, mu / sin(20) = 0.58476 for the stuck case; hardened V mu 0.1 / sin(20) = 0.29238', [f(0, 90, 30, 0.1, 0), f(1, 0, 40, 0.1, 0), f(1, 0, 40, 0.2, 2), f(2, 0, 40, 0.1, 0)].map(x => +x.toFixed(5)), [0.1892, 0.12732, 0.58476, 0.29238]);
+  const r = m4({});
+  check('friction cases of the default lift: f 0.1892, 0.1631 (mu 0.1 / (1 + 0.16)), 0.37839; e^(f alpha) 1.753, 1.622, 3.073 at 170 degrees', [r.f[0], r.f[1], r.f[2], r.e[0], r.e[1], r.e[2]].map((x, i) => +x.toFixed(i < 3 ? 5 : 3)), [0.1892, 0.1631, 0.37839, 1.753, 1.622, 3.073]);
+  check('traction ratios: loading (1000 + 787.5) / 1315 = 1.3593; emergency stop loaded 1630 x 10.31 / (1315 x 9.31) = 1.3727; empty going up 1315 x 10.31 / (1000 x 9.31) = 1.4562; all pass; stuck infinite with no rope mass', [+r.load.ratio.toFixed(4), +r.stopD.ratio.toFixed(4), +r.stopU.ratio.toFixed(4), r.okLoad, r.okStop, r.okStuck, r.stuck.ratio === null || !isFinite(r.stuck.ratio)], [1.3593, 1.3727, 1.4562, true, true, true, true]);
+  check('a light counterweight fails loading (800 kg: 1787.5 / 800 = 2.234 > 1.753); with 5 kg of counterweight-side rope the stuck ratio is 1000 / 5 = 200 and passes, with 400 kg it is 2.5 and fails (needs 3.07)', [m4({W: 800}).okLoad, +m4({W: 800}).load.ratio.toFixed(3), m4({rb: 5}).okStuck, +m4({rb: 5}).stuck.ratio.toFixed(1), m4({rb: 400}).okStuck, +m4({rb: 400}).stuck.ratio.toFixed(2)], [false, 2.234, true, 200, false, 2.5]);
+  check('2:1 reeving halves the car-side forces but keeps the ratios (default stays 1.3593); rope mass adds to the sides', [+m4({r: 2}).load.ratio.toFixed(4), m4({r: 2}).load.T1 < m4({}).load.T1, +m4({ra: 100}).load.ratio.toFixed(4)], [1.3593, true, +((1787.5 * 9.81 + 100 * 9.81) / (1315 * 9.81)).toFixed(4)]);
+  check('specific pressure: T = 28890.45 N, 6 ropes of 10 mm on an 800 mm sheave, undercut 90 degrees: 28890.45 / 48000 x 9.9102 = 5.965 N/mm2 against (12.5 + 4 x 1.6) / 2.6 = 7.269', [+m4({}).p.toFixed(3), +m4({}).pMax.toFixed(3), m4({}).okP, m4({nr: 3}).okP], [5.965, 7.269, true, false]);
+  check('V groove 40 degrees: p factor 4.5 / sin(20) = 13.157', [+(m4({kind: 1, beta: 0, gamma: 40}).p / (28890.45 / 48000)).toFixed(3)], [13.157]);
+  check('equivalent bends: undercut 90 -> 5.0; no undercut -> 1; V 40 -> 7.1; other sheaves (800 / 400)^4 x (2 + 4 x 1) = 96 added', [m4({}).Neq, m4({beta: 0}).Neq, m4({kind: 1, beta: 0, gamma: 40}).Neq, m4({ns: 2, nrv: 1}).Np, m4({ns: 2, nrv: 1}).Neq, m4({kind: 1, beta: 0, gamma: 41}).nOk], [5, 1, 7.1, 96, 101, false]);
+  const Sf = (D, d, N) => Math.pow(10, 2.6834 - Math.log10(695.85e6 * N / Math.pow(D / d, 8.567)) / Math.log10(77.09 * Math.pow(D / d, -2.894)));
+  check('rope safety factor formula: Dt / dr = 40 and N = 11.2 -> 19.5; Dt / dr = 80 and N = 5 -> 6.5 (the minimum is 12); the calculator reproduces the formula', [+Sf(40, 1, 11.2).toFixed(1), +Sf(80, 1, 5).toFixed(1), +m4({}).Sreq.toFixed(3), m4({}).Sneed, +m4({D: 400, d: 10, kind: 1, beta: 0, gamma: 40}).Sreq.toFixed(3)], [19.5, 6.5, +Sf(80, 1, 5).toFixed(3), 12, +Sf(40, 1, 7.1).toFixed(3)], 0.06);
+  check('actual safety factor: 6 x 50 kN / (1630 x 9.81 N) = 18.76 passes 12; 4 ropes of 25 kN give 6.25 and fail; D / d = 40 passes, 39 fails; 3 ropes pass, 2 fail; 8 mm passes, 7 fails', [+m4({}).S.toFixed(2), m4({}).okS, m4({nr: 4, fb: 25}).okS, m4({D: 400}).okRatio, m4({D: 390}).okRatio, m4({nr: 3}).okN, m4({nr: 2}).okN, m4({d: 8}).okD, m4({d: 7}).okD], [18.76, true, false, true, false, true, false, true, false]);
+  check('groove angles: undercut beta up to 106 (107 fails), gamma 25 degrees or more (24 fails); V groove gamma 35 or more (34 fails)', [m4({beta: 105}).limB, m4({beta: 107}).limB, m4({gamma: 25}).limG, m4({gamma: 24}).limG, m4({kind: 1, gamma: 35}).limG, m4({kind: 1, gamma: 34}).limG], [true, false, true, false, true, false]);
+}
+const m5 = o => ey(Object.assign({mode: 5, tbl: 0, li: 0, vb: 0, sw: 1800, sd: 2100, pd: 1500, oh: 4000}, o));
+{
+  check('Table C/1/1: four loads; 630 kg car 1100 x 1400 x 2200, shaft 1800 x 2100, pit 1500 (v below 1) and 1700 (below 1.6), overhead 4000 and 4400; the 300 kg lift has no pit or overhead for 2.5 m/s', [J('EY_C1.loads'), J('EY_C1.cw[2]'), J('EY_C1.cd[2]'), J('EY_C1.sw[2]'), J('EY_C1.sd[2]'), m5({li: 2}).pit, m5({li: 2, vb: 1}).pit, m5({li: 2}).oh, m5({li: 2, vb: 1}).oh, m5({li: 0, vb: 2}).pit, m5({li: 0, vb: 2}).oh], [[300, 450, 630, 1000], 1100, 1400, 1800, 2100, 1500, 1700, 4000, 4400, null, null]);
+  check('Table C/1/1 machine room (v below 1): areas 7.5, 7.5, 10, 12 m2; 1000 kg: 2400 x 4200 x 2000; shaft check 1800 x 2100 passes for 630 kg, 1799 fails; pit 1500 passes, 1499 fails; 5400 mm overhead at 2.5 m/s', [J('EY_C1.mr[0].area'), m5({li: 3}).mrW, m5({li: 3}).mrD, m5({li: 3}).mrH, m5({li: 2}).okSw && m5({li: 2}).okSd, m5({li: 2, sw: 1799}).okSw, m5({li: 2}).okPit, m5({li: 2, pd: 1499}).okPit, m5({li: 2, vb: 2}).oh], [[7.5, 7.5, 10, 12], 2400, 4200, 2000, true, false, true, false, 5400]);
+  check('Table C/2/1: five loads; 1000 kg car 1600 x 1400 x 2300 with door 1100, shaft 2400 x 2300; 1600 kg car 1950 x 1750; pit 1500 / 1700 / 2800, 630 kg none at 2.5 m/s; machine room areas 15, 20, 22, 22, 25', [J('EY_C2.loads'), m5({tbl: 1, li: 2}).tbl.cw[2], m5({tbl: 1, li: 2}).tbl.ch[2], m5({tbl: 1, li: 2}).tbl.dw[2], m5({tbl: 1, li: 2}).tbl.sw[2], m5({tbl: 1, li: 2}).tbl.sd[2], m5({tbl: 1, li: 4}).tbl.cw[4], m5({tbl: 1, li: 4}).tbl.cd[4], m5({tbl: 1, li: 2, vb: 2}).pit, m5({tbl: 1, li: 0, vb: 2}).pit, J('EY_C2.mr[0].area')], [[630, 800, 1000, 1250, 1600], 1600, 2300, 1100, 2400, 2300, 1950, 1750, 2800, null, [15, 20, 22, 22, 25]]);
+  check('Table C/3/1: 15 rows; 8 passengers 640 kg 1100 x 1400 = 1.54 m2 (shaft 1600 x 1800); the car area equals width x depth for every row (within the printed rounding)', [J('EY_C3').length, J('EY_C3[2]'), J('EY_C3').every(x => Math.abs(x[3] * x[4] / 1e6 - x[5]) < 0.11)], [15, [0, 8, 640, 1100, 1400, 1.54, 1600, 1800], true]);
+}
+let tt;
+w.renderCalc('egelev'); w.calcResult('egelev');
+tt = txt(w, 'ey_results');
+check('the default page (630 kg) shows 1.66 m2, 8 passengers, 1.45 m2 minimum, the ✔ marks and no ✘; only the first group is visible', [tt.includes('1.66 m²'), tt.includes('8'), tt.includes('1.45 m²'), (tt.match(/✔/g) || []).length, tt.includes('✘'), w.document.getElementById('ey_g0').style.display, w.document.getElementById('ey_g1').style.display], [true, true, true, 4, false, '', 'none']);
+set('ey_us', '1'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('the accessible lift adds the door, car and control checks (800 mm, 1100 x 1400, 900 - 1200 mm) and the handrail', [tt.includes('800 mm على الأقل'), tt.includes('1100 mm عرضًا و1400 mm'), tt.includes('بين 900 و1200 mm'), tt.includes('درابزين')], [true, true, true, true]);
+set('ey_us', '2'); set('ey_cd', '2100'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('the fire lift adds the 1100 x 2100 car, the 1000 kg load and the 70 degree rating; a 630 kg load fails', [tt.includes('1100 mm عرضًا و2100 mm'), tt.includes('1000 kg على الأقل'), tt.includes('70 °C'), tt.includes('✘')], [true, true, true, true]);
+set('ey_m', '1'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('the clearance page shows 0.190, 1.090, 0.390 m, the pit rules, the fence height 2.41 m and the 🔴 note; the group is switched', [tt.includes('0.190 m'), tt.includes('1.090 m'), tt.includes('0.390 m'), tt.includes('2.41 m'), tt.includes('🔴'), w.document.getElementById('ey_g1').style.display, w.document.getElementById('ey_g0').style.display], [true, true, true, true, true, '', 'none']);
+set('ey_m', '2'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('the machine-room page shows the 10 checks marked ✔ and no ✘ for defaults', [(tt.match(/✔/g) || []).length, tt.includes('✘')], [10, false]);
+set('ey_m', '3'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('the governor page shows 1.84 and 2.15 m/s, the 0.172 m stroke and the ✔ marks', [tt.includes('1.84 m/s'), tt.includes('2.15 m/s'), tt.includes('0.172 m'), tt.includes('✘')], [true, true, true, false]);
+set('ey_m', '4'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('the traction page shows f 0.189, e^(f alpha) 1.75, the ratio 1.359, p 5.96 and the safety factor 18.8, with no ✘', [tt.includes('0.189'), tt.includes('1.75'), tt.includes('1.359'), tt.includes('5.96 N/mm²'), tt.includes('18.8'), tt.includes('✘')], [true, true, true, true, true, false]);
+set('ey_tk', '1'); set('ey_tb', '0'); set('ey_tc', '41'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('a V groove of 41 degrees is outside Table D/4/2/1 and the page says so', [tt.includes('خارج الجدول'), tt.includes('✘')], [true, true]);
+set('ey_m', '5'); set('ey_cs', '15'); w.calcResult('egelev'); tt = txt(w, 'ey_results');
+check('Annex C page for the 300 kg residential lift: 1000 x 900 x 2200 car, door 700, shaft 1600 x 1600, pit 1200, overhead 4000 and the 🔴 note', [tt.includes('1000 × 900 × 2200 mm'), tt.includes('700 × 2000 mm'), tt.includes('1600 × 1600 mm'), tt.includes('1200 mm'), tt.includes('4000 mm'), tt.includes('🔴')], [true, true, true, true, true, true]);
+check('other reference codes open egelev too', others('egelev', 'ey_results'), [true, true, true]);
+}
+// ---------- part 202: Egyptian sanitary installations code (2002) (`egsan`: Tables 2-1, 3-5, 3-6, 4-1, 4-2, 4-4, 4-5) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const ez = o => J('ezCalc(' + JSON.stringify(o) + ')');
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+check('Table 2-1: 14 population types and 3 per-unit types; the first has steps 50 -> 1 and 300 -> 2 with a fixture per 300 persons; the employee type has 15 -> 1, 40 -> 2, 75 -> 3 and one per 40 persons', [J('EZ_O').length, J('EZ_U').length, J('EZ_O[0][1]'), J('EZ_O[0][2]'), J('EZ_O[8][1]'), J('EZ_O[8][2]')], [14, 3, [[50, 1], [300, 2]], 300, [[15, 1], [40, 2], [75, 3]], 40]);
+const N = (t, p) => J('ezN(EZ_O[' + t + '], ' + p + ')');
+check('assembly (1a): 50 -> 1, 51 -> 2, 300 -> 2, 301 -> 3, 600 -> 3, 601 -> 4', [50, 51, 300, 301, 600, 601].map(p => N(0, p)), [1, 2, 2, 3, 3, 4]);
+check('assembly with food (1b): 100 -> 2, 101 -> 3, 200 -> 3, 201 -> 4, 400 -> 4, 401 -> 5, 700 -> 5, 701 -> 6; restaurants (1c): 50 -> 2, 200 -> 4, 201 -> 5, 400 -> 5, 401 -> 6', [100, 101, 200, 201, 400, 401, 700, 701].map(p => N(1, p)).concat([50, 200, 201, 400, 401].map(p => N(2, p))), [2, 3, 3, 4, 4, 5, 5, 6, 2, 4, 5, 5, 6]);
+check('clubs (1d): 40 -> 1, 41 -> 2, 150 -> 4; schools: kindergarten 15 -> 1, 16 -> 2; primary 25 -> 1, 26 -> 2, 100 -> 4; secondary 30 -> 1, 31 -> 2, 90 -> 3', [40, 41, 150].map(p => N(3, p)).concat([15, 16].map(p => N(4, p)), [25, 26, 100].map(p => N(5, p)), [30, 31, 90].map(p => N(6, p))), [1, 2, 4, 1, 2, 1, 2, 4, 1, 2, 3]);
+check('workplaces (2): 10 -> 1, 11 -> 2, 25 -> 2, 26 -> 3, 50 -> 3, 75 -> 4, 76 -> 5, 100 -> 5, 101 -> 6, 150 -> 6, 151 -> 7; employees (3): 15 -> 1, 16 -> 2, 40 -> 2, 41 -> 3, 75 -> 3, 76 -> 4, 115 -> 4, 116 -> 5', [10, 11, 25, 26, 50, 75, 76, 100, 101, 150, 151].map(p => N(7, p)).concat([15, 16, 40, 41, 75, 76, 115, 116].map(p => N(8, p))), [1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 1, 2, 2, 3, 3, 4, 4, 5]);
+check('commercial centres (4): 50 -> 1, 51 -> 2, 301 -> 3; dormitories: 20 -> 2, 21 -> 3, 40 -> 3, 41 -> 4; hospitals 8 -> 1, 9 -> 2; prisons: 4 -> 1, 5 -> 2; 8 -> 1, 9 -> 2; zero persons -> 0', [50, 51, 301].map(p => N(9, p)).concat([20, 21, 40, 41].map(p => N(10, p)), [8, 9].map(p => N(11, p)), [4, 5].map(p => N(12, p)), [8, 9].map(p => N(13, p)), [N(8, 0)]), [1, 2, 3, 2, 3, 3, 4, 1, 2, 1, 2, 1, 2, 0]);
+const sh = (r, p, e) => J('ezShower(' + r + ', ' + p + ', ' + (e || 0) + ')');
+check('showers: clubs 15 -> 1, 16 -> 2, 150 -> 10, 151 -> 11, 180 -> 11, 181 -> 12; exposed workers 31 -> 3; dormitory 20 -> 2, 21 -> 3, 41 -> 4; hospital 21 -> 2; prison 7 -> 2 (short term), 16 -> 2 (long term)', [sh(1, 15), sh(1, 16), sh(1, 150), sh(1, 151), sh(1, 180), sh(1, 181), sh(2, 100, 31), sh(3, 20), sh(3, 21), sh(3, 41), sh(4, 21), sh(5, 7), sh(6, 16), sh(0, 50)], [1, 2, 10, 11, 11, 12, 3, 2, 3, 4, 2, 2, 2, 0]);
+const m0 = o => ez(Object.assign({mode: 0, type: 8, P: 120, mixed: false, units: 10, exposed: 0}, o));
+{
+  const r = m0({});
+  check('120 employees: 5 WC / urinals, 3 basins (0.5 x 5 rounded up), 2 fountains, 2 urinals at most; mixed use: 72 persons for each sex -> 3 + ceil(0 / ...) = 4 each, total 8', [r.wc, r.basin, r.df, r.urMax, m0({mixed: true}).per, m0({mixed: true}).wc, m0({mixed: true}).wcTotal], [5, 3, 2, 2, 72, 3, 6]);
+  check('prisons use as many basins as WC; clubs 1d at 100 persons: 3 WC, 2 basins, 2 fountains (1 per 75, rounded up), 7 showers; schools 1e-2 at 100 pupils: 4 WC, 2 basins, 3 fountains', [m0({type: 12, P: 40}).basin === m0({type: 12, P: 40}).wc, m0({type: 3, P: 100}).wc, m0({type: 3, P: 100}).basin, m0({type: 3, P: 100}).df, m0({type: 3, P: 100}).sh, m0({type: 5, P: 100}).wc, m0({type: 5, P: 100}).basin, m0({type: 5, P: 100}).df], [true, 3, 2, 2, 7, 4, 2, 3]);
+  check('one person gets one fountain at least; no persons -> nothing; hospitals have no fountain rule', [m0({P: 1}).df, m0({P: 0}).wc, m0({P: 0}).df, m0({type: 11, P: 20}).df], [1, 0, 0, 0]);
+  check('per-unit types: a single-room dwelling x 10 -> 10 WC, 10 basins, 10 baths, 10 kitchen sinks; a hotel x 50 -> 50 / 50 and a cleaning sink; a private hospital room x 4 -> 4, 4, 4', [m0({type: 14}).wc, m0({type: 14}).basin, m0({type: 14}).bath, m0({type: 14}).sink, m0({type: 15, units: 50}).wc, m0({type: 15, units: 50}).clean, m0({type: 16, units: 4}).bath], [10, 10, 10, 10, 50, 1, 4]);
+}
+check('Table 3-5: 20 rows; every total is at most cold + hot and at least the larger of the two; the flush-valve rows are 2, 4, 6 and 7 (indices 1, 3, 5, 6)', [J('EZ_W').length, J('EZ_W').every(x => x[3] <= x[1] + x[2] + 1e-9 && x[3] >= Math.max(x[1], x[2]) - 1e-9), J('EZ_W').map((x, i) => x[4] ? i : -1).filter(i => i >= 0)], [20, true, [1, 3, 5, 6]]);
+check('Table 3-6: 61 rows, units strictly increasing, flows non-decreasing for both columns; the valve column starts at 5 units; 1000 units gives 476 for both; 100 units 88 and 272', [J('EZ_F').length, J('EZ_F').every((x, i, a) => i === 0 || (x[0] > a[i - 1][0] && x[1] >= a[i - 1][1] && (x[2] === null || a[i - 1][2] === null || x[2] >= a[i - 1][2]))), J('EZ_F').filter(x => x[2] === null).map(x => x[0]), J('EZ_F').find(x => x[0] === 1000).slice(1), J('EZ_F').find(x => x[0] === 100).slice(1)], [61, true, [1, 2, 3, 4], [476, 476], [88, 272]]);
+const fl = (u, v) => J('ezFlow(' + u + ', ' + v + ')');
+check('flows: exact rows 10 units -> 46 (tank) and 132 (valve); 11 units -> 46.5 and 136.5 (linear between 10 and 12); 125 units -> 100 and 289; 0.5 unit -> 1.9 with flush tanks; 4 units with valves is outside the table; 1001 units is outside', [fl(10, false).q, fl(10, true).q, fl(11, false).q, fl(11, true).q, fl(125, false).q, fl(125, true).q, fl(0.5, false).q, fl(4, true).ok, fl(4, true).why, fl(1001, false).ok, fl(1000, true).q, fl(0, true).q], [46, 132, 46.5, 136.5, 100, 289, 1.9, false, 'valve', false, 476, 0]);
+const pp = (q, v) => J('ezPipe(' + q + ', ' + v + ')');
+check('pipe by velocity: 47 L/min at 1.2 m/s needs 28.8 mm -> 1.25 in (1 in has 26.97 mm); real velocity 0.83 m/s; 600 L/min at 2.4 m/s needs 72.8 mm -> 3 in; 3000 L/min at 1.2 m/s exceeds 4 in', [+pp(47, 1.2).D.toFixed(1), pp(47, 1.2).pick[0], +pp(47, 1.2).v.toFixed(2), pp(600, 2.4).pick[0], pp(3000, 1.2).pick], [28.8, 1.25, 0.83, 3, null]);
+const m1 = o => ez(Object.assign({mode: 1, n: new Array(20).fill(0), sys: 0, vi: 0}, o));
+const cnt = (a) => { const n = new Array(20).fill(0); for (const [i, c] of a) n[i] = c; return n; };
+{
+  const r = m1({n: cnt([[0, 2], [7, 2], [9, 2], [12, 1]])});
+  check('a flat: 2 tank WC + 2 basins + 2 baths + kitchen sink = cold 12, hot 6, total 14 units; tank curve 47 L/min; hot 30 L/min; total 48 L/min', [r.cold, r.hot, r.total, r.valve, r.fc.q, r.fh.q, r.ft.q], [12, 6, 14, false, 47, 30, 48]);
+  check('flush-valve WC in the list switches the automatic system to valves (5 units cold -> 103 L/min); forcing tanks gives 26', [m1({n: cnt([[1, 1]])}).valve, m1({n: cnt([[3, 1]])}).fc.q, m1({n: cnt([[3, 1]]), sys: 1}).fc.q, m1({n: cnt([[3, 1]]), sys: 1}).valve, m1({n: cnt([[0, 1]]), sys: 2}).valve, m1({n: cnt([[0, 1]]), sys: 2}).fc.ok], [true, 132, 46, false, true, false]);
+  check('hot water uses the tank curve even with valves; dishwasher (hot 1, total 1) -> 3.8 L/min hot', [m1({n: cnt([[16, 1]]), sys: 2}).fh.q, m1({n: cnt([[16, 1]])}).hot, m1({n: cnt([[16, 1]])}).cold], [3.8, 1, 0]);
+}
+check('Table 4-1: 31 rows; flush-valve bathroom group 8, tank group 6; WC private 4 and public 6; floor drain 2 / 3 / 4 inch: 3, 5, 6; drinking pipe 0.5; the unlisted trap rows 1 - 6', [J('EZ_D').length, J('EZ_D[0][1]'), J('EZ_D[1][1]'), J('EZ_D[13][1]'), J('EZ_D[14][1]'), J('EZ_D[19][1]'), J('EZ_D[20][1]'), J('EZ_D[21][1]'), J('EZ_D[18][1]'), J('EZ_D').slice(25).map(x => x[1])], [31, 8, 6, 4, 6, 3, 5, 6, 0.5, [1, 2, 3, 4, 5, 6]]);
+check('Table 4-2: 10 sizes; 4 inch 160 / 240 / 500 / 90; 8 inch 1400 / 2200 / 3600 / 600; 3 inch 20 / 48 / 72 / 20; limits increase with size for every column', [J('EZ_T2').length, J('EZ_T2.find(x => x[0] === 4)').slice(2), J('EZ_T2.find(x => x[0] === 8)').slice(2), J('EZ_T2.find(x => x[0] === 3)').slice(2), J('EZ_T2').every((x, i, a) => i === 0 || [2, 3, 4, 5].every(k => x[k] >= a[i - 1][k]))], [10, [160, 240, 500, 90], [1400, 2200, 3600, 600], [20, 48, 72, 20], true]);
+check('Table 4-4: 10 sizes; 4 inch 180 / 216 / 250 at 10.4 / 20.8 / 41.6 mm/m (none at 5.2); 8 inch 1400 / 1600 / 1920 / 2300; 15 inch 7000 / 8300 / 10000 / 12000; every row increases with slope', [J('EZ_T4').length, J('EZ_T4.find(x => x[0] === 4)')[2], J('EZ_T4.find(x => x[0] === 8)')[2], J('EZ_T4.find(x => x[0] === 15)')[2], J('EZ_T4').every(x => x[2].filter(y => y !== null).every((y, i, a) => i === 0 || y >= a[i - 1]))], [10, [null, 180, 216, 250], [1400, 1600, 1920, 2300], [7000, 8300, 10000, 12000], true]);
+const m2 = o => ez(Object.assign({mode: 2, n: new Array(31).fill(0), el: 0, dia: 4, si: false, di: 0, slope: 2, wc: 0}, o));
+const cd = a => { const n = new Array(31).fill(0); for (const [i, c] of a) n[i] = c; return n; };
+{
+  const r = m2({n: cd([[2, 2], [9, 2], [13, 2]])});
+  check('2 basins + 2 baths + 2 WC = 2 + 4 + 8 = 14 DFU; a branch needs 3 inch (limit 20); 4 inch passes', [r.dfu, r.min[0], r.ok, m2({n: cd([[2, 2], [9, 2], [13, 2]]), dia: 2}).ok], [14, 3, true, false]);
+  check('3 inch branch: 20 DFU passes if not more than 2 WC; 3 WC fails even with small DFU; 21 DFU fails; 4 inch branch: 160 passes, 161 fails', [m2({n: cd([[13, 5]]), dia: 3}).ok, m2({n: cd([[13, 1]]), dia: 3, wc: 3}).ok, m2({n: cd([[2, 21]]), dia: 3}).ok, m2({n: cd([[2, 160]])}).ok, m2({n: cd([[2, 161]])}).ok], [true, false, false, true, false]);
+  check('stack of up to 3 intervals: 240 DFU -> 4 inch, 241 -> 5 inch; more than 3 intervals: 500 -> 4 inch total, 90 per interval (91 -> 5 inch); the 3 inch stack allows 6 WC (7 fails)', [m2({n: cd([[2, 240]]), el: 1}).min[0], m2({n: cd([[2, 241]]), el: 1}).min[0], m2({n: cd([[2, 500]]), el: 1}).min2[0], m2({n: cd([[2, 501]]), el: 1}).min2[0], m2({n: cd([[2, 100]]), el: 1, si: true, di: 90}).minInt[0], m2({n: cd([[2, 100]]), el: 1, si: true, di: 91}).minInt[0], m2({n: cd([[2, 10]]), el: 1, dia: 3, wc: 6}).ok, m2({n: cd([[2, 10]]), el: 1, dia: 3, wc: 7}).ok], [4, 5, 4, 5, 4, 5, true, false]);
+  check('stack of more than 3 intervals with 4 inch: 500 DFU and 90 per interval pass; 91 per interval fails; 501 total fails', [m2({n: cd([[2, 500]]), el: 1, si: true, di: 90}).ok, m2({n: cd([[2, 500]]), el: 1, si: true, di: 91}).ok, m2({n: cd([[2, 501]]), el: 1, si: true, di: 50}).ok], [true, false, false]);
+  check('building drain: 216 DFU at 20.8 mm/m needs 4 inch; at 10.4 mm/m 216 -> 5 inch (4 inch holds 180); at 5.2 mm/m only sizes from 8 inch exist; 4 inch at 41.6 holds 250; 3 inch holds 2 WC only', [m2({n: cd([[2, 216]]), el: 2, dia: 4}).min[0], m2({n: cd([[2, 216]]), el: 2, slope: 1, dia: 5}).min[0], m2({n: cd([[2, 5]]), el: 2, slope: 0}).min[0], m2({n: cd([[2, 250]]), el: 2, slope: 3, dia: 4}).ok, m2({n: cd([[2, 251]]), el: 2, slope: 3, dia: 4}).ok, m2({n: cd([[2, 40]]), el: 2, slope: 2, dia: 3, wc: 3}).ok, m2({n: cd([[2, 40]]), el: 2, slope: 2, dia: 3, wc: 2}).ok, m2({n: cd([[2, 5]]), el: 2, slope: 0, dia: 4}).ok], [4, 5, 8, true, false, false, true, false]);
+  check('too many units for every size: 20000 DFU on a branch has no size in Table 4-2', [m2({n: cd([[2, 20000]])}).min], [null]);
+}
+const m3 = f => ez({mode: 3, floors: f});
+check('single-stack system: 6 floors -> 4 inch / 2 inch every 2 floors; 12 -> 4 / 2 every floor or 2; 16 -> 4 / 2.5; 21 -> 5 / 2; 25 -> 5; 5 and 26 are outside', [m3(6).row.slice(2), m3(12).row.slice(2), m3(16).row.slice(2, 4), m3(21).row.slice(2, 4), m3(25).row[2], m3(5).row, m3(26).row, m3(5).below, m3(26).above], [[4, 2, 'كل دورين'], [4, 2, 'كل دور أو كل دورين'], [4, 2.5], [5, 2], 5, null, null, true, true]);
+let tt;
+w.renderCalc('egsan'); w.calcResult('egsan');
+tt = txt(w, 'ez_results');
+check('the default page (120 employees) shows 5 WC, 3 basins, 2 fountains, the 0.5 x rule and the 🔴 note; only the first group is visible', [tt.includes('الحد الأدنى للأجهزة الصحية'), tt.includes('المراحيض والمباول لكل جنس5'), tt.includes('عدد الأحواض3'), tt.includes('حنفيات الشرب2'), tt.includes('🔴'), w.document.getElementById('ez_g0').style.display, w.document.getElementById('ez_g1').style.display], [true, true, true, true, true, '', 'none']);
+set('ez_mx', '1'); w.calcResult('egsan'); tt = txt(w, 'ez_results');
+check('mixed use shows 72 persons per sex and the total of 6', [tt.includes('72'), tt.includes('مجموع المراحيض والمباول للجنسين6')], [true, true]);
+set('ez_ty', '14'); w.calcResult('egsan'); tt = txt(w, 'ez_results');
+check('a per-unit type shows the dwelling counts', [tt.includes('المراحيض10'), tt.includes('حوض المطبخ10')], [true, true]);
+set('ez_m', '1'); w.calcResult('egsan'); tt = txt(w, 'ez_results');
+check('the water page shows cold 12, hot 6, total 14, 47 L/min, 1.25 in and the 🔴 note', [tt.includes('12.00'), tt.includes('6.00'), tt.includes('14.00'), tt.includes('47.0 L/min'), tt.includes('1.25 in'), tt.includes('🔴'), w.document.getElementById('ez_g1').style.display, w.document.getElementById('ez_g0').style.display], [true, true, true, true, true, true, '', 'none']);
+set('ez_m', '2'); w.calcResult('egsan'); tt = txt(w, 'ez_results');
+check('the drainage page shows 14 DFU, 3 in as the smallest size and the ✔ mark for 4 in', [tt.includes('14.0'), tt.includes('3 in'), tt.includes('✔'), tt.includes('✘')], [true, true, true, false]);
+set('ez_dm', '2'); w.calcResult('egsan'); tt = txt(w, 'ez_results');
+check('a 2 in branch fails with the ✘ mark', [tt.includes('✘')], [true]);
+set('ez_m', '3'); set('ez_fl', '18'); w.calcResult('egsan'); tt = txt(w, 'ez_results');
+check('the single-stack page for 18 floors shows 4 in, 2.5 in and the diversity-factor note', [tt.includes('4 in'), tt.includes('2.5 in'), tt.includes('معامل تخفيض')], [true, true, true]);
+check('other reference codes open egsan too', others('egsan', 'ez_results'), [true, true, true]);
+}
+// ---------- part 203: Egyptian fire protection code, Part 1, Chapter 4 egress (`egegress`: Tables 4-a to 4-e, exits, travel distance, exit units, stairs) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const eo = o => J('eoCalc(' + JSON.stringify(o) + ')');
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+check('Table 4-a: 21 rows; offices 10 m2, mercantile 3 and 6, factories 5, storage 30, garages 50; assembly standing 0.4 and classrooms 1.25; checksum of the factors 211.25', [J('EO_L').length, J('EO_L[12][2]'), J('EO_L[13][2]'), J('EO_L[14][2]'), J('EO_L[15][2]'), J('EO_L[16][2]'), J('EO_L[17][2]'), J('EO_L[0][2]'), J('EO_L[4][2]'), +J('EO_L').reduce((s, x) => s + x[2], 0).toFixed(2)], [21, 10, 3, 6, 5, 30, 50, 0.4, 1.25, 211.25]);
+const m0 = o => eo(Object.assign({mode: 0, use: 12, area: 500, bedrooms: 0, seats: 0}, o));
+check('offices 500 m2 / 10 = 50 persons; 505 m2 -> 51; assembly standing 100 m2 / 0.4 = 250; classrooms 100 m2 / 1.25 = 80; zero area -> 0; bedrooms x 2', [m0({}).persons, m0({area: 505}).persons, m0({use: 0, area: 100}).persons, m0({use: 4, area: 100}).persons, m0({area: 0}).persons, m0({bedrooms: 30}).bed], [50, 51, 250, 80, 0, 60]);
+check('Table 4-b: 11 rows; assembly 35 / 50 with dead end 6; residential dead end 9, travel 30 / 45; mercantile 30 / 60; industrial part 1 has no dead end (20 / 25); open garages 15, 40 / 60; closed garages 35 / 50', [J('EO_T').length, J('EO_T[0]').slice(1), J('EO_T[2]').slice(1), J('EO_T[4]').slice(1), J('EO_T[5]').slice(1), J('EO_T[9]').slice(1), J('EO_T[10]').slice(1)], [11, [6, 35, 50], [9, 30, 45], [6, 30, 60], [null, 20, 25], [15, 40, 60], [15, 35, 50]]);
+const m1 = o => eo(Object.assign({mode: 1, tr: 3, spr: false, ae: false, b: false, noSingle: false, load: 50, area: 400, top: 10, travel: 30, dead: 0, roomD: 9, roomLoad: 20}, o));
+{
+  check('number of exits: assembly or mercantile above 1000 persons -> 4, above 600 -> 3 (601), 600 -> 2, any other group -> 2', [J('eoExits(true, 1001)'), J('eoExits(true, 1000)'), J('eoExits(true, 601)'), J('eoExits(true, 600)'), J('eoExits(false, 5000)')], [4, 3, 3, 2, 2]);
+  check('single exit: 60 persons, 600 m2 and 16 m pass (61, 601, 16.1 fail); the institutional group needs 13 m (13.1 fails); groups A and F-1 never', [m1({load: 60, area: 600, top: 16}).single, m1({load: 61}).single, m1({area: 601}).single, m1({top: 16.1}).single, m1({b: true, top: 13}).single, m1({b: true, top: 13.1}).single, m1({noSingle: true}).single], [true, false, false, false, true, false, false]);
+  check('travel distance: business 30 m without sprinklers (31 fails), 45 with; assembly 35 / 50; mercantile 60 with sprinklers; dead end 6 m (7 fails) and 12 m for residential and business with sprinklers (13 fails); industrial part 1 allows none', [m1({travel: 30}).okTravel, m1({travel: 31}).okTravel, m1({spr: true, travel: 45}).okTravel, m1({tr: 0, travel: 35}).okTravel, m1({tr: 4, spr: true, travel: 60}).okTravel, m1({dead: 6}).okDead, m1({dead: 7}).okDead, m1({spr: true, dead: 12}).okDead, m1({spr: true, dead: 13}).okDead, m1({tr: 5, dead: 1}).okDead, m1({tr: 5, dead: 0}).okDead, m1({tr: 4, spr: true, dead: 7}).okDead], [true, false, true, true, true, true, false, true, false, false, true, false]);
+  check('room travel: 15 m without sprinklers (16 fails), 20 m with; room door swings with the exit above 15 m or 60 persons (15 m and 60 do not)', [m1({roomD: 15}).okRoom, m1({roomD: 16}).okRoom, m1({spr: true, roomD: 20}).okRoom, m1({roomD: 15, roomLoad: 60}).doorSwing, m1({roomD: 15.1}).doorSwing, m1({roomLoad: 61}).doorSwing], [true, false, true, false, true, true]);
+}
+check('Table 4-d: persons per 55 cm unit 30, 90, 60, 100, 500, 60; Table 4-e doors 36, 45, 110, 75, 75', [J('EO_U').map(x => x[1]), J('EO_D').map(x => x[1])], [[30, 90, 60, 100, 500, 60], [36, 45, 110, 75, 75]]);
+check('unit rounding: 3.2 -> 3.5; 3.5 -> 3.5; 3.6 -> 4; 3 -> 3; 0.2 -> 0.5; 0 -> 0', [3.2, 3.5, 3.6, 3, 0.2, 0].map(x => J('eoHalf(' + x + ')')), [3.5, 3.5, 4, 3, 0.5, 0]);
+const m2 = o => eo(Object.assign({mode: 2, load: 150, u: 1, du: 2, exits: 2, el: 0, w: 1.65, perDoor: 150, dw: 1.3, leaves: 2}, o));
+{
+  const r = m2({});
+  check('150 persons on 90 per unit = 1.667 -> 2 units = 1.10 m; 2 exits take 1 unit each; the 1.65 m exit passes; door 150 / 110 = 1.36 -> 1.5 units = 0.825 m -> minimum 0.90; 1.3 m door of two 0.65 m leaves passes and is at least 3/4 of 1.65 (1.2375)', [+r.rawUnits.toFixed(3), r.units, +r.width.toFixed(3), r.share, r.okW, +r.doorRaw.toFixed(3), r.doorUnits, +r.doorMin.toFixed(3), r.okDoor, r.okLeaf, r.door34], [1.667, 2, 1.1, 1, true, 1.364, 1.5, 0.9, true, true, true]);
+  check('600 persons on stairs (60 per unit) = 10 units = 5.50 m; with 4 exits no exit may take more than 5 units; 3 exits the same', [m2({load: 600, u: 2}).units, +m2({load: 600, u: 2}).width.toFixed(2), m2({load: 600, u: 2, exits: 4}).share, m2({load: 600, u: 2, exits: 1}).share], [10, 5.5, 5, 10]);
+  check('minimum element width: exit corridor 1.10 (1.09 fails against the 1.10 minimum when the units need less), non-exit corridor 0.90, non-exit stair 0.72, door leaf 0.80', [0, 1, 2, 3].map(e => m2({el: e}).minEl), [1.1, 0.9, 0.72, 0.8]);
+  check('a 1.05 m exit for 100 persons at 90 per unit (1.11 -> 1.5 units = 0.825 m) still fails the 1.10 m minimum; 1.10 passes', [m2({load: 100, w: 1.05}).okW, m2({load: 100, w: 1.1}).okW, +m2({load: 100}).width.toFixed(3)], [false, true, 0.825]);
+  check('door leaves: one leaf 0.80 minimum (0.79 fails), two leaves 0.60 each (1.19 m fails), leaf at most 1.20 m (1.21 fails); exit door minimum 0.90', [m2({leaves: 1, dw: 0.8}).okLeaf, m2({leaves: 1, dw: 0.79}).okLeaf, m2({leaves: 2, dw: 1.2}).okLeaf, m2({leaves: 2, dw: 1.19}).okLeaf, m2({leaves: 1, dw: 1.21}).okLeaf, m2({dw: 0.89, leaves: 1}).okDoor], [true, false, true, false, false, false]);
+  check('door at least 3/4 of the corridor: 1.2375 m of 1.65 (1.23 fails)', [m2({dw: 1.24}).door34, m2({dw: 1.23}).door34], [true, false]);
+}
+const m3 = o => eo(Object.assign({mode: 3, w: 1.2, nr: 9, tread: 0.28, rail: 0.9, wall: 0.05, open: false, guard: 1, ball: 0.1}, o));
+{
+  check('stair: width 1.10 passes (1.09 fails); 3 risers pass (2 fail); tread 0.23 passes (0.22 fails); rail 0.75 - 1.10 (0.74 and 1.11 fail); wall gap 0.04 (0.03 fails)', [m3({w: 1.1}).okW, m3({w: 1.09}).okW, m3({nr: 3}).okRiser, m3({nr: 2}).okRiser, m3({tread: 0.23}).okTread, m3({tread: 0.22}).okTread, m3({rail: 0.75}).okRail, m3({rail: 1.1}).okRail, m3({rail: 0.74}).okRail, m3({rail: 1.11}).okRail, m3({wall: 0.04}).okWall, m3({wall: 0.03}).okWall], [true, false, true, false, true, false, true, true, false, false, true, false]);
+  check('open sides: guard 1 m passes (0.99 fails), ball opening 10 cm passes (11 cm fails); closed sides skip both; width over 2.20 m needs a middle rail; over 3.40 m sections of at most 1.70 m: 3.5 m -> 3 sections (1.17 m), 3.4 m -> 2', [m3({open: true, guard: 1}).okGuard, m3({open: true, guard: 0.99}).okGuard, m3({open: true, ball: 0.1}).okBall, m3({open: true, ball: 0.11}).okBall, m3({guard: 0.5}).okGuard, m3({w: 2.2}).midRail, m3({w: 2.21}).midRail, m3({w: 3.4}).multi, m3({w: 3.5}).multi, m3({w: 3.5}).sect, m3({w: 3.4}).sect], [true, false, true, false, true, false, true, false, true, 3, 2]);
+}
+let tt;
+w.renderCalc('egegress'); w.calcResult('egegress');
+tt = txt(w, 'eo_results');
+check('the default page (offices 500 m2) shows 50 persons, 10 m2 per person and the 🔴 note; only the first group is visible', [tt.includes('10.00 m²/فرد'), tt.includes('عدد الأفراد من المساحة50'), tt.includes('🔴'), w.document.getElementById('eo_g0').style.display, w.document.getElementById('eo_g1').style.display], [true, true, true, '', 'none']);
+set('eo_m', '1'); w.calcResult('egegress'); tt = txt(w, 'eo_results');
+check('the exits page shows 2 exits, a single exit allowed, 30 m travel and 6 m dead end with no ✘', [tt.includes('الحد الأدنى لعدد المخارج للطابق2'), tt.includes('مسموح'), tt.includes('30 m'), tt.includes('6 m'), tt.includes('✘')], [true, true, true, true, false]);
+set('eo_ld', '70'); w.calcResult('egegress'); tt = txt(w, 'eo_results');
+check('70 persons forbid a single exit and the page names the load', [tt.includes('غير مسموح'), tt.includes('الحمل 70')], [true, true]);
+set('eo_m', '2'); w.calcResult('egegress'); tt = txt(w, 'eo_results');
+check('the exit-unit page shows 2.00 units, 1.10 m and no ✘ for defaults', [tt.includes('عدد وحدات الخروج المطلوبة2.0'), tt.includes('1.10 m'), tt.includes('✘')], [true, true, false]);
+set('eo_m', '3'); w.calcResult('egegress'); tt = txt(w, 'eo_results');
+check('the stairs page shows 6 ✔ marks and no ✘', [(tt.match(/✔/g) || []).length, tt.includes('✘')], [5, false]);
+check('other reference codes open egegress too', others('egegress', 'eo_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);

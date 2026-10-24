@@ -747,7 +747,7 @@ setv(w, 'sp_dw', 3); w.calcResult('septic');
 const spText = doc.getElementById('sp_results').textContent;
 check('the results quote 6/2/3, the pit rules, Table 7 and the inspection chamber rules', ['6/2/3', '6/3/7', 'الجدول 7', '4/3/3 J', '4/1/5', 'حفرة تجميعية كتيمة'].every(s => spText.includes(s)), true);
 w = boot('intl'); w.renderCalc('septic');
-check('the septic calculator is available with every code and the plumbing screen counts 27 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('32 حاسبة متاحة')], [true, true]);
+check('the septic calculator is available with every code and the plumbing screen counts 27 calculators', [!!w.document.getElementById('sp_results'), w.document.body.textContent.includes('33 حاسبة متاحة')], [true, true]);
 
 // ---------- Jordan: central heating code Tables 9, 10, 11 and 5/3/6 (heatexpansion) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('heatexpansion');
@@ -1204,7 +1204,7 @@ check('other codes: the Syrian chimney check and fields stay (no Table 3 fields)
 
 // ---------- Jordan: fire protection code chapter 17 (fire resistance of concrete, Tables 13 - 19): the concrete fire resistance calculator ----------
 w = boot('jo'); doc = w.document;
-check('fire category: 47 calculators and the concrete fire resistance card', [doc.getElementById('main-categories-grid').textContent.includes('47 حاسبة متاحة'), doc.getElementById('fire-category').innerHTML.includes("showCalc('concretefire')")], [true, true]);
+check('fire category: 48 calculators and the concrete fire resistance card', [doc.getElementById('main-categories-grid').textContent.includes('48 حاسبة متاحة'), doc.getElementById('fire-category').innerHTML.includes("showCalc('concretefire')")], [true, true]);
 const CFD = w.eval('JSON.parse(JSON.stringify({H: JO_CF_H, E: JO_CF, T17: JO_CF_T17}))');
 const cfv = (el, i, j) => CFD.E[el][2][i][2][j][1];
 check('Table 13 (reinforced beams): 4 rows; plain concrete cover 15 / 25 / 35 / 45 / 55 / 65 and width 80 / 110 / 140 / 180 / 240 / 280; lightweight aggregate cover 15 / 20 / 30 / 35 / 45 / 50', [CFD.H, CFD.E.beamRC[2].length, cfv('beamRC', 0, 0), cfv('beamRC', 0, 1), cfv('beamRC', 3, 0)], [[0.5, 1, 1.5, 2, 3, 4], 4, [15, 25, 35, 45, 55, 65], [80, 110, 140, 180, 240, 280], [15, 20, 30, 35, 45, 50]]);
