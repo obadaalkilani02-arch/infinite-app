@@ -4131,6 +4131,286 @@ set('pnp_m', '2'); w.calcResult('pumphead'); tt = txt(w, 'pnp_results');
 check('the affinity page shows the operating point 20.00 L/s at 36.00 m and the trimming percentage', [tt.includes('نقطة التشغيل20.00 L/s'), tt.includes('36.00 m'), tt.includes('10.0 %')], [true, true, true]);
 check('other reference codes open pumphead too', others('pumphead', 'pnp_results'), [true, true, true]);
 }
+// ---------- part 208: Egyptian fire code part 1, chapter 3-7 external exposure (`egexpo`: Tables 3-d, 3-e, 3-f, 3-g, 3-h; permitted unprotected openings, minimum limiting distance, wall fire resistance, exceptions) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const P = (t, k, a, d) => J('xePermit(' + [t, k, a, d].join(',') + ')');
+check('Table 3-d printed cells: 10 m2 below 3:1 at 1, 2, 3, 4, 5 m = 7, 20, 50, 96, 100; 100 m2 at 5 m = 23, 12 m = 100; 1000 m2 above 10:1 at 30 m = 100, 20 m = 65; 2000 m2 at 45 m = 100', [P(0, 0, 10, 1), P(0, 0, 10, 2), P(0, 0, 10, 3), P(0, 0, 10, 4), P(0, 0, 10, 5), P(0, 0, 100, 5), P(0, 0, 100, 12), P(0, 2, 1000, 30), P(0, 2, 1000, 20), P(0, 1, 2000, 45)], [7, 20, 50, 96, 100, 23, 100, 100, 65, 100], 1e-9);
+check('Table 3-e printed cells: 10 m2 below 3:1 at 1, 2, 3, 4, 5, 6 m = 3, 10, 25, 51, 86, 100; 2000 m2 above 10:1 at 45, 60, 65 m = 64, 97, 100; 500 m2 between 3:1 and 10:1 at 30 m = 89', [P(1, 0, 10, 1), P(1, 0, 10, 2), P(1, 0, 10, 3), P(1, 0, 10, 4), P(1, 0, 10, 5), P(1, 0, 10, 6), P(1, 2, 2000, 45), P(1, 2, 2000, 60), P(1, 2, 2000, 65), P(1, 1, 500, 30)], [3, 10, 25, 51, 86, 100, 64, 97, 100, 89], 1e-9);
+check('the boundary gives 0 % and any distance beyond the last column gives 100 %', [P(0, 0, 100, 0), P(0, 0, 100, -3), P(0, 2, 2000, 1000), P(1, 0, 2000, 70)], [0, 0, 100, 100], 1e-9);
+check('proportion for a distance between columns: 100 m2 below 3:1 at 4.5 m = (17 + 23) / 2 = 20; at 0.5 m = 3 (between the boundary 0 and 6 at 1 m)', [P(0, 0, 100, 4.5), P(0, 0, 100, 0.5)], [20, 3], 1e-9);
+check('proportion for an area between rows: 240 m2 below 3:1 at 4 m = 13 + (11 - 13) x 0.9 = 11.2; 40 m2 at 3 m = 22 + (18 - 22) x 0.5 = 20 (between 30 and 50 m2)', [P(0, 0, 240, 4), P(0, 0, 40, 3)], [11.2, 20], 1e-9);
+check('an area below 10 m2 takes the 10 m2 row and above 2000 m2 the 2000 m2 row', [P(0, 0, 4, 3), P(0, 0, 10, 3), P(0, 0, 5000, 20), P(0, 0, 2000, 20)], [50, 50, 26, 26], 1e-9);
+check('ratio class: 20 x 12 -> below 3:1; 36 x 12 -> exactly 3:1 is the middle class; 12 x 36 the same; 120 x 12 = 10:1 is still middle; 121 x 12 -> above 10:1', [J('xeClass(20,12)'), J('xeClass(36,12)'), J('xeClass(12,36)'), J('xeClass(120,12)'), J('xeClass(121,12)')], [0, 1, 1, 1, 2]);
+{
+  const bad = J(`(function () {
+    const out = [];
+    for (let t = 0; t < 2; t++) for (let a = 0; a < XE_AREA.length; a++) for (let k = 0; k < 3; k++) {
+      const r = XE_T[t][a][k], n = XE_DIST[t].length;
+      if (r.length > n || r[0] !== 0 || r[r.length - 1] !== 100 || r.slice(0, -1).some(x => x >= 100)) out.push('shape ' + t + ' ' + a + ' ' + k);
+      for (let i = 1; i < n; i++) if (xeCell(t, a, k, i) < xeCell(t, a, k, i - 1)) out.push('dist ' + t + ' ' + a + ' ' + k + ' ' + i);
+      if (k > 0) for (let i = 0; i < n; i++) if (xeCell(t, a, k, i) < xeCell(t, a, k - 1, i)) out.push('class ' + t + ' ' + a + ' ' + k + ' ' + i);
+      if (a > 0) for (let i = 0; i < n; i++) if (xeCell(t, a, k, i) > xeCell(t, a - 1, k, i)) out.push('area ' + t + ' ' + a + ' ' + k + ' ' + i);
+      if (t === 1) for (let i = 0; i < XE_DIST[0].length; i++) { const j = XE_DIST[1].indexOf(XE_DIST[0][i]); if (xeCell(1, a, k, j) > xeCell(0, a, k, i)) out.push('table ' + a + ' ' + k + ' ' + i); }
+    }
+    return out;
+  })()`);
+  check('every printed row starts at 0, ends at its first 100 and the cells rise with distance and ratio class and fall with area; table 3-e never exceeds table 3-d', bad, []);
+}
+const dmin = (t, k, a, p) => J('xeMinDist(' + [t, k, a, p].join(',') + ')');
+check('minimum distance: 100 m2 below 3:1 for 20 % -> 4.5 m, for 100 % -> 12 m; none for 0 %; 10 m2 for 7 % -> 1 m', [dmin(0, 0, 100, 20), dmin(0, 0, 100, 100), dmin(0, 0, 100, 0), dmin(0, 0, 10, 7)], [4.5, 12, 0, 1], 1e-9);
+check('the minimum distance round-trips through the table for a spread of facades', J('[[0,0,100,20],[0,1,240,35],[1,2,60,12],[1,0,800,50]].map(x => { const d = xeMinDist(...x); return Math.abs(xePermit(x[0], x[1], x[2], d) - x[3]) < 0.5 && xePermit(x[0], x[1], x[2], d - 0.02) < x[3]; })'), [true, true, true, true]);
+const F = o => J('xeFacade(' + JSON.stringify(Object.assign({g: 3, mo: 0, L: 20, H: 12, bd: 0, d: 4, sw: 12, Ao: 40, fr: 0, gf: 0}, o)) + ')');
+{
+  const r = F({});
+  check('facade 20 x 12 m, group D (table 3-d), 4 m: area 240, ratio 1.67 (below 3:1), permitted 11.2 %, 26.88 m2', [r.t, r.area, r.q, r.k, r.pTab, r.allowed, r.maxArea], [0, 240, 20 / 12, 0, 11.2, 11.2, 26.88], 1e-9);
+  check('40 m2 of openings = 16.67 % exceeds 11.2 %; the minimum distance is 5.69 m (between 5 m at 14.4 % and 6 m at 17.7 %); wall fire resistance 1 h', [r.pAct, r.ok, r.dmin, r.frr], [16.6667, false, 5.69, 1], 1e-3);
+  check('group E uses table 3-e: 240 m2 at 4 m between the 150 m2 value 7 and the 250 m2 value 5 = 5.2 % (against 11.2 % for table 3-d)', [F({g: 4}).t, F({g: 4}).pTab], [1, 5.2], 1e-9);
+  check('groups: A, B, C, D, F-3 use table 3-d; E, F-1, F-2 use table 3-e', [0, 1, 2, 3, 4, 5, 6, 7].map(g => F({g}).t), [0, 0, 0, 0, 1, 1, 1, 0]);
+  check('a sprinklered building doubles the permitted percentage (22.4 %) and halves the required distance; wired glass does the same; the result is capped at 100 %', [F({mo: 1}).allowed, F({mo: 2}).allowed, F({mo: 1}).ok, F({mo: 1}).dmin < r.dmin, F({mo: 1, d: 30}).allowed], [22.4, 22.4, true, true, 100], 1e-9);
+  const o40 = F({mo: 1});
+  check('with doubling 16.67 % needs the table value 8.33 %: between 2 m (8 %) and 3 m (9.1 %) = 2.31 m', [o40.dmin], [2.31], 0.011);
+  check('limits: 11.2 % x 240 = 26.88 m2 passes, 27 m2 fails', [F({Ao: 26.88}).ok, F({Ao: 27}).ok], [true, false]);
+  check('a street: distance 4 m to its edge + half of a 12 m width = 10 m to the axis', [F({bd: 1}).dlim, F({bd: 1}).pTab], [10, P(0, 0, 240, 10)], 1e-9);
+  check('facade of 240 m2 at 10 m: 150 m2 row 61 %, 250 m2 row 40 % -> 42.1 %', [P(0, 0, 240, 10)], [42.1], 1e-9);
+  check('exception 3-7-4-1: ground-floor facade on a street, 9 m from its axis, height up to 5 m -> 100 %', [F({bd: 1, d: 3, sw: 12, gf: 1, H: 5, L: 30}).allowed, F({bd: 1, d: 3, sw: 12, gf: 1, H: 5, L: 30}).gfOk], [100, true]);
+  const g1 = F({bd: 1, d: 2.9, sw: 12, gf: 1, H: 5}), g2 = F({bd: 1, d: 3, sw: 12, gf: 1, H: 5.1}), g3 = F({bd: 0, d: 20, gf: 1, H: 5});
+  check('... but not when the axis is nearer than 9 m, the storey is higher than 5 m, or the boundary is not a street', [g1.gfOk, g1.gfDist, g2.gfOk, g2.gfH, g3.gfOk, g3.gfStreet], [false, false, false, false, false, false]);
+  check('a wall without openings with less than the required resistance: 75 % from half an hour, 100 % below it; both fail at 4 m and need a wall rated 0.75 h at 25 % or more', [F({Ao: 0, fr: 1}).pAct, F({Ao: 0, fr: 2}).pAct, F({Ao: 0, fr: 1}).ok, F({Ao: 0, fr: 1}).frr], [75, 100, false, 0.75]);
+  check('Table 3-f: group D below 25 % -> 1 h, 25 % or more -> 3/4 h (exactly 25 % -> 3/4 h); group E below 25 % -> 2 h, otherwise 1 h', [F({Ao: 59.9}).frr, F({Ao: 60}).frr, F({g: 4, Ao: 59.9}).frr, F({g: 4, Ao: 60}).frr], [1, 0.75, 2, 1]);
+  check('openings larger than the facade are cut to the facade area; a facade without size is invalid', [F({Ao: 500}).AoE, F({Ao: 500}).pAct, F({L: 0}).valid], [240, 100, false], 1e-9);
+  check('area flags: 6 m2 below the first row, 2500 m2 above the last', [F({L: 2, H: 3}).areaLow, F({L: 50, H: 50}).areaHigh, r.areaLow, r.areaHigh], [true, true, false, false]);
+  const pr = J('xeProfile({}, xeFacade(' + JSON.stringify({g: 3, mo: 0, L: 20, H: 12, bd: 0, d: 4, sw: 12, Ao: 40, fr: 0, gf: 0}) + '))');
+  check('the profile rows: 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 45, 60 m; permitted area = percentage x 240 m2', [pr.map(x => x.d), pr[3].p, +pr[3].a.toFixed(3), pr[13].p], [[1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 45, 60], 11.2, 26.88, 100], 1e-9);
+}
+const O = o => J('xeOther(' + JSON.stringify(Object.assign({g: 3, sv: 1, an: 100, sh: 1, nf: 2, hd: 8, bh: 15, fl: 60, fu: 0}, o)) + ')');
+check('3-7-5-1: vertical spacing at least 0.90 m; 3-7-5-2: corner spacing 0.90 m above 135 degrees, 1.20 m from 90 to 135 degrees, none given below 90 degrees', [O({sv: 0.9}).vOk, O({sv: 0.89}).vOk, O({an: 136}).cReq, O({an: 135}).cReq, O({an: 90}).cReq, O({an: 89}).cReq, O({an: 89}).cOk, O({an: 100, sh: 1.2}).cOk, O({an: 100, sh: 1.19}).cOk], [true, false, 0.9, 1.2, 1.2, null, null, true, false]);
+check('Table 3-h: 1 floor 7.5 m, 2 floors 10 m, 3 floors 12 m, 4 or more 14 m; 8 m is not enough for 2 floors, 10 m is', [1, 2, 3, 4, 5, 9].map(n => O({nf: n}).hReq), [7.5, 10, 12, 14, 14, 14]);
+check('... compliance of the horizontal distance and the floor between: 1 h for A to D and F-3, 2 h for E, F-1 and F-2', [O({hd: 8}).hOk, O({hd: 10}).hOk, O({g: 3}).slab, O({g: 4}).slab, O({g: 5}).slab, O({g: 7}).slab], [false, true, 1, 2, 2, 1]);
+check('Table 3-g: building height below 8 m -> surfaces C; 8 to 24 m -> B; above 24 m -> A', [7.9, 8, 24, 24.1, 60].map(h => O({bh: h}).surf), [0, 1, 1, 2, 2]);
+check('fire load class: more than 100 kg/m2 -> F-1, 50 to 100 -> F-2, up to 50 -> F-3; in MJ/m2 the limits are 2000 and 1000', [[101, 0], [100, 0], [50.1, 0], [50, 0], [2001, 1], [2000, 1], [1000, 1], [999, 1]].map(x => O({fl: x[0], fu: x[1]}).fcls), [0, 1, 1, 2, 0, 1, 2, 2]);
+let tt;
+w.renderCalc('egexpo'); w.calcResult('egexpo');
+tt = txt(w, 'xe_results');
+check('the default page shows the area, the table 3-d, the permitted percentage with ✘, the minimum distance, the wall resistance, the profile table and the 🔴 note; only the first group is visible', [tt.includes('240.0 m²'), tt.includes('3-D'), tt.includes('11.2 %'), tt.includes('✘'), tt.includes('5.69 m'), tt.includes('1 h'), tt.includes('المسافة الفاصلة (m)'), tt.includes('🔴'), w.document.getElementById('xe_g0').style.display, w.document.getElementById('xe_g1').style.display, w.document.getElementById('xe_g2').style.display], [true, true, true, true, true, true, true, true, '', 'none', 'none']);
+set('xe_Ao', '20'); w.calcResult('egexpo'); tt = txt(w, 'xe_results');
+check('20 m2 of openings = 8.3 % is below 11.2 %: ✔', [tt.includes('8.3 %'), tt.includes('✔')], [true, true]);
+set('xe_gr', '4'); w.calcResult('egexpo'); tt = txt(w, 'xe_results');
+check('group E switches to table 3-e and lowers the permitted percentage to 5.2 %', [tt.includes('3-E'), tt.includes('5.2 %'), tt.includes('2 h')], [true, true, true]);
+set('xe_gr', '3'); set('xe_mo', '1'); w.calcResult('egexpo'); tt = txt(w, 'xe_results');
+check('sprinklers: the permitted percentage becomes 22.4 % with the reason shown', [tt.includes('22.4 %'), tt.includes('رشاشات تلقائية بالكامل')], [true, true]);
+set('xe_mo', '0'); set('xe_gf', '1'); set('xe_bd', '1'); set('xe_d', '3'); set('xe_H', '4'); w.calcResult('egexpo'); tt = txt(w, 'xe_results');
+check('ground-floor facade on a street 9 m from its axis shows the exception 3-7-4-1 as satisfied and 100 %', [tt.includes('استثناء الطابق الأرضي'), tt.includes('غير متحقق'), tt.includes('100.0 %')], [true, false, true]);
+set('xe_m', '1'); w.calcResult('egexpo'); tt = txt(w, 'xe_results');
+check('four facades: facade 1 fails (16.7 % against 11.2 %), the building does not comply, the table lists the four rows; only the second group is visible', [tt.includes('واجهة 1'), tt.includes('غير مطابق'), tt.includes('أصغر مسافة 5.69 m'), w.document.getElementById('xe_g0').style.display, w.document.getElementById('xe_g1').style.display], [true, true, true, 'none', '']);
+set('xe_A1', '20'); set('xe_A4', '10'); w.calcResult('egexpo'); tt = txt(w, 'xe_results');
+check('after reducing facade 1 to 20 m2 all four facades comply and the building result turns to compliant', [tt.includes('مطابق'), tt.includes('غير مطابق')], [true, false]);
+set('xe_m', '2'); w.calcResult('egexpo'); tt = txt(w, 'xe_results');
+check('the rules page shows the 0.90 m spacing, the 1.20 m corner, the table 3-h distance 10.0 m with ✘ for 8 m, the surfaces B and the class F-2', [tt.includes('0.90 m'), tt.includes('1.20 m'), tt.includes('10.0 m'), tt.includes('✘'), tt.includes('F-2'), w.document.getElementById('xe_g2').style.display], [true, true, true, true, true, '']);
+check('other reference codes open egexpo too', others('egexpo', 'xe_results'), [true, true, true]);
+}
+// ---------- part 209: Egyptian fire code part 1, mixed occupancies and fire separations (`egsep`: Tables 2-b, 3-a, 3-b, 3-c; clauses 2-3-2, 3-3-3, 3-3-4) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const pr = (a, b) => J('xsPair(' + a + ',' + b + ')');
+const O = {'A-1': 0, 'A-2': 1, 'A-3': 2, 'A-4': 3, 'B-1': 4, 'B-2': 5, 'C-1': 6, 'C-2': 7, D: 8, E: 9, 'F-1': 10, 'F-2': 11, 'F-3': 12};
+const h = (a, b) => { const p = pr(O[a], O[b]); return p === null ? null : p.ok ? p.h + p.note : 'X'; };
+check('Table 2-b, assembly subdivisions: A-1 with A-2, A-3, A-4 and the other assembly pairs = 1 h; assembly with institutional B-1 and B-2 = 2 h', [h('A-1', 'A-2'), h('A-1', 'A-3'), h('A-1', 'A-4'), h('A-2', 'A-3'), h('A-2', 'A-4'), h('A-3', 'A-4'), h('A-1', 'B-1'), h('A-4', 'B-1'), h('A-1', 'B-2'), h('A-3', 'B-2'), h('B-1', 'B-2')], ['1', '1', '1', '1', '1', '1', '2', '2', '2', '2', '2']);
+check('... residential: C-1 and C-2 with A-1 = 2 h, with A-2 / A-3 / A-4 = 1 h, with B-1 = 2 h, with B-2 = 1 h, C-1 with C-2 = 1 h; D with A-1 = 2, A-2 = 1, A-4 = 1, B-1 = 2, B-2 = 1, C-1 = 1, C-2 = 1', [h('C-1', 'A-1'), h('C-1', 'A-2'), h('C-1', 'A-4'), h('C-1', 'B-1'), h('C-1', 'B-2'), h('C-2', 'A-1'), h('C-2', 'A-3'), h('C-2', 'B-1'), h('C-2', 'B-2'), h('C-1', 'C-2'), h('D', 'A-1'), h('D', 'A-2'), h('D', 'A-4'), h('D', 'B-1'), h('D', 'B-2'), h('D', 'C-1'), h('D', 'C-2')], ['2', '1', '1', '2', '1', '2', '1', '2', '1', '1', '2', '1', '1', '2', '1', '1', '1']);
+check('... mercantile E: 2 h with every A, B and C division, 1 h with D; the 🔴 cell D with A-3 is read as 1 h', [['A-1', 'A-2', 'A-3', 'A-4', 'B-1', 'B-2', 'C-1', 'C-2'].map(x => h('E', x)), h('E', 'D'), h('D', 'A-3')], [['2', '2', '2', '2', '2', '2', '2', '2'], '1', '1']);
+check('... industrial F-1: not allowed with any A, B or C division; 3 h with D and with E; F-2: 2 h with A, B and C, 1 h (car workshops 2 h) with D and E, 3 h with F-1; F-3: 1 h (garages 1.5 h) with A, C, D, E and F-2, 2 h with B, 3 h with F-1', [['A-1', 'A-2', 'A-3', 'A-4', 'B-1', 'B-2', 'C-1', 'C-2'].map(x => h('F-1', x)), h('F-1', 'D'), h('F-1', 'E'), ['A-1', 'A-4', 'B-1', 'B-2', 'C-1', 'C-2'].map(x => h('F-2', x)), h('F-2', 'D'), h('F-2', 'E'), h('F-2', 'F-1'), ['A-1', 'A-4', 'C-1', 'C-2', 'D', 'E', 'F-2'].map(x => h('F-3', x)), h('F-3', 'B-1'), h('F-3', 'B-2'), h('F-3', 'F-1')], [Array(8).fill('X'), '3', '3', Array(6).fill('2'), '1W', '1W', '3', Array(7).fill('1G'), '2', '2', '3']);
+check('the matrix is symmetric, has no entry on the diagonal and every row i has i entries', J(`(function () {
+  for (let i = 0; i < 13; i++) { if (XS_M[i].length !== i) return 'row ' + i; if (xsPair(i, i) !== null) return 'diagonal ' + i; for (let j = 0; j < 13; j++) if (JSON.stringify(xsPair(i, j)) !== JSON.stringify(xsPair(j, i))) return 'sym ' + i + ',' + j; }
+  return 'ok'; })()`), 'ok');
+const C = x => J('xsClosure(' + x + ')');
+check('Table 3-c: below 0.75 h none; 0.75 -> 0.5; 1 -> 0.75; 1.5 -> 1; 2 -> 1.5; 3 -> 2; 4 -> 3 (2.5 is not listed: takes the larger neighbour 2)', [0.5, 0.75, 1, 1.5, 2, 3, 4, 2.5].map(x => C(x).c), [0, 0.5, 0.75, 1, 1.5, 2, 3, 2]);
+check('exact entries are flagged, the 2.5 h row is not', [C(2).exact, C(2.5).exact, C(0.5).exact], [true, false, true]);
+const calc = o => J('xsCalc(' + JSON.stringify(o) + ')');
+{
+  const r = calc({mode: 0, a: 8, b: 9, ar: 200});
+  check('D with E: 1 h, closure 0.75 h, E is not F-1 or F-2 and 200 m2 is within 300 m2: the building may be classified by its main purpose', [r.hEff, r.cl.c, r.accessory], [1, 0.75, true]);
+  check('accessory use above 300 m2 or an F-1 / F-2 secondary use is not accepted; 300 m2 exactly is', [calc({mode: 0, a: 8, b: 9, ar: 301}).accessory, calc({mode: 0, a: 8, b: 9, ar: 300}).accessory, calc({mode: 0, a: 8, b: 11, ar: 100}).accessory, calc({mode: 0, a: 8, b: 12, ar: 100}).accessory], [false, true, false, true]);
+  check('garage F-3 beside D: 1.5 h (closure 1 h); car repair F-2 beside E: 2 h (closure 1.5 h); F-1 beside residential: not permitted', [calc({mode: 0, a: 8, b: 12, ar: 50}).hEff, calc({mode: 0, a: 8, b: 12, ar: 50}).cl.c, calc({mode: 0, a: 9, b: 11, ar: 50}).hEff, calc({mode: 0, a: 9, b: 11, ar: 50}).cl.c, calc({mode: 0, a: 6, b: 10, ar: 50}).p.ok], [1.5, 1, 2, 1.5, false]);
+  check('the one-dwelling rule appears for industrial F-2 / F-3 beside residential', [calc({mode: 0, a: 12, b: 6, ar: 50}).dwelling, calc({mode: 0, a: 6, b: 11, ar: 50}).dwelling, calc({mode: 0, a: 8, b: 6, ar: 50}).dwelling], [true, true, false]);
+  check('the same division gives no separation', [calc({mode: 0, a: 4, b: 4, ar: 50}).p], [null]);
+}
+check('Table 3-a hours: stored hazardous materials 3, transformers 2.5, under stands 0.75, fuel-fired plant (B or F-1, large) 2, other buildings 1, machinery 1, incinerator or boiler 2, refuse store 2 or 1 with sprinklers, refuse chutes 2 or 1 with a fusible-link door, commercial kitchen 1', J('XS_S.map(x => x[1])'), [3, 2.5, 0.75, 2, 1, 1, 2, 2, 1, 2, 1, 1]);
+check('...with closures 2, 2, 0.5, 1.5, 0.75, 0.75, 1.5, 1.5, 0.75, 1.5, 0.75, 0.75', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => calc({mode: 1, sp: i}).cl.c), [2, 2, 0.5, 1.5, 0.75, 0.75, 1.5, 1.5, 0.75, 1.5, 0.75, 0.75]);
+check('Table 3-b: elevator and non-exit stair shafts follow the floors 1 / 1.5 / 2 / 3 / 4 h -> 0.75 / 1 / 1.5 / 2 / 3 h; other shafts -> 0.75 / 1 / 1 / 2 / 3 h; exit stairs are not tabulated', [[0, 1, 2, 3, 4].map(f => calc({mode: 2, vt: 0, fr: f}).h), [0, 1, 2, 3, 4].map(f => calc({mode: 2, vt: 1, fr: f}).h), calc({mode: 2, vt: 2, fr: 0}).h], [[0.75, 1, 1.5, 2, 3], [0.75, 1, 1, 2, 3], null]);
+check('shaft closures: 0.75 -> 0.5, 1 -> 0.75, 1.5 -> 1, 2 -> 1.5, 3 -> 2', [[0, 1, 2, 3, 4].map(f => calc({mode: 2, vt: 0, fr: f}).cl.c)], [[0.5, 0.75, 1, 1.5, 2]]);
+{
+  const m3 = Object.assign({mode: 3, sh: 1, ow: 1, oh: 2.1, sl: 20, tw: 4, spr: false, bh: 12, lc: 0});
+  const r = calc(m3);
+  check('a 1.0 x 2.1 door in a 1 h separation: area 2.1 m2, closure 0.75 h, within 3.7 m and 12 m2, 4 m of 20 m = 20 %, no division', [r.A, r.cl.c, r.okSize, r.frac, r.okFrac, r.split, r.sections], [2.1, 0.75, true, 20, true, false, 1], 1e-9);
+  check('size limits: 3.7 x 3.2 m (11.84 m2) passes, 3.8 m wide fails, 3.7 x 3.24 m (11.99 m2) passes, 3.7 x 3.3 m (12.21 m2) fails; with sprinklers on both sides up to 24 m2 passes and 24.1 m2 fails', [calc(Object.assign({}, m3, {ow: 3.7, oh: 3.2})).okSize, calc(Object.assign({}, m3, {ow: 3.8, oh: 2})).okSize, calc(Object.assign({}, m3, {ow: 3.7, oh: 3.24})).okSize, calc(Object.assign({}, m3, {ow: 3.7, oh: 3.3})).okSize, calc(Object.assign({}, m3, {ow: 6, oh: 4, spr: true})).okSize, calc(Object.assign({}, m3, {ow: 6, oh: 4.02, spr: true})).okSize], [true, false, true, false, true, false]);
+  check('openings above 8 m2 must be divided into sections of at most 8 m2: 9 m2 -> 2, 16 m2 -> 2, 16.5 m2 -> 3', [calc(Object.assign({}, m3, {ow: 3, oh: 3})).sections, calc(Object.assign({}, m3, {ow: 4, oh: 4, spr: true})).sections, calc(Object.assign({}, m3, {ow: 5.5, oh: 3, spr: true})).sections], [2, 2, 3]);
+  check('total width of openings 25 % of the separation length is allowed, above it is not', [calc(Object.assign({}, m3, {tw: 5})).okFrac, calc(Object.assign({}, m3, {tw: 5.2})).okFrac], [true, false]);
+  check('20-minute closure: 0.75 h separation in a building up to 10 m; 1 h separation only for a corridor opening to rented rooms, offices or B-2 rooms; none for 1.5 h', [calc(Object.assign({}, m3, {sh: 0.75, bh: 10})).min20, calc(Object.assign({}, m3, {sh: 0.75, bh: 10.5})).min20, calc(Object.assign({}, m3, {sh: 1})).min20, calc(Object.assign({}, m3, {sh: 1, lc: 1})).min20, calc(Object.assign({}, m3, {sh: 1.5, lc: 1})).min20, calc(Object.assign({}, m3, {sh: 0.5})).min20], [true, false, false, true, false, false]);
+  check('an exit enclosure wall never needs more than 1.5 h closure (3 h wall gives 2 -> 1.5) and its openings are exempt from the size limits', [calc(Object.assign({}, m3, {sh: 3, lc: 2})).clEff, calc(Object.assign({}, m3, {sh: 3, lc: 0})).clEff, calc(Object.assign({}, m3, {sh: 1, lc: 2, ow: 6, oh: 5})).okSize], [1.5, 2, true]);
+  check('zero separation length gives no ratio', [calc(Object.assign({}, m3, {sl: 0})).frac], [0]);
+}
+{
+  check('fire wall: E, F-1 or F-2 on either side -> 4 h (closure 3 h, roof 2 h, parapet 0.9 m, wall facing vacant land 2 h); otherwise 2 h (closure 1.5 h, roof 1 h, parapet 0.3 m, land 1 h)', [calc({mode: 4, a: 8, b: 9}), calc({mode: 4, a: 8, b: 6}), calc({mode: 4, a: 11, b: 3}), calc({mode: 4, a: 12, b: 12})].map(r => [r.h, r.cl.c, r.roof, r.parapet, r.land]), [[4, 3, 2, 0.9, 2], [2, 1.5, 1, 0.3, 1], [4, 3, 2, 0.9, 2], [2, 1.5, 1, 0.3, 1]], 1e-9);
+}
+let tt;
+w.renderCalc('egsep'); w.calcResult('egsep');
+tt = txt(w, 'xs_results');
+check('the default page (D beside E) shows the 1 h separation, the 0.75 h closure, the classification by main purpose and the 🔴 note; only the first group is visible', [tt.includes('بين D و E'), tt.includes('1 h'), tt.includes('0.75 h (45 min)'), tt.includes('ممكن'), tt.includes('🔴'), w.document.getElementById('xs_g0').style.display, w.document.getElementById('xs_g1').style.display], [true, true, true, true, true, '', 'none']);
+set('xs_a', '0'); set('xs_b', '10'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('assembly A-1 with F-1: not permitted in the same building', [tt.includes('غير مسموح'), tt.includes('2-3-2-4')], [true, true]);
+set('xs_b', '12'); set('xs_a', '8'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('D beside the garage F-3 shows 1.5 h and the reason', [tt.includes('1.5 h'), tt.includes('الجراجات')], [true, true]);
+set('xs_m', '1'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('the special spaces page: transformers 2.5 h, closure 2 h with the neighbouring-value remark', [tt.includes('2.5 h'), tt.includes('غرفة محولات كهربائية'), tt.includes('القيمة الأعلى المجاورة'), w.document.getElementById('xs_g1').style.display], [true, true, true, '']);
+set('xs_m', '2'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('the shaft page: elevator shaft in 1.5 h floors needs 1 h; exit stairs refer to clause 4-3-1-1', [tt.includes('1 h'), tt.includes('0.75 h (45 min)')], [true, true]);
+set('xs_vt', '2'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('exit stairs are not tabulated', [tt.includes('4-3-1-1'), tt.includes('غير مدرجة')], [true, true]);
+set('xs_m', '3'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('the openings page shows the closure, the size check ✔, the 20 % ratio and no division', [tt.includes('0.75 h (45 min)'), tt.includes('✔'), tt.includes('20.0 %'), tt.includes('لا يلزم')], [true, true, true, true]);
+set('xs_ow', '4'); set('xs_oh', '4'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('a 4 x 4 m opening fails the size limit (✘) and needs two sections', [tt.includes('غير مطابقة'), tt.includes('✘'), tt.includes('2 أقسام')], [true, true, true]);
+set('xs_m', '4'); w.calcResult('egsep'); tt = txt(w, 'xs_results');
+check('the fire wall page for D beside E shows 4 h, closure 3 h and the 0.90 m parapet', [tt.includes('4 h'), tt.includes('3 h'), tt.includes('0.90 m')], [true, true, true]);
+check('other reference codes open egsep too', others('egsep', 'xs_results'), [true, true, true]);
+}
+// ---------- part 210: Egyptian fire code part 1, interior finishes and fire stopping (`egfinish`: clauses 3-6-2 to 3-6-8 and 3-4-1) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const cls = (fs, sd) => J('xfClass(' + fs + ',' + sd + ')');
+check('3-6-2-4: flame spread 0 - 25 -> A, 26 - 75 -> B, 76 - 200 -> C (class limits are inclusive), above 200 or smoke above 450 -> not classified', [0, 25, 26, 75, 76, 200, 201].map(x => cls(x, 300)).concat([cls(10, 450), cls(10, 451)]), [0, 0, 1, 1, 2, 2, -1, 0, -1]);
+check('3-6-2-5 and 3-6-2-6: critical radiant flux 0.45 W/cm2 or more -> class 1, 0.22 or more -> class 2, below that none', [0.5, 0.45, 0.449, 0.22, 0.219, 0].map(x => J('xfFloor(' + x + ')')), [1, 1, 2, 2, 0, 0]);
+const calc = o => J('xfCalc(' + JSON.stringify(o) + ')');
+{
+  const m1 = {mode: 1, req: 1, freq: 1, gb: false, spr: false, act: 1, fact: 1, da: 0, wa: 100};
+  check('no sprinklers: requirements stay (B and floor 1); sprinklers lower the walls and ceilings one class: A -> B, B -> C, C stays C; floors 1 -> 2 and 2 -> none', [calc(m1).effReq, calc(Object.assign({}, m1, {spr: true, req: 0})).effReq, calc(Object.assign({}, m1, {spr: true, req: 1})).effReq, calc(Object.assign({}, m1, {spr: true, req: 2})).effReq, calc(Object.assign({}, m1, {spr: true})).fEff, calc(Object.assign({}, m1, {spr: true, freq: 2})).fEff, calc(m1).fEff], [1, 1, 2, 2, 2, 0, 1]);
+  check('group B institutions get no reduction even with sprinklers', [calc(Object.assign({}, m1, {spr: true, gb: true, req: 0})).effReq, calc(Object.assign({}, m1, {spr: true, gb: true})).fEff, calc(Object.assign({}, m1, {spr: true, gb: true})).reduce], [0, 1, false]);
+  check('a better class replaces a lesser requirement: actual A and B satisfy B, actual C does not; actual none (not classified) never satisfies', [0, 1, 2, -1].map(a => calc(Object.assign({}, m1, {act: a})).okWall), [true, true, false, false]);
+  check('floor: actual class 1 satisfies 1 and 2, class 2 does not satisfy 1, unclassified never; nothing required always passes', [calc(Object.assign({}, m1, {fact: 1})).okFloor, calc(Object.assign({}, m1, {fact: 2})).okFloor, calc(Object.assign({}, m1, {fact: 0})).okFloor, calc(Object.assign({}, m1, {freq: 0, fact: 0})).okFloor, calc(Object.assign({}, m1, {freq: 2, fact: 2})).okFloor], [true, false, false, true, true]);
+  check('3-6-6: decorations of class C up to 10 % of the wall or ceiling area where A or B is required: 10 % passes, 11 % fails; no limit when C is required', [calc(Object.assign({}, m1, {da: 10})).okDeco, calc(Object.assign({}, m1, {da: 11})).okDeco, calc(Object.assign({}, m1, {req: 2, da: 50})).decoAllowed, calc(Object.assign({}, m1, {req: 2, da: 50})).okDeco], [true, false, null, true]);
+}
+{
+  const m2 = {mode: 2, ua: 9, ud: 3, ga: 36, gd: 12, gap: 0.6, ta: 20, ca: 40, loc: 0, gap2: 1.2};
+  const r = calc(m2);
+  check('3-6-8: unit 9 m2 and 3 m, group 36 m2 and 12 m, gap 0.60 m and 50 % of the ceiling are all exactly at their limits and pass', [r.okUnit, r.okGroup, r.okGap, r.share, r.okShare, r.ok], [true, true, true, 50, true, true]);
+  check('... just beyond each limit fails: unit 9.1 m2 or 3.1 m, group 36.1 m2 or 12.1 m, gap 0.59 m, 51 % of the ceiling', [calc(Object.assign({}, m2, {ua: 9.1})).ok, calc(Object.assign({}, m2, {ud: 3.1})).ok, calc(Object.assign({}, m2, {ga: 36.1})).ok, calc(Object.assign({}, m2, {gd: 12.1})).ok, calc(Object.assign({}, m2, {gap: 0.59})).ok, calc(Object.assign({}, m2, {ta: 20.4})).ok], [false, false, false, false, false, false]);
+  check('in a public corridor or an exit stair shaft: 0.9 m2 units at least 1.2 m apart only', [calc(Object.assign({}, m2, {loc: 1, ua: 0.9})).ok, calc(Object.assign({}, m2, {loc: 1, ua: 0.91})).ok, calc(Object.assign({}, m2, {loc: 1, ua: 0.5, gap2: 1.19})).ok, calc(Object.assign({}, m2, {loc: 1, ua: 0.5, gap2: 1.2})).ok], [true, false, false, true]);
+  check('no ceiling area gives no share', [calc(Object.assign({}, m2, {ca: 0})).share], [0]);
+}
+{
+  const m3 = {mode: 3, area: 300, fs25: true, spr: false, comp: false, stud: false, h: 2.7};
+  check('3-4-1-2: concealed space limit 500 m2 for flame spread up to 25, 250 m2 above; 500 passes, 501 fails; 300 m2 needs 1 part', [calc(m3).limit, calc(Object.assign({}, m3, {fs25: false})).limit, calc(Object.assign({}, m3, {area: 500})).ok, calc(Object.assign({}, m3, {area: 501})).ok, calc(m3).parts], [500, 250, true, false, 1]);
+  check('parts needed: 1200 m2 at 250 -> 5, 1250 -> 5, 1251 -> 6; sprinklers or a fire compartment design remove the limit', [calc(Object.assign({}, m3, {area: 1200, fs25: false})).parts, calc(Object.assign({}, m3, {area: 1250, fs25: false})).parts, calc(Object.assign({}, m3, {area: 1251, fs25: false})).parts, calc(Object.assign({}, m3, {area: 5000, spr: true})).ok, calc(Object.assign({}, m3, {area: 5000, comp: true})).ok], [5, 5, 6, true, true]);
+  check('3-4-1-3: combustible studs or sheathing: height up to 3 m passes, 3.1 m needs 2 vertical parts, 7 m needs 3', [calc(Object.assign({}, m3, {stud: true, h: 3})).okStud, calc(Object.assign({}, m3, {stud: true, h: 3.1})).okStud, calc(Object.assign({}, m3, {stud: true, h: 3.1})).studParts, calc(Object.assign({}, m3, {stud: true, h: 7})).studParts, calc(Object.assign({}, m3, {stud: false, h: 9})).okStud], [true, false, 2, 3, true]);
+}
+let tt;
+w.renderCalc('egfinish'); w.calcResult('egfinish');
+tt = txt(w, 'xf_results');
+check('the default page classifies flame spread 40 / smoke 300 as B and the floor flux 0.30 as class 2, with the 🔴 note; only the first group is visible', [tt.includes('نوعية تشطيب الحوائط والأسقفB'), tt.includes('نوعية تشطيب الأرضيات2'), tt.includes('🔴'), w.document.getElementById('xf_g0').style.display, w.document.getElementById('xf_g1').style.display], [true, true, true, '', 'none']);
+set('xf_fs', '300'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('flame spread 300 is not classified and the reason is shown', [tt.includes('غير مصنفة'), tt.includes('أكبر من 200')], [true, true]);
+set('xf_m', '1'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('the requirements page shows the required B, the adopted B, ✔ for an actual B and the decorations at 0 %', [tt.includes('النوعية المطلوبة للحوائط والأسقفB'), tt.includes('النوعية المعتمدة بعد التخفيضB'), tt.includes('✔'), tt.includes('0.0 %')], [true, true, true, true]);
+set('xf_sp', '1'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('with sprinklers the adopted class becomes C and the floor requirement is lowered to 2', [tt.includes('النوعية المعتمدة بعد التخفيضC'), tt.includes('بعد التخفيض: 2')], [true, true]);
+set('xf_gb', '1'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('group B shows that there is no reduction', [tt.includes('النوعية المعتمدة بعد التخفيضB'), tt.includes('لا يسري التخفيض')], [true, true]);
+set('xf_m', '2'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('the light fixtures page is compliant for the defaults (4 m2 units, 20 m2 groups, 25 % of the ceiling)', [tt.includes('مطابقة'), tt.includes('25.0 %'), w.document.getElementById('xf_g2').style.display], [true, true, '']);
+set('xf_ta', '25'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('62.5 % of the ceiling fails the 50 % limit', [tt.includes('62.5 %'), tt.includes('غير مطابقة'), tt.includes('✘')], [true, true, true]);
+set('xf_m', '3'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('the concealed spaces page shows 500 m2, 300 m2 passing and one part', [tt.includes('500 m²'), tt.includes('300.0 m²'), tt.includes('✔')], [true, true, true]);
+set('xf_fc', '1'); w.calcResult('egfinish'); tt = txt(w, 'xf_results');
+check('flame spread above 25 lowers the limit to 250 m2 and 300 m2 needs two parts', [tt.includes('250 m²'), tt.includes('✘')], [true, true]);
+check('other reference codes open egfinish too', others('egfinish', 'xf_results'), [true, true, true]);
+}
+// ---------- part 211: Egyptian fire code part 4, chapter 3 automatic sprinklers (`egspr`: Figure 3-1 area / density curves, Tables 3-A to 3-K, clauses 3-14 to 3-31) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const F2 = 0.09290304, G = 40.7458;
+const dens = (c, a) => J('xrDensity(' + c + ',' + a + ')');
+check('Figure 3-1 ends in L/min/m2: light 0.10 gpm/ft2 at 1500 ft2 = 4.07 and 0.07 at 3000 ft2 = 2.85; ordinary 1: 6.11 and 4.07 (4000 ft2); ordinary 2: 8.15 and 6.11; extra 1: 12.22 at 2500 ft2 and 8.15 at 5000 ft2; extra 2: 16.30 and 12.22', [[0, 1500], [0, 3000], [1, 1500], [1, 4000], [2, 1500], [2, 4000], [3, 2500], [3, 5000], [4, 2500], [4, 5000]].map(x => dens(x[0], x[1] * F2)), [0.10 * G, 0.07 * G, 0.15 * G, 0.10 * G, 0.20 * G, 0.15 * G, 0.30 * G, 0.20 * G, 0.40 * G, 0.30 * G], 1e-9);
+check('between the ends the curve is a straight line: light at 2250 ft2 = 0.085 gpm/ft2; ordinary 1 at 2750 ft2 = 0.125; extra 2 at 3750 ft2 = 0.35', [dens(0, 2250 * F2), dens(1, 2750 * F2), dens(4, 3750 * F2)], [0.085 * G, 0.125 * G, 0.35 * G], 1e-9);
+check('outside the curve the end values are used: light below 1500 ft2 and above 3000 ft2; extra below 2500 ft2 and above 5000 ft2', [dens(0, 50), dens(0, 900), dens(3, 100), dens(3, 700), dens(4, 700)], [0.10 * G, 0.07 * G, 0.30 * G, 0.20 * G, 0.30 * G], 1e-9);
+const calc = o => J('xrCalc(' + JSON.stringify(o) + ')');
+{
+  const m0 = {mode: 0, c: 1, area: 1500 * F2, dry: false, hot: false, hoseSel: 0, tm: 0, sa: 12, K: 80};
+  const r = calc(m0), d = 0.15 * G;
+  check('ordinary group 1 over 1500 ft2 (139.35 m2): density 6.11 L/min/m2, flow 852 L/min, 12 sprinklers of 12 m2 each discharging 73.3 L/min at (73.3 / 80)^2 = 0.84 bar', [r.d, r.Q, r.heads, r.qHead, r.pHead], [d, d * 1500 * F2, 12, d * 12, Math.pow(d * 12 / 80, 2)], 1e-9);
+  check('duration 60 minutes for ordinary hazard; volume = 852 x 60 / 1000 = 51.1 m3; maximum area of one system 4850 m2', [r.t, r.V, r.maxArea], [60, d * 1500 * F2 * 60 / 1000, 4850], 1e-9);
+  check('hose allowances: 190 L/min for one point, 380 for two or more, and the combined inside and outside flow of Table 3-e: 380 light, 950 ordinary, 1900 extra', [calc(Object.assign({}, m0, {hoseSel: 1})).Qh, calc(Object.assign({}, m0, {hoseSel: 2})).Qh, calc(Object.assign({}, m0, {hoseSel: 3, c: 0})).Qh, calc(Object.assign({}, m0, {hoseSel: 3, c: 2})).Qh, calc(Object.assign({}, m0, {hoseSel: 3, c: 3})).Qh], [190, 380, 380, 950, 1900]);
+  check('durations: light 30 or 30, ordinary 60 or 90, extra 90 or 120 minutes', [calc(Object.assign({}, m0, {c: 0})).t, calc(Object.assign({}, m0, {c: 0, tm: 1})).t, calc(m0).t, calc(Object.assign({}, m0, {tm: 1})).t, calc(Object.assign({}, m0, {c: 3})).t, calc(Object.assign({}, m0, {c: 4, tm: 1})).t], [30, 30, 60, 90, 90, 120]);
+  const dry = calc(Object.assign({}, m0, {dry: true, area: 200}));
+  check('a dry system increases the design area by 30 %: 200 m2 -> 260 m2 with the density read at 260 m2', [dry.A, dry.d], [260, dens(1, 260)], 1e-9);
+  check('high-temperature sprinklers cut the design area 25 % in extra hazard but never below 186 m2: 400 -> 300, 200 -> 186; they do nothing in ordinary hazard', [calc(Object.assign({}, m0, {c: 3, hot: true, area: 400})).A, calc(Object.assign({}, m0, {c: 3, hot: true, area: 200})).A, calc(Object.assign({}, m0, {c: 1, hot: true, area: 200})).A], [300, 186, 200], 1e-9);
+  check('areas outside the curve are flagged: below the start (50 m2 -> the start density) and above the end (500 m2 on the light curve)', [calc(Object.assign({}, m0, {area: 50})).below, calc(Object.assign({}, m0, {c: 0, area: 500})).above, calc(m0).below, calc(m0).above], [true, true, false, false]);
+  check('extra hazard areas above 3750 m2 are not allowed for one system through the area limit 3750 m2', [calc(Object.assign({}, m0, {c: 3})).maxArea, calc(Object.assign({}, m0, {c: 4})).maxArea, calc(Object.assign({}, m0, {c: 0})).maxArea], [3750, 3750, 4850]);
+}
+{
+  const p = (haz, mat, above, wide, n) => J('(function () { const t = ' + (above ? (haz ? "'j'" : "'g'") : (haz ? "'h'" : "'f'")) + '; return xrPipe(t, ' + mat + ', ' + n + ', ' + wide + '); })()');
+  check('Table 3-f, light hazard steel: 2 sprinklers DN 25, 3 -> 32, 5 -> 38, 10 -> 50, 30 -> 63, 60 -> 75; copper: 12 -> 50, 40 -> 63, 65 -> 75; one more than the limit moves to the next size', [2, 3, 4, 5, 6, 10, 11, 30, 31, 60].map(n => p(0, 0, false, false, n).dn).concat([12, 13, 40, 41, 65].map(n => p(0, 1, false, false, n).dn)), [25, 32, 38, 38, 50, 50, 63, 63, 75, 75, 50, 63, 63, 75, 75]);
+  check('... beyond DN 75 (60 steel, 65 copper) the table has no row', [p(0, 0, false, false, 61), p(0, 1, false, false, 66)], [null, null]);
+  check('Table 3-h, ordinary hazard steel: 2, 3, 5, 10, 20, 40, 100, 160, 275 sprinklers -> DN 25, 32, 38, 50, 63, 75, 100, 125, 150; copper 12, 25, 45, 115, 180, 300 -> 50, 63, 75, 100, 125, 150', [2, 3, 5, 10, 20, 40, 100, 160, 275].map(n => p(1, 0, false, false, n).dn).concat([12, 25, 45, 115, 180, 300].map(n => p(1, 1, false, false, n).dn)), [25, 32, 38, 50, 63, 75, 100, 125, 150, 50, 63, 75, 100, 125, 150]);
+  check('... 276 steel sprinklers have no row in the table (DN 200 by the area limit)', [p(1, 0, false, false, 276), p(1, 1, false, false, 301)], [null, null]);
+  check('Table 3-i: when the branches are more than 3.7 m apart DN 63 / 75 / 100 take 15 / 30 / 60 steel (20 / 35 / 65 copper): 15 -> 63, 16 -> 75, 31 -> 100, 61 -> 125 (160 of the normal table)', [15, 16, 30, 31, 60, 61].map(n => p(1, 0, false, true, n).dn).concat([20, 21, 35, 36, 65, 66].map(n => p(1, 1, false, true, n).dn)), [63, 75, 75, 100, 100, 125, 63, 75, 75, 100, 100, 125]);
+  check('Table 3-g (light above and below ceilings): 2, 4, 7, 15, 50 steel -> DN 25 to 63; copper 18 -> 50, 65 -> 63; Table 3-j (ordinary): 2, 4, 7, 15, 30, 60 -> DN 25 to 75; copper 18, 40, 65', [2, 4, 7, 15, 50].map(n => p(0, 0, true, false, n).dn).concat([18, 65].map(n => p(0, 1, true, false, n).dn), [2, 4, 7, 15, 30, 60].map(n => p(1, 0, true, false, n).dn), [18, 40, 65].map(n => p(1, 1, true, false, n).dn)), [25, 32, 38, 50, 63, 50, 63, 25, 32, 38, 50, 63, 75, 50, 63, 75]);
+  const m1 = {mode: 1, haz: 1, mat: 0, above: false, wide: false, n: 20, side: 8, area: 300};
+  check('the page logic: 20 ordinary steel sprinklers -> DN 63; 276 -> DN 200 by area; light 61 -> DN 100 by area; above and below ceilings beyond the table -> feed pipe at least DN 75 sized by the normal table', [calc(m1).p.dn, calc(Object.assign({}, m1, {n: 276})).p.dn, calc(Object.assign({}, m1, {n: 276})).byArea, calc(Object.assign({}, m1, {haz: 0, n: 61})).p.dn, calc(Object.assign({}, m1, {haz: 0, above: true, n: 51})).back, calc(Object.assign({}, m1, {haz: 0, above: true, n: 51})).p2.dn, calc(Object.assign({}, m1, {haz: 1, above: true, n: 61})).p2.dn], [63, 200, true, 100, true, 75, 100]);
+  check('branch line: up to 8 sprinklers per side; 9 or 10 only with larger pipes; more than 10 not allowed', [8, 9, 10, 11].map(s => [calc(Object.assign({}, m1, {side: s})).sideOk, calc(Object.assign({}, m1, {side: s})).sideLarge]), [[true, false], [false, true], [false, true], [false, false]]);
+  const s0 = calc(Object.assign({}, m1, {haz: 0})), s1 = calc(m1);
+  check('Table 3-d: light 1 bar, 1890 - 2840 L/min, 30 - 60 min; ordinary 1.4 bar, 3220 - 5680 L/min, 60 - 90 min; Table 3-e hose allowance combined 380 L/min (30 min) and 950 L/min (60 - 90 min)', [s0.sup, s1.sup, s0.hose, s1.hose], [[1, 1890, 2840, 30, 60], [1.4, 3220, 5680, 60, 90], [190, 380, 380, 30, 30], [190, 380, 950, 60, 90]]);
+  check('water volume range: light (1890 + 380) x 30 = 68.1 m3 to (2840 + 380) x 60 = 193.2 m3; ordinary (3220 + 950) x 60 = 250.2 m3 to (5680 + 950) x 90 = 596.7 m3', [s0.vLow, s0.vHigh, s1.vLow, s1.vHigh], [68.1, 193.2, 250.2, 596.7], 1e-9);
+  check('the pipe-schedule method is accepted for new work up to 465 m2; the largest areas are 4850 m2', [calc(Object.assign({}, m1, {area: 465})).areaOk, calc(Object.assign({}, m1, {area: 466})).areaOk, s1.maxArea], [true, false, 4850]);
+}
+{
+  const m2 = {mode: 2, haz: 0, ct: 0, hyd: false, sw: false, s: 3.6, b: 3.6, we: 1.5, wb: 3, bd: 0.6};
+  const a = o => calc(Object.assign({}, m2, o));
+  check('maximum area per sprinkler: light 19 m2 (21 m2 hydraulic) on flat ceilings or beams, 12 m2 under wooden joists, 16 m2 otherwise; ordinary 12 m2 for every construction; extra 8.5 m2 (9.3 m2 hydraulic)', [a({}).areaMax, a({hyd: true}).areaMax, a({ct: 1}).areaMax, a({ct: 2}).areaMax, a({haz: 1}).areaMax, a({haz: 1, ct: 2}).areaMax, a({haz: 2}).areaMax, a({haz: 2, hyd: true}).areaMax], [19, 21, 12, 16, 12, 12, 8.5, 9.3]);
+  check('sidewall sprinklers: light 18 m2 (16 m2 for combustible ceilings closed with resistant material), ordinary 9.3 m2 (7.5 m2), extra not given; branch spacing up to 4.25 m (light) or 3 m (ordinary)', [a({sw: true}).areaMax, a({sw: true, ct: 1}).areaMax, a({sw: true, haz: 1}).areaMax, a({sw: true, haz: 1, ct: 1}).areaMax, a({sw: true, haz: 2}).areaMax, a({sw: true}).bMax, a({sw: true, haz: 1}).bMax], [18, 16, 9.3, 7.5, null, 4.25, 3]);
+  check('3.6 x 3.6 m (12.96 m2) passes the 19 m2 light limit and fails the 12 m2 limit of ordinary hazard; 4.6 m spacing passes light and ordinary but 3.7 m is the limit of extra hazard', [a({}).okArea, a({haz: 1}).okArea, a({s: 4.6, b: 4.1}).okS, a({s: 4.61}).okS, a({haz: 2, s: 3.7}).okS, a({haz: 2, s: 3.71}).okS], [true, false, true, false, true, false]);
+  check('distance of the end sprinkler from the wall: not above half the allowed spacing (2.3 m, 1.85 m for extra) and not less than 0.10 m; end branch from the wall not above 1.5 times the allowed spacing (6.9 m, 5.55 m)', [a({we: 2.3}).okEnd, a({we: 2.31}).okEnd, a({we: 0.1}).okEnd, a({we: 0.09}).okEnd, a({haz: 2, we: 1.85}).okEnd, a({haz: 2, we: 1.86}).okEnd, a({wb: 6.9}).okBranch, a({wb: 6.91}).okBranch, a({haz: 2, wb: 5.55}).okBranch], [true, false, true, false, true, false, true, false, true]);
+  check('Table 3-k: lateral distance to the beam (m) -> largest vertical distance (mm): < 0.3 -> 0, 0.3 -> 25, 0.45 -> 50, 0.6 -> 75, 0.75 -> 100, 0.9 -> 150, 1.05 -> 175, 1.2 -> 225, 1.35 -> 275, 1.5 -> 350; 1.65 and more is outside the table', [0.2, 0.3, 0.44, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 1.64, 1.65].map(d => J('xrBeam(' + d + ')')), [0, 25, 25, 50, 75, 100, 150, 175, 225, 275, 350, 350, null]);
+}
+{
+  const m3 = {mode: 3, dn: 0, pmax: 8, haz: 1, tank: 11000, hw: 3};
+  check('Table 3-c flushing flow: DN 100 -> 1514 L/min, 125 -> 2271, 150 -> 2839, 200 -> 3785, 250 -> 5678, 300 -> 7570 (the 400, 600, 750, 1000, 1500 and 2000 gpm of NFPA 13)', [0, 1, 2, 3, 4, 5].map(i => calc(Object.assign({}, m3, {dn: i})).flush), [1514, 2271, 2839, 3785, 5678, 7570]);
+  check('hydrostatic test 14 bar for 2 h; above 10 bar working pressure it is the working pressure + 4 bar: 10 -> 14, 10.5 -> 14.5, 12 -> 16; 12 bar is the largest working pressure', [8, 10, 10.5, 12].map(p => calc(Object.assign({}, m3, {pmax: p})).test).concat([calc(Object.assign({}, m3, {pmax: 12})).airOk, calc(Object.assign({}, m3, {pmax: 12.5})).airOk]), [14, 14, 14.5, 16, true, false]);
+  check('pressure tank: at least 7500 L (light) or 11000 L (ordinary); internal pressure at least 5.5 bar + 3 x the water-column pressure: 3 m -> 5.5 + 3 x 3 / 10.197 = 6.38 bar', [calc(Object.assign({}, m3, {haz: 0})).tankMin, calc(m3).tankMin, calc(Object.assign({}, m3, {tank: 10999})).tankOk, calc(m3).tankOk, calc(m3).tankP], [7500, 11000, false, true, 5.5 + 9 / 10.197], 1e-9);
+}
+{
+  const m4 = {mode: 4, grp: 0, rack: 0, h: 1.5, box: false, gap: 2};
+  const s = o => calc(Object.assign({}, m4, o));
+  check('Table 3-a: groups I and III on bases -> ordinary 1, groups II and IV -> ordinary 2; on shelves or racks: I and III -> high 1, II and IV -> high 2', [0, 1, 2, 3].map(g => s({grp: g}).deg).concat([0, 1, 2, 3].map(g => s({grp: g, rack: 1}).deg)), ['خطورة عادية، المجموعة 1', 'خطورة عادية، المجموعة 2', 'خطورة عادية، المجموعة 1', 'خطورة عادية، المجموعة 2', 'خطورة عالية، المجموعة 1', 'خطورة عالية، المجموعة 2', 'خطورة عالية، المجموعة 1', 'خطورة عالية، المجموعة 2']);
+  check('Table 3-b (plastics group A): up to 1.5 m -> ordinary 2 with 2.0 m clearance; 1.5 - 3 m: shelves in cartons -> high 1, shelves without cartons -> high 2, racks / bases -> high 2, clearance 1.5 m; above 3 m not given', [s({}).plastic, s({}).gap, s({h: 2, rack: 1, box: true}).plastic, s({h: 2, rack: 1}).plastic, s({h: 2}).plastic, s({h: 2}).gap, s({h: 3.5}).plastic, s({h: 3.5}).gap], ['خطورة عادية، المجموعة 2', 2, 'خطورة عالية، المجموعة 1', 'خطورة عالية، المجموعة 2', 'خطورة عالية، المجموعة 2', 1.5, '', null]);
+  check('clearance between stock and ceiling: 2.0 m is needed up to 1.5 m of stock, 1.5 m above; smaller values fail', [s({gap: 2}).okGap, s({gap: 1.9}).okGap, s({h: 2, gap: 1.5}).okGap, s({h: 2, gap: 1.4}).okGap, s({h: 3.5}).okGap], [true, false, true, false, null]);
+}
+let tt;
+w.renderCalc('egspr'); w.calcResult('egspr');
+tt = txt(w, 'xr_results');
+check('the default page (ordinary group 1, 139.4 m2, one inside hose) shows the curve, the density 6.11, the flows 852 + 190 = 1042 L/min, the 60 minute duration, the volume and the 🔴 note; only the first group is visible', [tt.includes('خطورة عادية، المجموعة الأولى'), tt.includes('6.11 L/min/m²'), tt.includes('852 L/min'), tt.includes('1042 L/min'), tt.includes('60 min'), tt.includes('62.5 m³'), tt.includes('🔴'), w.document.getElementById('xr_g0').style.display, w.document.getElementById('xr_g1').style.display], [true, true, true, true, true, true, true, '', 'none']);
+set('xr_dr', '1'); set('xr_a', '200'); w.calcResult('egspr'); tt = txt(w, 'xr_results');
+check('a dry system shows the 260 m2 design area', [tt.includes('260.0 m²'), tt.includes('30 %')], [true, true]);
+set('xr_m', '1'); w.calcResult('egspr'); tt = txt(w, 'xr_results');
+check('the pipe-schedule page: 20 steel sprinklers need DN 63, the supply ranges and the volume range 250.2 - 596.7 m3 appear, 300 m2 is within 465 m2', [tt.includes('DN 63'), tt.includes('3220'), tt.includes('5680'), tt.includes('250.2 - 596.7 m³'), tt.includes('✔'), w.document.getElementById('xr_g1').style.display], [true, true, true, true, true, '']);
+set('xr_n', '300'); w.calcResult('egspr'); tt = txt(w, 'xr_results');
+check('300 ordinary sprinklers need DN 200 by the area limit', [tt.includes('DN 200'), tt.includes('4850')], [true, true]);
+set('xr_m', '2'); w.calcResult('egspr'); tt = txt(w, 'xr_results');
+check('the coverage page: 12.96 m2 against the ordinary 12 m2 fails ✘, the 3.6 m spacing passes, the beam distance 0.6 m gives 75 mm', [tt.includes('12.96 m²'), tt.includes('✘'), tt.includes('75 mm')], [true, true, true]);
+set('xr_m', '3'); w.calcResult('egspr'); tt = txt(w, 'xr_results');
+check('the tests page shows the flushing flow 1514 L/min, the 14 bar test, 2.8 bar air test, tank 11000 L ✔ and 6.38 bar', [tt.includes('1514 L/min'), tt.includes('14.0 bar'), tt.includes('2.8 bar'), tt.includes('11000 L'), tt.includes('6.38 bar')], [true, true, true, true, true]);
+set('xr_m', '4'); w.calcResult('egspr'); tt = txt(w, 'xr_results');
+check('the storage page shows group I on bases as ordinary 1 and the plastics clearance', [tt.includes('خطورة عادية، المجموعة 1'), tt.includes('الفراغ بين قمة المخزون والسقف')], [true, true]);
+check('other reference codes open egspr too', others('egspr', 'xr_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
