@@ -4562,6 +4562,121 @@ set('xw_m', '4'); w.calcResult('egspray'); tt = txt(w, 'xw_results');
 check('the pipes page: DN 150 wall 3.40 ✔, 18.64 L/m, 932 L ✔, the 3.0 m spacing, 1.4 bar and the ultra-high-speed limits', [tt.includes('3.40 mm'), tt.includes('18.64 L/m'), tt.includes('932 L'), tt.includes('1.4 bar'), tt.includes('100 ms'), tt.includes('5.681')], [true, true, true, true, true, true]);
 check('other reference codes open egspray too', others('egspray', 'xw_results'), [true, true, true]);
 }
+// ---------- part 214: Egyptian fire code part 4, chapter 3 occupancy classification and sprinkler installation rules (`egsprinst`: clauses 3-4, 3-18-2, 3-18-1, 3-19 to 3-24) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+check('occupancy list: 55 entries = 10 light, 8 ordinary group 1, 23 ordinary group 2, 7 extra group 1, 7 extra group 2', J(`[0, 1, 2, 3, 4].map(c => XK_O.filter(x => x[1] === c).length).concat([XK_O.length])`), [10, 8, 23, 7, 7, 55]);
+const idx = name => J('XK_O.findIndex(x => x[0] === ' + JSON.stringify(name) + ')');
+const calc = o => J('xkCalc(' + JSON.stringify(o) + ')');
+{
+  const c = (n, sh) => calc({mode: 0, oc: idx(n), sh});
+  check('examples: offices and hospitals are light; bakeries and parking are ordinary 1; paper mills, textile and printing are ordinary 2; hangars and foam upholstery are extra 1; paint dipping and plastics are extra 2', [c('المكاتب', 1).cls, c('أماكن التمريض أو الاستشفاء أو النقاهة', 1).cls, c('المخابز', 1).cls, c('أماكن انتظار السيارات أو صالات عرضها', 1).cls, c('معالجة الورق', 1).cls, c('تصنيع المنسوجات', 1).cls, c('دور الطبع والنشر', 1).cls, c('حظائر الطائرات', 1).cls, c('التنجيد بالإسفنج الصناعي (الفوم)', 1).cls, c('الدهانات والطلاء بالغمس', 1).cls, c('معالجة البلاستيك', 1).cls], [0, 0, 1, 1, 2, 2, 2, 3, 3, 4, 4]);
+  check('curve numbers of Figure 3-1 follow the class (1 to 5); areas 4850 for light and ordinary; extra 2350 by tables, 3750 hydraulic; the table method only for light and ordinary', [0, 1, 2, 3, 4].map(k => { const r = calc({mode: 0, oc: J('XK_O.findIndex(x => x[1] === ' + k + ')'), sh: 1}); return [r.curve, r.areaTab, r.areaHyd, r.tableMethod]; }), [[1, 4850, 4850, true], [2, 4850, 4850, true], [3, 4850, 4850, true], [4, 2350, 3750, false], [5, 2350, 3750, false]]);
+  check('stock height: ordinary 1 up to 2.4 m (2.5 m moves to group 2, 3.8 m to the storage rules); ordinary 2 up to 3.7 m (3.8 m to storage rules); light and extra have no limit', [c('المخابز', 2.4).okStock, c('المخابز', 2.5).okStock, c('المخابز', 2.5).next, c('المخابز', 3.8).next, c('معالجة الورق', 3.7).okStock, c('معالجة الورق', 3.8).okStock, c('معالجة الورق', 3.8).next, c('المكاتب', 9).okStock, c('حظائر الطائرات', 9).okStock], [true, false, 2, 'storage', true, false, 'storage', null, null]);
+}
+{
+  const a = o => calc(Object.assign({mode: 1, cls: 1, hyd: false, area: 4000, stor: 0}, o));
+  check('largest area of one system: light and ordinary 4850 m2 in both methods; extra 2350 m2 by tables and 3750 m2 hydraulically', [a({cls: 0}).limit, a({cls: 2, hyd: true}).limit, a({cls: 3}).limit, a({cls: 3, hyd: true}).limit, a({cls: 4}).limit], [4850, 4850, 2350, 3750, 2350]);
+  check('4850 m2 passes, 4851 needs 2 control groups, 9700 needs 2, 9701 needs 3; extra by tables: 2351 -> 2', [a({area: 4850}).exOk, a({area: 4851}).sections, a({area: 9700}).sections, a({area: 9701}).sections, a({cls: 3, area: 2351}).sections], [true, 2, 2, 3, 2]);
+  check('storage in the same system: storage up to 3750 m2 and the total with the other area up to 4850 m2', [a({stor: 3750, area: 1100}).okStor, a({stor: 3751, area: 1000}).okStor, a({stor: 3750, area: 1100}).okTotal, a({stor: 3750, area: 1101}).okTotal, a({stor: 0}).mixed, a({stor: 100}).mixed], [true, false, true, false, false, true]);
+}
+{
+  const d = o => calc(Object.assign({mode: 2, dn: 100, dm: 50, vol: 100, freeze: false, da: 25, tieD: 25, tieS: 4, td: 25}, o));
+  check('main drain by riser size: up to 50 mm -> 20 mm, 63 / 75 / 90 mm -> 32 mm, 100 mm and more -> 50 mm', [25, 50, 62, 63, 75, 90, 100, 150].map(n => d({dn: n}).main), [20, 20, 20, 32, 32, 32, 50, 50]);
+  check('main drain check: 50 mm drain for a 100 mm riser passes, 32 mm fails', [d({}).mainOk, d({dm: 32}).mainOk], [true, false]);
+  check('auxiliary drain, wet: up to 19 L a 12 mm nipple with cap; 19 to 190 L a 20 mm valve; 190 L and more a 25 mm valve', [19, 19.1, 189.9, 190, 400].map(v => d({vol: v}).aux + d({vol: v}).auxDn), ['nipple12', 'valve2020', 'valve2020', 'valve2525', 'valve2525']);
+  check('auxiliary drain, dry or exposed to freezing: up to 19 L a 12 mm valve; above that two 25 mm valves and a 50 x 300 mm condensate nipple', [19, 19.1, 300].map(v => d({vol: v, freeze: true}).aux + d({vol: v, freeze: true}).auxDn), ['valve1212', 'two2525', 'two2525']);
+  check('valve size check against the requirement; tie-in drains at most 25 mm with a slope of at least 4 mm/m; test pipe at least 25 mm', [d({vol: 200, da: 20}).auxOk, d({vol: 200, da: 25}).auxOk, d({tieD: 26}).okTie, d({tieS: 3.9}).okTie, d({}).okTie, d({td: 24}).okTest, d({td: 25}).okTest], [false, true, false, false, true, false, true]);
+}
+{
+  const s = o => calc(Object.assign({mode: 3, role: 0, dry: true, freeze: false, slope: 4, temp: 10}, o));
+  check('slopes in dry and exposed systems: branches 4 mm/m; feed and distribution mains 2 mm/m, 4 mm/m when they pass freezing areas; wet systems need none', [s({}).needEff, s({role: 1}).needEff, s({role: 1, freeze: true}).needEff, s({dry: false, freeze: false}).needEff, s({dry: false, freeze: true}).needEff], [4, 2, 4, 0, 4]);
+  check('slope pass / fail: 4 mm/m passes for a branch, 3.9 fails; 1.9 mm/m fails for a main and 2 passes; wet systems pass any slope', [s({}).okSlopeEff, s({slope: 3.9}).okSlopeEff, s({role: 1, slope: 2}).okSlopeEff, s({role: 1, slope: 1.9}).okSlopeEff, s({dry: false, slope: 0}).okSlopeEff], [true, false, true, false, true]);
+  check('pipe temperature at least 4 C', [s({temp: 4}).okTemp, s({temp: 3.9}).okTemp, s({temp: -2}).okTemp], [true, false, false]);
+}
+{
+  const t = o => calc(Object.assign({mode: 4, dn: 50, screwed: false, pf: 12, tc: 6, br: 300, de: 32, hl: 20, hd: 32, hyd: false, fd: 63, hp: 6, vd: 25}, o));
+  check('flange or mechanical joint at each floor for 75 mm and larger risers; screwed ends only up to 50 mm', [t({dn: 74}).flange, t({dn: 75}).flange, t({screwed: true, dn: 50}).okScrew, t({screwed: true, dn: 63}).okScrew, t({screwed: false, dn: 100}).okScrew], [false, true, true, false, true]);
+  check('bend radius: 6 x D up to DN 50 (300 mm), 5 x D from DN 63 (315 mm for DN 63, 500 mm for DN 100)', [t({}).bendMin, t({dn: 63}).bendMin, t({dn: 100}).bendMin, t({br: 299}).okBend, t({br: 300}).okBend], [300, 315, 500, false, true]);
+  check('fittings rated 12 bar or more, valve closing 5 s or more, distribution pipe ends 32 mm or more', [t({pf: 11.9}).okPress, t({pf: 12}).okPress, t({tc: 4.9}).okClose, t({tc: 5}).okClose, t({de: 25}).okEnd, t({de: 32}).okEnd], [false, true, false, true, false, true]);
+  check('hose connections: horizontal pipe 25 mm up to 6 m, 32 mm over 6 m up to 25 m, 38 mm over 25 m; feed 63 mm (50 mm with hydraulic calculations); pressure at most 7 bar; vertical at least 25 mm', [t({hl: 6}).hose, t({hl: 6.1}).hose, t({hl: 25}).hose, t({hl: 25.1}).hose, t({hl: 30, hd: 32}).okHose, t({}).feedMin, t({hyd: true}).feedMin, t({hyd: true, fd: 50}).okFeed, t({fd: 50}).okFeed, t({hp: 7}).okP, t({hp: 7.1}).okP, t({vd: 20}).okVert], [25, 32, 32, 38, false, 63, 50, true, false, true, false, false]);
+}
+let tt;
+w.renderCalc('egsprinst'); w.calcResult('egsprinst');
+tt = txt(w, 'xk_results');
+check('the default page (bakery, 2 m of stock) shows ordinary hazard group 1, curve 2, 4850 m2, the table method allowed, ✔ and the 🔴 note; only the first group is visible', [tt.includes('المخابز'), tt.includes('خطورة عادية، المجموعة الأولى'), tt.includes('منحنى الكثافة والمساحة رقم 2'), tt.includes('4850 m²'), tt.includes('مسموحة'), tt.includes('✔'), tt.includes('🔴'), w.document.getElementById('xk_g0').style.display, w.document.getElementById('xk_g1').style.display], [true, true, true, true, true, true, true, '', 'none']);
+set('xk_sh', '3'); w.calcResult('egsprinst'); tt = txt(w, 'xk_results');
+check('3 m of stock exceeds the ordinary-1 limit: ✘ and the move to group 2', [tt.includes('✘'), tt.includes('المجموعة الثانية للخطورة العادية')], [true, true]);
+set('xk_m', '1'); w.calcResult('egsprinst'); tt = txt(w, 'xk_results');
+check('the area page: 4850 m2 limit and 4000 m2 passing', [tt.includes('4850 m²'), tt.includes('4000 m²'), tt.includes('✔')], [true, true, true]);
+set('xk_cl', '3'); set('xk_ar', '3000'); w.calcResult('egsprinst'); tt = txt(w, 'xk_results');
+check('extra hazard by tables 2350 m2: 3000 m2 needs 2 control groups ✘', [tt.includes('2350 m²'), tt.includes('✘'), tt.includes('2 مجموعات')], [true, true, true]);
+set('xk_m', '2'); w.calcResult('egsprinst'); tt = txt(w, 'xk_results');
+check('the drain page: DN 50 riser -> 20 mm drain... for 100 mm: 50 mm, the 100 L trapped volume needs a 20 mm valve, tie-in drain 25 mm / 4 mm/m, test pipe 25 mm', [tt.includes('DN 50'), tt.includes('محبس 20 mm'), tt.includes('4 mm/m'), tt.includes('DN 25')], [true, true, true, true]);
+set('xk_m', '3'); w.calcResult('egsprinst'); tt = txt(w, 'xk_results');
+check('the slope page: branch 4 mm/m ✔ and the temperature 10 C ✔', [tt.includes('4 mm/m'), tt.includes('10.0 °C'), tt.includes('✔')], [true, true, true]);
+set('xk_m', '4'); w.calcResult('egsprinst'); tt = txt(w, 'xk_results');
+check('the connections page: bend 300 mm, hose pipe DN 32, feed DN 63, 7 bar limit', [tt.includes('300 mm'), tt.includes('DN 32'), tt.includes('DN 63'), tt.includes('7 bar')], [true, true, true, true]);
+check('other reference codes open egsprinst too', others('egsprinst', 'xk_results'), [true, true, true]);
+}
+// ---------- part 215: Egyptian fire code part 1, chapter 4-4 exit components (`egexitcomp`: doors, horizontal exits, ramps, corridors, smokeproof enclosures) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xcCalc(' + JSON.stringify(o) + ')');
+{
+  const d = o => calc(Object.assign({mode: 0, ang: 90, rt: 0.75, va: 0, vs: 1, gt: 6, sc: 0.6, lock: false, rev: false, rx: true, rb: false, rd: false, rs: 3, rn: 1, exits: 3}, o));
+  check('door opening angle at least 90 degrees; stair clearance at least 0.50 m; no locking against the escape direction', [d({ang: 90}).okAngle, d({ang: 89}).okAngle, d({sc: 0.5}).okClear, d({sc: 0.49}).okClear, d({lock: true}).okSwing, d({}).okSwing], [true, false, true, false, false, true]);
+  check('vision panel: wired glass 6 mm or more, area up to 0.80 m2, no side above 1.35 m, door rating up to 0.75 h; a 1 h door cannot have glass', [d({va: 0.8, vs: 1.35}).okGlass, d({va: 0.81}).okGlass, d({va: 0.5, vs: 1.36}).okGlass, d({va: 0.5, gt: 5}).okGlass, d({va: 0.5, rt: 1}).okGlass, d({va: 0.5, rt: 0.5}).okGlass, d({va: 0}).okGlass], [true, false, false, false, false, true, true]);
+  check('a revolving door is accepted on the exit-discharge floor with a swinging door beside it, not for B or F-1 or a single exit or a loading of 1.2 m2 per person or less, and not above half of the exits', [d({rev: true}).okRev, d({rev: true, rx: false}).okRev, d({rev: true, rb: true}).okRev, d({rev: true, rd: true}).okRev, d({rev: true, rs: 0}).okRev, d({rev: true, rn: 2, exits: 3}).okRev, d({rev: true, rn: 2, exits: 4}).okRev, d({rev: false, rx: false}).okRev], [true, false, false, false, false, false, true, true]);
+}
+{
+  const h = o => calc(Object.assign({mode: 1, exits: 4, hx: 2, units: 8, uo: 4, fac: 10, area1: 600, dw: 1.1, dsum: 1.1, bw: 1.1, rails: false, open: false, gh: 1, go: 0.1}, o));
+  check('horizontal exits count at most half the required exits (4 -> 2, 5 -> 2, 3 -> 1); the other exits keep at least half of the exit units (8 -> 4, 7 -> 4)', [h({}).maxH, h({exits: 5}).maxH, h({exits: 3}).maxH, h({hx: 3}).okCount, h({}).okCount, h({}).minOther, h({units: 7}).minOther, h({uo: 3.9}).okUnits, h({uo: 4}).okUnits], [2, 2, 1, false, true, 4, 4, false, true]);
+  check('not allowed for areas with 1.2 m2 per person or less; at least two exits are needed so a horizontal exit never stands alone', [h({fac: 1.2}).okFactor, h({fac: 1.21}).okFactor, h({exits: 1}).okSingle, h({}).okSingle], [false, true, false, true]);
+  check('bridge width at least the larger of the door width and the sum of the doors; 9 cm may be lost to a handrail; open bridge needs a 1 m guard with openings up to 10 cm', [h({bw: 1.09}).okBridge, h({bw: 1.09, rails: true}).okBridge, h({bw: 1.01, rails: true}).okBridge, h({bw: 1, rails: true}).okBridge, h({dw: 1.1, dsum: 1.5, bw: 1.4}).okBridge, h({open: true}).okGuard, h({open: true, gh: 0.99}).okGuard, h({open: true, go: 0.11}).okGuard], [false, true, true, false, false, true, false, false]);
+  check('capacity of the area beside the exit: 600 m2 at 10 m2 per person = 60 persons', [h({}).cap], [60]);
+}
+{
+  const r = o => calc(Object.assign({mode: 2, g: 1, rise: 1, run: 10, w: 1.5, ll: 1.5, nr: 2, side: 0.3, endw: 0.36, red: false}, o));
+  check('maximum slope: 1:6 inside E and F, 1:8 for other inside ramps, 1:10 outside and inside A and B-2: a 1 m rise needs 6, 8, 10 m of run', [0, 1, 2].map(g => r({g}).run), [6, 8, 10]);
+  check('slope check: 1:8 allows exactly 12.5 %; 1 m in 8 m passes, 1 m in 7.9 m fails; the 1:10 ramp fails at 1 m in 9 m', [r({run: 8}).okSlope, r({run: 7.9}).okSlope, r({g: 2, run: 9}).okSlope, r({g: 2, run: 10}).okSlope], [true, false, false, true]);
+  check('rise above 3.70 m needs horizontal landings: 3.7 m none, 3.71 m one, 7.4 m one, 7.41 m two; landing length not below the ramp width (1.20 m when the width exceeds 2.00 m)', [r({rise: 3.7}).landings, r({rise: 3.71}).landings, r({rise: 7.4}).landings, r({rise: 7.41}).landings, r({rise: 4, ll: 1.4}).okLand, r({rise: 4, ll: 1.5}).okLand, r({rise: 4, w: 2.5, ll: 1.2}).okLand, r({rise: 4, w: 2.5, ll: 1.1}).okLand, r({rise: 3, ll: 0.5}).okLand], [0, 1, 1, 2, false, true, true, false, true]);
+  check('handrails: one side for a width under 1.10 m, both sides from 1.10 m; side landing 0.30 m, end landing 0.36 m', [r({w: 1.09, nr: 1}).okRails, r({w: 1.1, nr: 1}).okRails, r({w: 1.1, nr: 2}).okRails, r({side: 0.29}).okSide, r({endw: 0.35}).okEnd, r({red: true}).okWidth], [true, false, true, false, false, false]);
+}
+{
+  const c = o => calc(Object.assign({mode: 3, pub: true, pr: 1, dr: 20 / 60, opn: 0.75}, o));
+  check('public corridors need a 1 h separation, doors of at least 20 minutes and opening protection of 3/4 h', [c({}).okPart, c({pr: 0.75}).okPart, c({}).door20, c({dr: 19 / 60}).door20, c({}).okOpen, c({opn: 0.5}).okOpen], [true, false, true, false, true, false]);
+}
+{
+  const s = o => calc(Object.assign({mode: 4, sr: 2, dr: 1.5, vr: 20 / 60, spr: false, fr: 2, vw: 1.1, vl: 1.8, vo: 1.5, ach: 1, sup: 100, exh: 150, sh: 0.15, eh: 0.15, tr: 0.5, sa: 10, va: 1, tv: 3, dp: 12.5, stack: 20, rp: 25, dd: 3, gr: 1, gh: 2, bd: 1.5}, o));
+  check('enclosure 2 h with 1.5 h doors; vestibule door 20 minutes; the fan room 2 h, or 1 h in a fully sprinklered building', [s({}).okShaft, s({sr: 1.5}).okShaft, s({}).okDoors, s({dr: 1}).okDoors, s({}).okVDoor, s({vr: 0.3}).okVDoor, s({}).okFan, s({fr: 1}).okFan, s({fr: 1, spr: true}).okFan, s({spr: true}).fan], [true, false, true, false, true, false, true, false, true, 1]);
+  check('vestibule: width 1.10 m, length 1.80 m in the escape direction, vent opening 1.50 m2; one air change a minute and exhaust of at least 150 % of supply; supply opening within 15 cm of the floor, exhaust within 15 cm of the ceiling; smoke trap 0.50 m', [s({vw: 1.09}).okVw, s({vl: 1.79}).okVl, s({vo: 1.49}).okVo, s({ach: 0.9}).okAch, s({exh: 149}).okExh, s({exh: 150}).okExh, s({sh: 0.16}).okSupH, s({eh: 0.16}).okExhH, s({tr: 0.49}).okTrap], [false, false, false, false, false, true, false, false, false]);
+  check('natural venting: 10 % of the stair shaft area at each floor and 30 % at the smoke-trap top: 10 m2 shaft needs 1 m2 and 3 m2', [s({}).ventNat, s({}).trapVent, s({va: 0.99}).okVentNat, s({tv: 2.99}).okTrapVent, s({sa: 20}).ventNat], [1, 3, false, false, 2], 1e-9);
+  check('pressurisation: at least 12.5 Pa; with the stack pressure the total must stay at or under 87.5 Pa (8.75 mm of water); relief at 25 Pa with the doors closed', [s({dp: 12.4}).okPmin, s({dp: 60, stack: 27.5}).okPmax, s({dp: 60, stack: 27.6}).okPmax, s({rp: 24.9}).okRelief, s({rp: 25}).okRelief], [false, true, false, false, true]);
+  check('smoke detector within 3 m of the vestibule door; generator room 1 h and 2 h running; balcony door 1.5 h', [s({dd: 3}).okDet, s({dd: 3.1}).okDet, s({gr: 0.75}).okGen, s({gh: 1.9}).okGen, s({}).okGen, s({bd: 1}).okBal], [true, false, false, false, true, false]);
+}
+let tt;
+w.renderCalc('egexitcomp'); w.calcResult('egexitcomp');
+tt = txt(w, 'xc_results');
+check('the default page (doors) shows 90, the 0.60 m clearance with ✔ and the 🔴 note; only the first group is visible', [tt.includes('90°'), tt.includes('0.60 m'), tt.includes('✔'), tt.includes('🔴'), w.document.getElementById('xc_g0').style.display, w.document.getElementById('xc_g1').style.display], [true, true, true, true, '', 'none']);
+set('xc_va', '0.9'); set('xc_rt', '2'); w.calcResult('egexitcomp'); tt = txt(w, 'xc_results');
+check('glass in a 2 h door shows ✘ and the wired-glass line', [tt.includes('غير مطابق'), tt.includes('✘'), tt.includes('زجاج النظارة')], [true, true, true]);
+set('xc_m', '1'); w.calcResult('egexitcomp'); tt = txt(w, 'xc_results');
+check('the horizontal exits page: at most 2 of 4 exits, 60 persons, bridge 1.10 m ✔', [tt.includes('(4)'), tt.includes('60'), tt.includes('1.10 m'), tt.includes('✔'), w.document.getElementById('xc_g1').style.display], [true, true, true, true, '']);
+set('xc_m', '2'); w.calcResult('egexitcomp'); tt = txt(w, 'xc_results');
+check('the ramps page: 1 : 8 (12.5 %), the actual slope 1 : 10.0 and 8.0 m of minimum run', [tt.includes('1 : 8'), tt.includes('12.5 %'), tt.includes('1 : 10.0'), tt.includes('8.0 m')], [true, true, true, true]);
+set('xc_ri', '5'); set('xc_ru', '30'); w.calcResult('egexitcomp'); tt = txt(w, 'xc_results');
+check('a 5 m rise on 30 m is steeper than 1:8 (✘) and needs one landing', [tt.includes('✘'), tt.includes('البسطات الوسيطة1')], [true, true]);
+set('xc_m', '3'); w.calcResult('egexitcomp'); tt = txt(w, 'xc_results');
+check('the corridors page shows the 1 h separation, the 20 minute door and 0.75 h', [tt.includes('1.00 h'), tt.includes('20 min'), tt.includes('0.75 h')], [true, true, true]);
+set('xc_m', '4'); w.calcResult('egexitcomp'); tt = txt(w, 'xc_results');
+check('the smokeproof enclosure page: 2 h, 1.5 h, 12.5 Pa, 87.5 Pa and 25 Pa lines', [tt.includes('2.00 h'), tt.includes('1.50 h'), tt.includes('12.5 Pa'), tt.includes('87.5 Pa'), tt.includes('25 Pa'), w.document.getElementById('xc_g4').style.display], [true, true, true, true, true, '']);
+check('other reference codes open egexitcomp too', others('egexitcomp', 'xc_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
