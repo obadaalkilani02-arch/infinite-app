@@ -4411,6 +4411,87 @@ set('xr_m', '4'); w.calcResult('egspr'); tt = txt(w, 'xr_results');
 check('the storage page shows group I on bases as ordinary 1 and the plastics clearance', [tt.includes('خطورة عادية، المجموعة 1'), tt.includes('الفراغ بين قمة المخزون والسقف')], [true, true]);
 check('other reference codes open egspr too', others('egspr', 'xr_results'), [true, true, true]);
 }
+// ---------- part 212: Egyptian fire code part 4, chapters 1 and 2 (`egfw`: hydrants and external network, Hazen-Williams hydraulics with Tables 1-A / 1-B, standpipes Tables 2-C to 2-G, tie rods and straps) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+check('equivalent-length conversion (C / 120)^1.85: C 100 -> 0.714 (printed 0.713), 120 -> 1, 130 -> 1.160 (1.16), 140 -> 1.330 (1.32 in Table 1-B, 1.33 in Table 2-F), 150 -> 1.511 (1.51)', [100, 120, 130, 140, 150].map(c => J('ewCf(' + c + ')')), [0.713, 1, 1.16, 1.33, 1.51], 0.0035);
+const F = (Q, d, c) => J('ewFric(' + [Q, d, c].join(',') + ')');
+{
+  const f = F(1900, 100, 120), ref = 6.05 * Math.pow(1900, 1.85) / (Math.pow(120, 1.85) * Math.pow(100, 4.87)) * 1e5;
+  check('equation 1: 1900 L/min in 100 mm at C = 120 -> 6.05 x Q^1.85 / (C^1.85 d^4.87) x 10^5 = 0.01805 bar/m', [f], [ref], 1e-12);
+  const si = 10.67 * Math.pow(1900 / 60000, 1.852) / (Math.pow(120, 1.852) * Math.pow(0.1, 4.87)) / 10.1972;
+  check('... agrees with the usual SI Hazen-Williams formula (10.67 Q^1.852 / C^1.852 d^4.87 in m of water) within 2 %', [f / si > 0.98 && f / si < 1.02], [true]);
+  check('friction rises as Q^1.85 (double flow -> 3.605 times), falls as d^-4.87 and as C^-1.85; zero when any input is zero', [F(3800, 100, 120) / f, F(1900, 150, 120) / f, F(1900, 100, 150) / f, F(0, 100, 120), F(1900, 0, 120), F(1900, 100, 0)], [Math.pow(2, 1.85), Math.pow(1.5, -4.87), Math.pow(1.25, -1.85), 0, 0, 0], 1e-9);
+  const v = J('ewVel(1900, 100)'), pv = J('ewVelP(1900, 100)');
+  check('velocity 1900 L/min in 100 mm = 4.032 m/s and velocity pressure 500 v2 = 0.0813 bar (the printed constant 0.005682 does not give this in bar, L/min and mm)', [+v.toFixed(3), +pv.toFixed(4)], [4.032, 0.0813], 0.0005);
+}
+const EQ = (dn, cnt, c) => J('ewEqLen(' + dn + ',' + JSON.stringify(cnt) + ',' + c + ')');
+check('Table 1-a rows (45, short 90, long 90, tee, gate, butterfly, check): DN 20 = 0.3 / 0.6 / 0.3 / 1.2 / - / - / 1.2; DN 100 = 1.2 / 3.0 / 1.8 / 6.0 / 0.6 / 3.7 / 6.7; DN 300 = 4.0 / 8.2 / 5.5 / 18.3 / 1.8 / 8.0 / 19.8', [J('EW_EQ[0]'), J('EW_EQ[7]'), J('EW_EQ[12]')], [[20, 0.3, 0.6, 0.3, 1.2, null, null, 1.2], [100, 1.2, 3.0, 1.8, 6.0, 0.6, 3.7, 6.7], [300, 4.0, 8.2, 5.5, 18.3, 1.8, 8.0, 19.8]]);
+check('every row rises with the diameter in every column and the printed 13 diameters are 20 - 300 mm', J(`(function () { const bad = []; for (let i = 1; i < EW_EQ.length; i++) for (let k = 1; k < 8; k++) { const a = EW_EQ[i - 1][k], b = EW_EQ[i][k]; if (a !== null && b !== null && b < a) bad.push(i + ',' + k); if (a !== null && b === null) bad.push('null ' + i + ',' + k); } return [EW_EQ.length, EW_EQ[0][0], EW_EQ[12][0], bad]; })()`), [13, 20, 300, []]);
+{
+  const e = EQ(100, [0, 0, 2, 1, 1, 0, 1], 120);
+  check('DN 100: 2 long elbows 1.8 + tee 6.0 + gate 0.6 + check 6.7 = 16.9 m at C = 120; at C = 140 x 1.330 = 22.48 m; at C = 100 x 0.714 = 12.06 m', [e.base, e.len, EQ(100, [0, 0, 2, 1, 1, 0, 1], 140).len, EQ(100, [0, 0, 2, 1, 1, 0, 1], 100).len], [16.9, 16.9, 16.9 * 1.3303, 16.9 * 0.71384], 0.01);
+  check('a valve missing from the table for a small pipe is reported: gate valve in DN 25 contributes nothing and is listed', [EQ(25, [0, 0, 0, 0, 2, 0, 0], 120).len, EQ(25, [0, 0, 0, 0, 2, 0, 0], 120).miss], [0, ['محبس بوابة']]);
+  check('a diameter between rows takes the larger row: DN 90 -> DN 100 row; above 300 -> the last row', [EQ(90, [1, 0, 0, 0, 0, 0, 0], 120).row, EQ(500, [1, 0, 0, 0, 0, 0, 0], 120).row], [100, 300]);
+}
+const T2 = (Q, L) => J('ewT2c(' + Q + ',' + L + ')');
+check('Table 2-c: up to 380 L/min -> 50 / 63 / 75 mm by length (15, 15 - 30, over 30 m); 380 - 1900 -> 100 / 100 / 150; 1900 - 2850 -> 125 / 125 / 150; 2850 - 4750 -> 150; above 4750 -> 200', [[380, 15], [380, 16], [380, 31], [1900, 10], [1900, 20], [1900, 31], [1901, 10], [2850, 31], [2851, 10], [4750, 100], [4751, 5]].map(x => T2(x[0], x[1])), [50, 63, 75, 100, 100, 150, 125, 150, 150, 150, 200]);
+const calc = o => J('ewCalc(' + JSON.stringify(o) + ')');
+{
+  const m0 = {mode: 0, sp: 90, nd: 2, fd: 20, dm: 150, df: 100, ht: 0, oh: 500, ct: 0, cv: 0.9, fd2: 150, pw: 8, nj: 100, vd: 600, nh: 4};
+  const a = o => calc(Object.assign({}, m0, o));
+  check('hydrants: spacing up to 100 m, two within 30 m of the main entrance, one within 25 m of every facade; the mains at least 150 mm and the feed at least 100 mm', [a({}).okSpace, a({sp: 101}).okSpace, a({nd: 1}).okDoor, a({fd: 25}).okFacade, a({fd: 26}).okFacade, a({dm: 149}).okMain, a({df: 99}).okFeed, a({}).okMain, a({}).okFeed], [true, false, false, true, false, false, false, true, true]);
+  check('hose outlet centre: barrel hydrant 450 - 600 mm, wall hydrant 600 - 800 mm, underground not restricted; barrel in a box 300 mm above the box bottom', [a({oh: 449}).okH, a({oh: 450}).okH, a({oh: 600}).okH, a({oh: 601}).okH, a({ht: 1, oh: 600}).okH, a({ht: 1, oh: 801}).okH, a({ht: 2}).okH, a({}).boxH, a({ht: 1}).boxH], [false, true, true, false, true, false, null, 300, null]);
+  check('burial depth: 0.8 m in ordinary soil, 0.9 m under roads, 1.2 m under railways', [a({cv: 0.79}).okCover, a({cv: 0.8}).okCover, a({ct: 1, cv: 0.89}).okCover, a({ct: 1, cv: 0.9}).okCover, a({ct: 2, cv: 1.19}).okCover, a({ct: 2, cv: 1.2}).okCover], [false, true, false, true, false, true]);
+  check('flushing flow at 3 m/s: DN 100 1475, 150 3330, 200 5900, 250 9235, 300 13320 L/min', [100, 150, 200, 250, 300].map(d => a({fd2: d}).flush), [1475, 3330, 5900, 9235, 13320]);
+  check('hydrostatic test 14 bar for 2 h up to 10 bar working pressure, above it the working pressure + 4 bar', [8, 10, 10.5, 12].map(p => a({pw: p}).test), [14, 14, 14.5, 16]);
+  check('allowed leakage: 2.0 L/h per 100 joints + 1.0 mL/h per mm of isolating valve sizes + 150 mL/min (9 L/h) per hydrant = 2 + 0.6 + 36 = 38.6 L/h', [a({}).leak, a({}).leakParts], [38.6, [2, 0.6, 36]], 1e-9);
+}
+{
+  const m1 = {mode: 1, Q: 1900, dn: 100, d: 0, cm: 1, sys: 1, L: 50, dz: 10, pin: 8, cn: [0, 0, 2, 1, 1, 0, 1], K: 80, pnoz: 1, Kus: 5.6};
+  const r = calc(m1), f = F(1900, 100, 120);
+  check('run of 50 m + 16.9 m equivalent in 100 mm black steel (C = 120): loss = 0.01805 x 66.9 = 1.208 bar, elevation 10 m = 0.981 bar, outlet total pressure 8 - 1.208 - 0.981 = 5.81 bar', [r.c, r.f, r.eq.len, r.Ltot, r.loss, r.elev, r.pOut], [120, f, 16.9, 66.9, f * 66.9, 10 * 0.0980665, 8 - f * 66.9 - 0.980665], 1e-9);
+  check('normal pressure Pn = Pt - Pv (equation 3) and nozzle flow Q = K sqrt(P): 80 L/min at 1 bar, 113.1 at 2 bar; Km = 14.4 x 5.6 = 80.64', [r.pn, calc(Object.assign({}, m1, {pnoz: 2})).Qn, r.Qn, r.Km], [r.pOut - J('ewVelP(1900, 100)'), 80 * Math.sqrt(2), 80, 80.64], 1e-9);
+  check('the actual inside diameter replaces the nominal one: 106 mm gives 19.4 % of the 100 mm friction x (100/106)^4.87 and the equivalent length still uses the nominal row', [calc(Object.assign({}, m1, {d: 106})).f, calc(Object.assign({}, m1, {d: 106})).eq.row], [F(1900, 106, 120), 100], 1e-9);
+  check('materials: external network black steel (Table 1-c) 120, cast iron 100, plastic 150, cement-lined 140; inside systems black steel dry 100 (Table 2-d); a material absent from a table gives no C', [calc(Object.assign({}, m1, {sys: 0, cm: 1})).c, calc(Object.assign({}, m1, {sys: 0, cm: 0})).c, calc(Object.assign({}, m1, {sys: 0, cm: 4})).c, calc(Object.assign({}, m1, {sys: 0, cm: 5})).c, calc(Object.assign({}, m1, {sys: 1, cm: 2})).c, calc(Object.assign({}, m1, {sys: 0, cm: 2})).cOk, calc(Object.assign({}, m1, {sys: 1, cm: 7})).cOk], [120, 100, 150, 140, 100, false, false]);
+}
+{
+  const m2 = {mode: 2, cls: 0, spr: false, comb: false, hyd: false, area: 3000, Q: 1900, L: 40, le: 15, H: 30, dn: 150, cm: 1, h2: 0, hs: 63, rch: 40, pr: 4.5, pm: 7, ps: 16, hh: 1.2};
+  const s = o => calc(Object.assign({}, m2, o));
+  check('Table 2-c gives DN 150 for 1900 L/min over 30 m; the minimum is 100 mm (class 1 and 3), 150 mm for a combined hose-and-sprinkler riser, 100 mm again for a fully sprinklered hydraulically designed combined system, none for class 2', [s({}).t2c, s({}).dnMin, s({comb: true}).dnMin, s({comb: true, spr: true, hyd: true}).dnMin, s({cls: 1}).dnMin, s({}).dn, s({comb: true, L: 10}).dn], [150, 100, 150, 100, 0, 150, 150]);
+  check('adopted diameter must not be below the required one: DN 125 fails and DN 150 passes', [s({dn: 125}).okDn, s({dn: 150}).okDn], [false, true]);
+  check('first riser flow 1900 L/min for floors up to 7500 m2: 1899 fails, 1900 passes, 7501 m2 not decided (page missing), class 2 not applicable', [s({Q: 1899}).Q1900, s({}).Q1900, s({area: 7501}).Q1900, s({cls: 1}).Q1900], [false, true, null, null]);
+  check('hose reach: 45 m (60 m in a sprinklered building) for classes 1 and 3; class 2: 40 m for 38 mm hose, 36 m for 25 mm', [s({}).reach, s({spr: true}).reach, s({cls: 2}).reach, s({cls: 1}).reach, s({cls: 1, h2: 1}).reach, s({rch: 45}).okReach, s({rch: 45.1}).okReach], [45, 60, 45, 40, 36, true, false]);
+  check('residual pressure at least 4.5 bar; at most 7 bar at 38 mm and smaller outlets, 12 bar at larger ones; at most 24 bar in the system', [s({pr: 4.4}).okResid, s({pr: 4.5}).okResid, s({hs: 38, pm: 7}).okMax, s({hs: 38, pm: 7.1}).okMax, s({hs: 63, pm: 12}).okMax, s({hs: 63, pm: 12.1}).okMax, s({ps: 24}).okSys, s({ps: 24.1}).okSys, s({hs: 25}).maxOut], [false, true, true, false, true, false, true, false, 7]);
+  check('drain pipe (Table 2-g): DN 50 and below -> 20, DN 63 and 75 -> 32, DN 100 and above -> 50 mm', [50, 63, 75, 100, 150].map(d => s({dn: d}).drain), [20, 32, 32, 50, 50]);
+  const f2 = F(1900, 150, 120);
+  check('pump pressure = 4.5 residual + 30 m x 0.0981 + friction x (40 + 15 m): 4.5 + 2.942 + 0.00252 x 55; water volume 1900 x 30 / 1000 = 57 m3', [s({}).pump, s({}).vol, s({}).run, s({}).f], [4.5 + 30 * 0.0980665 + f2 * 55, 57, f2 * 55, f2], 1e-9);
+  check('connection height 0.90 - 1.50 m', [s({hh: 0.89}).okH, s({hh: 0.9}).okH, s({hh: 1.5}).okH, s({hh: 1.51}).okH], [false, true, true, false]);
+}
+{
+  const t = dn => calc({mode: 3, dn});
+  check('Table 1-d tie rods: DN 100 and 150: 2 x 16 mm; 200: 3 x 16 or 2 x 19; 250: 4 / 3 / 2 for 16 / 19 / 22; 300: 6 / 4 / 3 / 2; 350: 8 / 5 / 4 / 3; 400: 10 / 7 / 5 / 4', [100, 150, 200, 250, 300, 350, 400].map(d => t(d).tie), [[2, null, null, null], [2, null, null, null], [3, 2, null, null], [4, 3, 2, null], [6, 4, 3, 2], [8, 5, 4, 3], [10, 7, 5, 4]]);
+  check('tie-rod diameter for fixing lugs: 16 mm up to DN 200, 19 mm for DN 250, 22 mm for DN 300; none above', [100, 200, 250, 300, 400].map(d => t(d).rod), [16, 16, 19, 22, null]);
+  check('Table 1-e straps (width, A, B, C, D): DN 100 65 / 320 / 260 / 65 / 45; DN 300 75 / 570 / 490 / 170 / 150; none above DN 300', [t(100).strap, t(300).strap, t(400).strap], [[100, 65, 320, 260, 65, 45], [300, 75, 570, 490, 170, 150], null]);
+}
+let tt;
+w.renderCalc('egfw'); w.calcResult('egfw');
+tt = txt(w, 'ew_results');
+check('the default page checks the hydrant spacing 90 m ✔, the 150 mm main, the burial 0.90 m, the flushing flow 3330 L/min, the test 14 bar, the leakage 38.60 L/h and shows the 🔴 note; only the first group is visible', [tt.includes('90 m'), tt.includes('✔'), tt.includes('3330 L/min'), tt.includes('14.0 bar'), tt.includes('38.60 L/h'), tt.includes('🔴'), w.document.getElementById('ew_g0').style.display, w.document.getElementById('ew_g1').style.display], [true, true, true, true, true, true, '', 'none']);
+set('ew_sp', '120'); w.calcResult('egfw'); tt = txt(w, 'ew_results');
+check('a spacing of 120 m fails ✘', [tt.includes('✘'), tt.includes('120 m')], [true, true]);
+set('ew_m', '1'); w.calcResult('egfw'); tt = txt(w, 'ew_results');
+check('the hydraulics page shows C 120, the friction 18.237 mbar/m, the velocity 4.03 m/s, the equivalent length 16.90 m and the conversion factors', [tt.includes('120'), tt.includes('18.237 mbar/m'), tt.includes('4.03 m/s'), tt.includes('16.90 m'), tt.includes('C 140 = 1.330'), w.document.getElementById('ew_g1').style.display], [true, true, true, true, true, '']);
+set('ew_m', '2'); w.calcResult('egfw'); tt = txt(w, 'ew_results');
+check('the standpipe page: DN 150 from Table 2-C ✔ for the entered DN 150, 4.5 bar residual, pump pressure, 57 m3, drain DN 50, and the note about the missing book pages', [tt.includes('DN 150'), tt.includes('✔'), tt.includes('57.0 m³'), tt.includes('DN 50'), tt.includes('78 و 79'), tt.includes('ضغط المضخة اللازم')], [true, true, true, true, true, true]);
+set('ew_dn2', '3'); w.calcResult('egfw'); tt = txt(w, 'ew_results');
+check('DN 100 against the required 150 shows ✘', [tt.includes('القطر المدخل DN 100 ✘')], [true]);
+set('ew_m', '3'); w.calcResult('egfw'); tt = txt(w, 'ew_results');
+check('the restraint page: DN 150 -> 2 x 16 mm tie rods and a 65 x 16 strap 370 / 310 / 90 / 70 mm', [tt.includes('2 × 16 mm'), tt.includes('65 × 16 mm'), tt.includes('370 / 310 / 90 / 70 mm')], [true, true, true]);
+check('other reference codes open egfw too', others('egfw', 'ew_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
