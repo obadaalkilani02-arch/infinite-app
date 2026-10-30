@@ -4492,6 +4492,76 @@ set('ew_m', '3'); w.calcResult('egfw'); tt = txt(w, 'ew_results');
 check('the restraint page: DN 150 -> 2 x 16 mm tie rods and a 65 x 16 strap 370 / 310 / 90 / 70 mm', [tt.includes('2 × 16 mm'), tt.includes('65 × 16 mm'), tt.includes('370 / 310 / 90 / 70 mm')], [true, true, true]);
 check('other reference codes open egfw too', others('egfw', 'ew_results'), [true, true, true]);
 }
+// ---------- part 213: Egyptian fire code part 4, chapter 4 fixed water spray (`egspray`: design densities, Table 4-d shelves, transformers, Table 4-b electrical clearances, Tables 4-a and 4-h, ultra-high-speed limits) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const B = (kv, k) => J('xwBeam(' + kv + ',' + k + ')');
+check('Table 4-b rows (operating kV -> mm): up to 13.8 -> 180, 22 -> 255, 33 -> 330, 66 -> 635, 115 -> 1070, 132 -> 1270, 160 -> 1475, 220 -> 1930, 500 -> 3150', [10, 13.8, 22, 33, 66, 115, 132, 160, 220, 500].map(x => B(x, 0).mm), [180, 180, 255, 330, 635, 1070, 1270, 1475, 1930, 3150], 1e-9);
+check('the same rows by maximum system voltage (24, 36, 72, 121, 145, 170, 245, 525 kV) and by BIL (125, 170, 325, 550, 650, 750, 1050, 1550 kV)', [[24, 255], [36, 330], [72, 635], [121, 1070], [145, 1270], [170, 1475], [245, 1930], [525, 3150]].map(x => B(x[0], 1).mm).concat([[125, 255], [170, 330], [325, 635], [550, 1070], [650, 1270], [750, 1475], [1050, 1930], [1550, 3150]].map(x => B(x[0], 2).mm)), [255, 330, 635, 1070, 1270, 1475, 1930, 3150, 255, 330, 635, 1070, 1270, 1475, 1930, 3150], 1e-9);
+check('between two rows the clearance is proportional: 44 kV = 330 + (635 - 330) / 3 = 431.67 mm; above 500 kV (operating) there is no value', [B(44, 0).mm, B(44, 0).exact, B(66, 0).exact, B(501, 0).mm, B(501, 0).over], [330 + 305 / 3, false, true, null, true], 1e-9);
+check('each row is consistent across the three voltage columns, rising in every column', J(`(function () { for (let i = 1; i < XW_B.length; i++) for (let k = 0; k < 4; k++) if (XW_B[i][k] <= XW_B[i - 1][k]) return 'row ' + i; return 'ok'; })()`), 'ok');
+const S = n => J('xwShelf(' + n + ')');
+check('Table 4-d: 1 level 10 L/min/m2; 2 levels 8 and 6 for both; 3 to 5 levels 8 and 6 alternately; 6 or more 8 and 4 alternately', [S(1), S(2), S(3), S(5), S(6), S(12)], [{top: 10, other: null, mode: ''}, {top: 8, other: 6, mode: 'both'}, {top: 8, other: 6, mode: 'alt'}, {top: 8, other: 6, mode: 'alt'}, {top: 8, other: 4, mode: 'alt'}, {top: 8, other: 4, mode: 'alt'}]);
+const calc = o => J('xwCalc(' + JSON.stringify(o) + ')');
+{
+  const h = i => calc({mode: 0, h: i, area: 50, d: 10, na: 8});
+  check('densities: conveyor 10, drive unit 10, pumps of flammables 20, control of burning 20, basins 12, tank surfaces 10, tank supports 10, horizontal steel 4, vertical steel 10, vertical pipe rows 6, transformer 10, transformer floor 6', [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(i => h(i).d), [10, 10, 20, 20, 12, 10, 10, 4, 10, 6, 10, 6]);
+  check('cable trays: 12 L/min/m2 in general, 6 with a steel shield (1.5 mm and 150 mm wider) or other sprinklers', [h(1).d, h(2).d], [12, 6]);
+  const c = h(3);
+  check('conveyor of 50 m2: 10 x 50 = 500 L/min plus 1000 L/min of hose streams for one hour = 1500 L/min, hose volume 60 m3; 7 nozzles of 8 m2 give 71.4 L/min each', [c.Q, c.hose, c.Qtot, c.hoseVol, c.nozzles, c.qN], [500, 1000, 1500, 60, 7, 500 / 7], 1e-9);
+  check('only conveyors and transformers carry the 1000 L/min hose allowance', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(i => h(i).hose), [0, 0, 0, 1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 1000]);
+  const g = d => calc({mode: 0, h: 0, area: 100, d, na: 8});
+  check('the general case needs 6 to 20 L/min/m2: 5.9 and 20.1 fail, 6 and 20 pass; 100 m2 at 12 -> 1200 L/min', [g(5.9).okD, g(6).okD, g(20).okD, g(20.1).okD, g(12).Q], [false, true, true, false, 1200]);
+}
+{
+  const s = o => calc(Object.assign({mode: 1, n: 3, a1: 30, vd: 0.6, rows: 0}, o));
+  check('3 levels of 30 m2: 8 x 30 + 6 x 30 = 420 L/min; 1 level: 10 x 30 = 300; 6 levels: 8 x 30 + 4 x 30 = 360', [s({}).Q, s({n: 1}).Q, s({n: 6}).Q, s({n: 2}).Q], [420, 300, 360, 420]);
+  check('nozzles at most 0.80 m below the protected shelf; vertical pipe rows get 6 L/min/m2 from one side', [s({vd: 0.8}).okV, s({vd: 0.81}).okV, s({rows: 2}).vertRow, s({}).vertRow], [true, false, 180, 0]);
+}
+{
+  const t = o => calc(Object.assign({mode: 2, L: 4, W: 2.5, H: 3.5, ag: 30, kind: 0, kv: 66, clr: 700}, o));
+  const r = t({});
+  check('transformer 4 x 2.5 x 3.5 m: six faces 2 (10 + 14 + 8.75) = 65.5 m2; 655 L/min on the faces + 6 x 30 = 180 on the floor = 835; with the 1000 L/min hose allowance 1835 L/min', [r.Af, r.Qf, r.Qg, r.Q, r.Qtot, r.hoseVol], [65.5, 655, 180, 835, 1835, 60], 1e-9);
+  check('clearance for 66 kV is 635 mm: 700 mm passes, 600 mm fails; a 72 kV maximum voltage gives the same row', [t({}).okClr, t({clr: 600}).okClr, t({kind: 1, kv: 72}).beam.mm], [true, false, 635]);
+  check('no value above the table: 600 kV has none and no pass / fail', [t({kv: 600}).beam.mm, t({kv: 600}).okClr], [null, null]);
+}
+{
+  const e = o => calc(Object.assign({mode: 3, kind: 0, kv: 33, clr: 330}, o));
+  check('the electrical page calculation: 33 kV -> 330 mm, equal passes, 329 fails; 115 kV row', [e({}).beam.mm, e({}).okClr, e({clr: 329}).okClr, e({kv: 115}).row[3]], [330, true, false, 1070]);
+}
+{
+  const p = o => calc(Object.assign({mode: 4, dn: 150, pw: 12, wt: 3.4, light: false, len: 50, sp: 2.5, pn: 2, cov: false, up: 4, rt: 80, qn: 100}, o));
+  check('Table 4-a: up to DN 125 the wall equals the light standard-weight pipe; DN 150 needs 3.40 mm; DN 200 and 250 need 4.80 mm; none above DN 250', [p({dn: 125}).wallLight, p({}).wall, p({dn: 200}).wall, p({dn: 250}).wall, p({dn: 300}).wall], [true, 3.4, 4.8, 4.8, undefined]);
+  check('wall check: 3.40 passes and 3.39 fails for DN 150; DN 200 needs 4.80; working pressure above 20 bar needs certified pipes', [p({}).okWall, p({wt: 3.39}).okWall, p({dn: 200, wt: 4.79}).okWall, p({dn: 200, wt: 4.8}).okWall, p({pw: 20}).pOk, p({pw: 21}).pOk], [true, false, false, true, true, false]);
+  const phys = J(`XW_V.map(r => r[0])`);
+  const id = {20: 20.93, 25: 26.64, 32: 35.05, 38: 40.89, 50: 52.5, 63: 62.71, 75: 77.93, 125: 128.2, 150: 154.05};
+  const rel = Object.keys(id).map(k => { const v = J('XW_V.find(r => r[0] === ' + k + ')[1]') * 3.28084, ph = Math.PI / 4 * Math.pow(id[k] / 1000, 2) * 1000; return Math.abs(v / ph - 1); });
+  check('Table 4-h medium values agree (within 1.5 %) with the volume of schedule-40 pipes when read as litres per FOOT (not per metre)', [Math.max(...rel) < 0.015], [true]);
+  check('DN 150 medium 5.681 L/ft = 18.64 L/m; 50 m = 932 L; 108 m exceeds the 2000 L limit of an ultra-high-speed system; DN 25 = 0.558 L/m; light DN 150 6.241 L/ft', [p({}).lpm, p({}).vol, p({len: 107}).okVol, p({len: 108}).okVol, p({dn: 25}).lpm, p({light: true}).lpf], [5.681 * 3.28084, 5.681 * 3.28084 * 50, true, false, 0.17 * 3.28084, 6.241], 1e-9);
+  check('DN 100 is not in Table 4-h, nor is a light DN 20', [p({dn: 100}).v, p({dn: 100}).vol, p({dn: 20, light: true}).lpf], [null, null, null]);
+  check('nozzle spacing up to 3.0 m, nozzle pressure at least 1.4 bar', [p({sp: 3}).okSp, p({sp: 3.01}).okSp, p({pn: 1.4}).okP, p({pn: 1.39}).okP], [true, false, true, false]);
+  check('ultra-high-speed: operating pressure 3.5 bar (75 % = 2.625 bar with frangible covers), response 100 ms, local nozzle 100 L/min', [p({up: 3.5}).okUp, p({up: 3.4}).okUp, p({up: 2.7, cov: true}).okUp, p({up: 2.6, cov: true}).okUp, p({rt: 100}).okResp, p({rt: 101}).okResp, p({qn: 99}).okNoz], [true, false, true, false, true, false, false]);
+}
+let tt;
+w.renderCalc('egspray'); w.calcResult('egspray');
+tt = txt(w, 'xw_results');
+check('the default page (conveyor, 50 m2) shows the density 10, the flows 500 / 1000 / 1500 L/min, the 60 m3 hose volume and the 🔴 note; only the first group is visible', [tt.includes('10.0 L/min/m²'), tt.includes('500 L/min'), tt.includes('1000 L/min'), tt.includes('1500 L/min'), tt.includes('60.0 m³'), tt.includes('🔴'), w.document.getElementById('xw_g0').style.display, w.document.getElementById('xw_g1').style.display], [true, true, true, true, true, true, '', 'none']);
+set('xw_h', '0'); set('xw_d', '25'); w.calcResult('egspray'); tt = txt(w, 'xw_results');
+check('a general density of 25 shows ✘ and the 6 to 20 range', [tt.includes('✘'), tt.includes('من 6 إلى 20')], [true, true]);
+set('xw_m', '1'); w.calcResult('egspray'); tt = txt(w, 'xw_results');
+check('the shelves page shows 8 and 6 L/min/m2 alternately and the 420 L/min flow', [tt.includes('8 L/min/m²'), tt.includes('6 L/min/m²'), tt.includes('بالتبادل'), tt.includes('420 L/min')], [true, true, true, true]);
+set('xw_m', '2'); w.calcResult('egspray'); tt = txt(w, 'xw_results');
+check('the transformer page shows 65.5 m2, 835 L/min, 1835 L/min and 635 mm ✔', [tt.includes('65.5 m²'), tt.includes('835 L/min'), tt.includes('1835 L/min'), tt.includes('635 mm'), tt.includes('✔')], [true, true, true, true, true]);
+set('xw_m', '3'); w.calcResult('egspray'); tt = txt(w, 'xw_results');
+check('the clearances page shows 635 mm for 66 kV with ✔ and the nine rows', [tt.includes('635 mm'), tt.includes('✔'), tt.includes('13.8/17.5/95 kV = 180 mm'), tt.includes('500.0/525.0/1550 kV = 3150 mm')], [true, true, true, true]);
+set('xw_kv2', '44'); w.calcResult('egspray'); tt = txt(w, 'xw_results');
+check('44 kV is proportional between the 33 and 66 kV rows: 432 mm', [tt.includes('432 mm'), tt.includes('بالنسبة والتناسب')], [true, true]);
+set('xw_m', '4'); w.calcResult('egspray'); tt = txt(w, 'xw_results');
+check('the pipes page: DN 150 wall 3.40 ✔, 18.64 L/m, 932 L ✔, the 3.0 m spacing, 1.4 bar and the ultra-high-speed limits', [tt.includes('3.40 mm'), tt.includes('18.64 L/m'), tt.includes('932 L'), tt.includes('1.4 bar'), tt.includes('100 ms'), tt.includes('5.681')], [true, true, true, true, true, true]);
+check('other reference codes open egspray too', others('egspray', 'xw_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
