@@ -4677,6 +4677,38 @@ set('xc_m', '4'); w.calcResult('egexitcomp'); tt = txt(w, 'xc_results');
 check('the smokeproof enclosure page: 2 h, 1.5 h, 12.5 Pa, 87.5 Pa and 25 Pa lines', [tt.includes('2.00 h'), tt.includes('1.50 h'), tt.includes('12.5 Pa'), tt.includes('87.5 Pa'), tt.includes('25 Pa'), w.document.getElementById('xc_g4').style.display], [true, true, true, true, true, '']);
 check('other reference codes open egexitcomp too', others('egexitcomp', 'xc_results'), [true, true, true]);
 }
+// ---------- part 216: Egyptian fire code part 1, chapter 5 high-rise buildings (`egrise`: applicability heights, firefighters' lift and services, smoke developed limits of Tables 5-a and 5-b) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xhCalc(' + JSON.stringify(o) + ')');
+check('applicability heights: C-1 flats above 34 m; C-2, A, D, E, F above 22 m; B above 16 m (13 m with bedridden occupants); exactly at the limit does not apply', [0, 1, 2, 3, 4, 5, 6, 7].map(g => calc({mode: 0, g, h: 0, nf: 1}).limit), [34, 22, 22, 22, 22, 22, 16, 13]);
+check('34 m does not apply to flats, 34.1 m does; 22.1 m applies to offices; 13.5 m applies to a hospital with bedridden patients but not to ordinary institutions (16 m)', [calc({mode: 0, g: 0, h: 34, nf: 10}).applies, calc({mode: 0, g: 0, h: 34.1, nf: 10}).applies, calc({mode: 0, g: 3, h: 22.1, nf: 8}).applies, calc({mode: 0, g: 7, h: 13.5, nf: 4}).applies, calc({mode: 0, g: 6, h: 13.5, nf: 4}).applies, calc({mode: 0, g: 6, h: 16.1, nf: 4}).applies], [false, true, true, true, false, true]);
+check('the excess height and the average storey height', [calc({mode: 0, g: 3, h: 30, nf: 10}).over, calc({mode: 0, g: 3, h: 30, nf: 10}).floors, calc({mode: 0, g: 3, h: 20, nf: 0}).over], [8, 3, 0], 1e-9);
+{
+  const l = o => calc(Object.assign({mode: 1, h: 60, v: 1, la: 2, lq: 900, ch: 0, sr: 1, wa: 400, oa: 4, sb: 2, fl: 0}, o));
+  check('the firefighters lift must reach the top floor within one minute: 60 m needs 1.00 m/s, 99.9 m needs 1.665 m/s; 0.99 m/s fails for 60 m', [l({}).vmin, l({h: 99.9}).vmin, l({v: 0.99}).okTime, l({}).okTime, l({h: 99.9, v: 1.6}).okTime], [1, 1.665, false, true, false], 1e-9);
+  check('lift car area at least 2 m2, load at least 900 kg, at most one change, shaft 1 h', [l({la: 1.99}).okArea, l({la: 2}).okArea, l({lq: 899}).okLoad, l({lq: 900}).okLoad, l({ch: 1}).okChanges, l({ch: 2}).okChanges, l({sr: 0.9}).okShaft, l({sr: 1}).okShaft], [false, true, false, true, true, false, false, true]);
+  check('venting openings at least 1 % of the external wall of the floor (400 m2 -> 4 m2); standby power at least 2 h', [l({}).openMin, l({oa: 3.99}).okOpen, l({oa: 4}).okOpen, l({sb: 1.9}).okStandby, l({sb: 2}).okStandby], [4, false, true, false, true], 1e-9);
+}
+check('Table 5-a: exit stairs and their lobbies, refuge areas, risers 25 for walls, ceilings and floors; lift cars 100 / 100 / 300', [0, 1, 2].map(e => calc({mode: 2, p: 0, e, si: 0}).lim).concat([0, 1, 2].map(e => calc({mode: 2, p: 1, e, si: 0}).lim)), [25, 25, 25, 100, 100, 300]);
+check('Table 5-b: exit-access corridors walls 100, ceilings 25, floors 300; other spaces walls 300, ceilings 25, floors 300', [0, 1, 2].map(e => calc({mode: 2, p: 2, e, si: 0}).lim).concat([0, 1, 2].map(e => calc({mode: 2, p: 3, e, si: 0}).lim)), [100, 25, 300, 300, 25, 300]);
+check('limits are inclusive: 25 passes and 26 fails on a stair wall', [calc({mode: 2, p: 0, e: 0, si: 25}).ok, calc({mode: 2, p: 0, e: 0, si: 26}).ok, calc({mode: 2, p: 3, e: 0, si: 300}).ok, calc({mode: 2, p: 3, e: 0, si: 301}).ok], [true, false, true, false]);
+let tt;
+w.renderCalc('egrise'); w.calcResult('egrise');
+tt = txt(w, 'xh_results');
+check('the default page (offices at 30 m) shows the 22 m limit, the excess 8.0 m and the 🔴 note; only the first group is visible', [tt.includes('22 m'), tt.includes('8.0 m'), tt.includes('يخضع المبنى'), tt.includes('🔴'), w.document.getElementById('xh_g0').style.display, w.document.getElementById('xh_g1').style.display], [true, true, true, true, '', 'none']);
+set('xh_gr', '0'); w.calcResult('egrise'); tt = txt(w, 'xh_results');
+check('flats at 30 m do not come under the chapter (34 m limit)', [tt.includes('34 m'), tt.includes('لا يسري الباب الخامس')], [true, true]);
+set('xh_m', '1'); w.calcResult('egrise'); tt = txt(w, 'xh_results');
+check('the extra requirements page: speed 1.00 m/s minimum, 900 kg, 4.00 m2 of venting, 2.0 h', [tt.includes('1.00 m/s'), tt.includes('900 kg'), tt.includes('4.00 m²'), tt.includes('2.0 h'), w.document.getElementById('xh_g1').style.display], [true, true, true, true, '']);
+set('xh_v', '0.8'); w.calcResult('egrise'); tt = txt(w, 'xh_results');
+check('a 0.8 m/s lift fails the one-minute rule ✘', [tt.includes('✘')], [true]);
+set('xh_m', '2'); set('xh_p', '1'); set('xh_e', '2'); set('xh_si', '350'); w.calcResult('egrise'); tt = txt(w, 'xh_results');
+check('a lift car floor of 350 exceeds 300 ✘ and the table limits line shows 100 / 100 / 300', [tt.includes('✘'), tt.includes('300'), tt.includes('5-A')], [true, true, true]);
+check('other reference codes open egrise too', others('egrise', 'xh_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
