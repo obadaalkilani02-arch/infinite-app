@@ -1587,6 +1587,647 @@ set('xoi_l', '0'); w.calcResult('nfpa31'); tt = txt(w, 'xoi_results');
 check('an outside tank larger than 2500 L refers to NFPA 30 chapter 22 and the distance field is shown', [tt.includes('الفصل 22 من NFPA 30'), doc.getElementById('xoi_dpf').style.display === '', doc.getElementById('xoi_dff').style.display === 'none'], [true, true, true]);
 check('other reference codes open nfpa31 too', others('nfpa31', 'xoi_results'), [true, true, true]);
 }
+// ---------- part 241: UPC 2021 Table 422.1 (`upcfix`: minimum plumbing fixtures by occupancy: water closets, urinals, lavatories, bathtubs, drinking fountains, male and female split, rounding up, notes 3 and 4) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xpfCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({t: 5, total: 300, male: 50, units: 20, exposed: 0}, o));
+  check('business 300 persons (150 men, 150 women): WC 3 men and 8 women, urinals 2, lavatories 2 men and 3 women, drinking fountains 2', [a({}).wm, a({}).wf, a({}).um, a({}).lm, a({}).lf, a({}).dr], [3, 8, 2, 2, 3, 2]);
+  check('assembly with fixed seats (A-1) 1000 persons: WC 4 men and 9 women, urinals 4, lavatories 3 and 5, fountains 4', [a({t: 0, total: 1000}).wm, a({t: 0, total: 1000}).wf, a({t: 0, total: 1000}).um, a({t: 0, total: 1000}).lm, a({t: 0, total: 1000}).lf, a({t: 0, total: 1000}).dr], [4, 9, 4, 3, 5, 4]);
+  check('A-1 1500 persons (750 men): WC 4 and 11, urinals 5 (over 600 add one per 300 men), lavatories 4 and 6', [a({t: 0, total: 1500}).wm, a({t: 0, total: 1500}).wf, a({t: 0, total: 1500}).um, a({t: 0, total: 1500}).lm, a({t: 0, total: 1500}).lf], [4, 11, 5, 4, 6]);
+  check('A-2, A-3, A-4 and A-5 differ in their steps: 400 persons give WC 3 / 2 / 2 / 2 men', [1, 2, 3, 4].map(t => a({t, total: 400}).wm).concat([a({t: 1, total: 400}).lm, a({t: 2, total: 400}).lm]), [3, 2, 2, 2, 2, 1]);
+  check('A-5 uses the same ratios as A-4', [a({t: 4, total: 1000}).wm, a({t: 3, total: 1000}).wm, a({t: 4, total: 1000}).lf === a({t: 3, total: 1000}).lf], [4, 4, true]);
+  check('educational: 1 per 50 men, 1 per 30 women, 1 urinal per 100 men, 1 lavatory per 40; 600 persons give 6 / 10 / 3 / 8 / 8 and 4 fountains', [a({t: 6, total: 600}).wm, a({t: 6, total: 600}).wf, a({t: 6, total: 600}).um, a({t: 6, total: 600}).lm, a({t: 6, total: 600}).lf, a({t: 6, total: 600}).dr], [6, 10, 3, 8, 8, 4]);
+  check('note 3: women WC are not fewer than the men WC plus urinals; 20 men only in a business gives 2 for women', [a({total: 20, male: 100}).wm, a({total: 20, male: 100}).um, a({total: 20, male: 100}).wf0, a({total: 20, male: 100}).wf, a({total: 20, male: 100}).noteF, a({}).noteF], [1, 1, 0, 2, true, false]);
+  check('note 4: the WC may be cut by the urinals added but not under two thirds of the minimum', [a({}).wmMin, a({t: 6, total: 600}).wm, a({t: 6, total: 600}).wmMin], [2, 6, 4]);
+  check('mercantile: urinals none up to 200 men, 1 up to 400; WC women 4 for 201 to 300; lavatories 1 per 400 women over 400', [a({t: 14, total: 300}).um, a({t: 14, total: 500}).um, a({t: 14, total: 500}).wf, a({t: 14, total: 1000}).lf], [0, 1, 4, 4]);
+  check('factory: WC 1 to 50, 2 to 75, 3 to 100 and one more per 40; no urinals; showers 1 per 15 exposed persons', [a({t: 7, total: 150}).wm, a({t: 7, total: 250}).wm, a({t: 7, total: 150}).um, a({t: 7, total: 150, exposed: 30}).bt, a({t: 7, total: 150}).bt], [2, 4, 0, 2, 0]);
+  check('storage: WC 1 / 2 / 3 per 100 persons then 1 per 500 men and 150 women; lavatories by sex 1 to 200; 1000 persons: 4 / 4 / 3 / 3', [a({t: 20, total: 1000}).wm, a({t: 20, total: 1000}).wf, a({t: 20, total: 1000}).lm, a({t: 20, total: 1000}).lf], [4, 4, 3, 3]);
+  check('employee use: men 1 / 2 / 3 to 15 / 35 / 55, women 1 / 3 / 4, then 1 per 40; lavatory 1 per 40 each', [a({t: 11, total: 60}).wm, a({t: 11, total: 60}).wf, a({t: 11, total: 120}).wm, a({t: 11, total: 120}).wf, a({t: 11, total: 60}).lm, a({t: 11, total: 60}).lf], [2, 3, 4, 5, 1, 1]);
+  check('institutional I-1: 1 per 15 each sex for WC and lavatories, 1 bath per 8 persons; 100 persons: 4 / 4 / 4 / 4 / 13', [a({t: 8, total: 100}).wm, a({t: 8, total: 100}).wf, a({t: 8, total: 100}).lm, a({t: 8, total: 100}).lf, a({t: 8, total: 100}).bt], [4, 4, 4, 4, 13]);
+  check('hospital individual rooms: one WC, lavatory and bath per room; wards 1 WC per 8 patients, 1 lavatory per 10, 1 bath per 20', [a({t: 9, units: 12}).wm, a({t: 9, units: 12}).lm, a({t: 9, units: 12}).bt, a({t: 10, total: 40}).wm, a({t: 10, total: 40}).lm, a({t: 10, total: 40}).bt, a({t: 10, total: 40}).dr], [12, 12, 12, 5, 4, 2, 1]);
+  check('prison cells one per cell, showers 1 per 20; correctional facilities WC 1 per 8, lavatory 1 per 10, shower 1 per 8, one fountain per floor', [a({t: 12, units: 30}).wm, a({t: 12, units: 30, total: 40}).bt, a({t: 13, total: 40, units: 3}).wm, a({t: 13, total: 40, units: 3}).lm, a({t: 13, total: 40, units: 3}).bt, a({t: 13, total: 40, units: 3}).dr], [30, 2, 5, 4, 5, 3]);
+  check('hotel one set per sleeping room; apartment houses one per apartment with a washer connection per 12 units; one- and two-family dwellings one of each', [a({t: 15, units: 30}).wm, a({t: 15, units: 30}).bt, a({t: 17, units: 25}).wm, a({t: 17, units: 25}).washer, a({t: 17, units: 25}).ot, a({t: 19, units: 1}).wm, a({t: 19, units: 1}).ot], [30, 30, 25, 3, 2, 1, 3]);
+  check('dormitories: WC 1 per 10 men and 1 per 8 women; urinals 1 per 25 men and one more per 50 over 150; lavatories 1 per 12; baths 1 per 8', [a({t: 16, total: 100}).wm, a({t: 16, total: 100}).wf, a({t: 16, total: 100}).um, a({t: 16, total: 100}).lm, a({t: 16, total: 100}).bt, a({t: 16, total: 400}).um], [5, 7, 2, 5, 13, 7]);
+  check('the shared single-user facility: total load of 10 or less (not residential), business or mercantile of 50 or less', [a({total: 10}).single, a({total: 11}).single, a({total: 40}).single50, a({total: 60}).single50, a({t: 14, total: 50}).single50, a({t: 15, units: 5, total: 5}).single, a({t: 6, total: 50}).single50], [true, false, true, false, true, false, false]);
+  check('the sex split follows the input: 60 % men of 100 persons in a business gives WC 2 for 60 men and 3 for 40 women', [a({total: 100, male: 60}).wm, a({total: 100, male: 60}).wf, a({total: 100, male: 60}).lm, a({total: 100, male: 60}).lf], [2, 3, 1, 1]);
+}
+let tt;
+w.renderCalc('upcfix'); w.calcResult('upcfix');
+tt = txt(w, 'xpf_results');
+check('the default page shows the men and women WC, the urinals, the drinking fountains and the 🔴 note', [tt.includes('المراحيض للذكور (WC)'), tt.includes('المباول للذكور'), tt.includes('نوافير الشرب'), tt.includes('🔴')], [true, true, true, true]);
+set('xpf_t', '9'); w.calcResult('upcfix'); tt = txt(w, 'xpf_results');
+check('a hospital individual-room occupancy counts units and shows the unit field', [tt.includes('واحد لكل وحدة'), doc.getElementById('xpf_fu').style.display === '', doc.getElementById('xpf_fm').style.display === 'none'], [true, true, true]);
+set('xpf_t', '7'); w.calcResult('upcfix'); tt = txt(w, 'xpf_results');
+check('a factory shows the exposed persons field and no urinals', [doc.getElementById('xpf_fe').style.display === '', doc.getElementById('xpf_fm').style.display === '', !tt.includes('المباول للذكور')], [true, true, true]);
+check('other reference codes open upcfix too', others('upcfix', 'xpf_results'), [true, true, true]);
+}
+// ---------- part 242: ASHRAE 170-2021 Tables 8-1, 8-2 and 9-1 (`a170op`: outpatient specialized and general spaces, residential health care spaces: pressure, outdoor and total ach, exhaust, recirculation, filter, humidity, temperature, Rp-Ra option) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xahCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 1e-6);
+{
+  check('the three tables have 43, 28 and 30 spaces', [J('XAH_T1.length'), J('XAH_T2.length'), J('XAH_T3.length')], [43, 28, 30]);
+  const a = o => calc(Object.assign({mode: 0, s: 4, area: 40, h: 3, people: 2}, o));
+  check('Table 8-1 operating room: positive, 4 outdoor and 20 total ach, no recirculation by room units, MERV-16, RH 20-60, 68-75 F', [a({}).press, a({}).oa, a({}).tot, a({}).row[6], a({}).row[8], a({}).row[9], a({}).row[10]], ['P', 4, 20, 'N', 'MERV-16', '20-60', '68-75/20-24']);
+  check('for 40 m2 x 3 m (120 m3): 4 ach is 133.3 L/s outdoor, 20 ach is 666.7 L/s total and 533.3 L/s the rest', [near(a({}).oaFlow * 1000, 133.333, 1e-3), near(a({}).totFlow * 1000, 666.667, 1e-3), near(a({}).recFlow * 1000, 533.333, 1e-3), a({}).vol], [true, true, true, 120]);
+  check('Table 8-1: delivery, procedure, trauma, class 2 and class 3 imaging rooms are positive with 4 / 3 / 3 / 3 / 4 outdoor ach', [0, 5, 9, 12, 13].map(s => a({s}).oa), [4, 3, 3, 3, 4]);
+  check('Table 8-1: AII anteroom and PE anteroom have no outdoor requirement, 10 total ach, pressure by the served room; PE room HEPA', [a({s: 15}).oa, a({s: 15}).tot, a({s: 15}).press, a({s: 17}).row[8], a({s: 18}).row[8], a({s: 18}).press], [null, 10, 'E', 'HEPA', 'HEPA', 'P']);
+  check('Table 8-1: sterile and support spaces: clean workroom positive 2 / 4, sterilizer room 10 total and exhausted, regulated waste 2 / 10 exhausted', [a({s: 34}).press, a({s: 34}).oa, a({s: 34}).tot, a({s: 33}).tot, a({s: 33}).row[5], a({s: 39}).tot, a({s: 39}).row[5]], ['P', 2, 4, 10, 'Y', 10, 'Y']);
+  check('Table 8-1 last row: soiled workroom negative 2 / 6, exhausted, 72-78 F', [a({s: 42}).press, a({s: 42}).oa, a({s: 42}).tot, a({s: 42}).row[10]], ['N', 2, 6, '72-78/22-26']);
+  const b = o => calc(Object.assign({mode: 1, s: 5, area: 20, h: 3, people: 2}, o));
+  check('Table 8-2 general examination room: 2 / 2 ach, air class 1, Rp 3.8 L/s with a minimum population of 3, Ra 0.6 L/s per m2', [b({}).oa, b({}).tot, b({}).cls, b({}).rpL, b({}).minPop, b({}).raL], [2, 2, 1, 3.8, 3, 0.6]);
+  check('Rp-Ra: with 2 people the minimum population 3 applies: 3.8 x 3 + 0.6 x 20 = 23.4 L/s; with 5 people 31 L/s; 23.4 L/s is 1.4 ach in 60 m3', [near(b({}).voz, 23.4), near(b({people: 5}).voz, 31), near(b({}).vozAch, 23.4 * 3.6 / 60, 1e-6)], [true, true, true]);
+  check('Table 8-2: the therapeutic pool has only Ra (2.4 L/s per m2: 48 L/s for 20 m2) and 10 total ach; a toilet room has no Rp-Ra option', [b({s: 18}).voz, b({s: 18}).tot, b({s: 24}).voz, b({s: 24}).press, b({s: 24}).row[5]], [48, 10, null, 'N', 'Y']);
+  check('Table 8-2: the birthing room Rp 5 L/s with a minimum of 4 persons gives 5 x 4 + 0.9 x 20 = 38 L/s; psychiatric rooms 0.3 L/s per m2', [near(b({s: 0}).voz, 38), b({s: 10}).raL, b({s: 13}).cls], [true, 0.3, 2]);
+  const c = o => calc(Object.assign({mode: 2, s: 5, area: 20, h: 3, people: 2}, o));
+  check('Table 9-1 nursing home: resident room 2 / 2 ach MERV-14 Max 60 70-78 F, AII room negative 2 / 12 exhausted, resident living area 4 / 4', [c({}).oa, c({}).tot, c({}).row[8], c({}).row[10], c({s: 0}).press, c({s: 0}).tot, c({s: 4}).oa, c({s: 4}).tot], [2, 2, 'MERV-14', '70-78/21-29', 'N', 12, 4, 4]);
+  check('Table 9-1 hospice and assisted living: hospice resident room 2 / 2 MERV-8 70-75 F; assisted living rows have no ach requirement', [c({s: 10}).oa, c({s: 10}).tot, c({s: 10}).row[8], c({s: 13}).oa, c({s: 13}).tot, c({s: 13}).oaFlow, c({s: 14}).row[10]], [2, 2, 'MERV-8', null, null, null, '70-78/21-29']);
+  check('Table 9-1 service and support: clean linen positive with 2 ach total, dietary storage and laundry no recirculation, hazardous waste 2 / 10, clean utility positive 2 / 4', [c({s: 17}).press, c({s: 17}).tot, c({s: 18}).row[6], c({s: 20}).tot, c({s: 21}).row[6], c({s: 28}).oa, c({s: 28}).tot, c({s: 26}).press, c({s: 26}).oa, c({s: 26}).tot], ['P', 2, 'N', 10, 'N', 2, 10, 'P', 2, 4]);
+  check('unoccupied turndown is not allowed in toilets, laundry and clean utility, allowed in resident rooms', [c({s: 7}).row[7], c({s: 21}).row[7], c({s: 26}).row[7], c({s: 5}).row[7]], ['N', 'N', 'N', 'Y']);
+}
+let tt;
+w.renderCalc('a170op'); w.calcResult('a170op');
+tt = txt(w, 'xah_results');
+check('the default page (operating room, 60 m3) shows 66.7 L/s, 333.3 L/s, MERV-16 and the 🔴 note', [tt.includes('66.7 L/s'), tt.includes('333.3 L/s'), tt.includes('MERV-16'), tt.includes('🔴')], [true, true, true, true]);
+set('xah_m', '1'); w.calcResult('a170op'); tt = txt(w, 'xah_results');
+check('Table 8-2 shows the Rp-Ra airflow 23.4 L/s and the air class, and switches the selectors', [tt.includes('23.4 L/s'), tt.includes('فئة الهواء'), doc.getElementById('xah_g1').style.display === '', doc.getElementById('xah_g0').style.display === 'none'], [true, true, true, true]);
+set('xah_m', '2'); w.calcResult('a170op'); tt = txt(w, 'xah_results');
+check('Table 9-1 shows the turndown row and the resident room values', [tt.includes('خفض التشغيل عند عدم الإشغال'), tt.includes('MERV-14'), doc.getElementById('xah_g2').style.display === ''], [true, true, true]);
+check('other reference codes open a170op too', others('a170op', 'xah_results'), [true, true, true]);
+}
+// ---------- part 243: NFPA 130-2014 transit station egress (`nfpa130`: platform load, exit capacity, 4-minute platform time, 6-minute time to a point of safety, annex C.1.3 sample) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xtrCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({train: 1500, entr: 814, stairs: 7320, nEsc: 2, escW: 1220, emStairs: 2440, dPlat: 41.5, rise: 9.1, dConc: 16.5, rise2: 0, dOut: 3.05, cv: 0, gates: 4, service: 1, exitDoors: 3660, minW: 1220, travel: 60, common: 20, carLen: 20, hold: 0}, o));
+  check('annex C.1.3 center-platform sample: platform load 2314; exit capacity 406 + 68 + 135 = 609 p/min; platform clear time 3.80 min', [a({}).P, Math.round(a({}).stCap), Math.round(a({}).escCap), Math.round(a({}).emCap), Math.round(a({}).platCap), near(a({}).Fp, 3.80)], [2314, 406, 68, 135, 609, true]);
+  check('walking times: 41.5 m at 37.7 = 1.10 min, 9.1 m rise at 14.6 = 0.62, 16.5 m at 37.7 = 0.44, 3.05 m = 0.08; total 2.23 min', [near(a({}).T1, 1.10), near(a({}).T2, 0.62), near(a({}).T3, 0.44), near(a({}).T5, 0.08), near(a({}).T, 2.23, 0.02)], [true, true, true, true, true]);
+  check('waiting at the platform exits 2.71 min; concourse load 1801 (2314 - 3.80 x 135); fare barrier capacity 560 and flow time 3.22 min give no waiting', [near(a({}).Wp, 2.70, 0.02), Math.round(a({}).conc / 10) * 10, Math.round(a({}).fbCap), near(a({}).Ffb, 3.22, 0.02), a({}).Wfb], [true, 1800, 560, true, 0]);
+  check('the total exit time is 4.94 min (within 6) and the platform test passes (within 4)', [near(a({}).total, 4.94, 0.02), a({}).test1, a({}).test2], [true, true, true]);
+  check('one escalator is discounted: a single escalator gives no capacity; the share of escalators is below 50 %', [a({nEsc: 1}).escCap, a({}).escOk, near(a({}).escShare, 0.111, 0.005), a({nEsc: 5, escW: 3000}).escOk], [0, true, true, false]);
+  check('a heavy platform fails the 4-minute test: 4000 persons gives Fp 6.6 min; the 6-minute test fails with it', [near(a({entr: 2500}).Fp, 6.56, 0.02), a({entr: 2500}).test1, a({entr: 2500}).test2], [true, false, false]);
+  check('the concourse speed 61.0 m/min shortens the concourse walk: 16.5 m takes 0.27 min', [near(a({cv: 1}).T3, 0.27), a({cv: 1}).vC], [true, 61]);
+  check('width and distance limits: 1120 mm clear width, 100 m travel, 25 m or one car length common path', [a({minW: 1120}).okWidth, a({minW: 1100}).okWidth, a({travel: 100}).okDist, a({travel: 101}).okDist, a({common: 25}).okCommon, a({common: 26}).okCommon, a({common: 30, carLen: 30}).okCommon], [true, false, true, false, true, false, true]);
+  check('no fare barrier capacity with a concourse load cannot be evaluated; with no concourse load there is no waiting', [a({gates: 0, service: 0, exitDoors: 0}).test2, a({train: 0, entr: 0}).conc, a({train: 0, entr: 0}).Wfb], [false, 0, 0]);
+  check('the holding area holds 1 person per 0.46 m2', [Math.round(a({hold: 46}).hold)], [100]);
+}
+let tt;
+w.renderCalc('nfpa130'); w.calcResult('nfpa130');
+tt = txt(w, 'xtr_results');
+check('the default page shows 2314 persons, 609 p/min, 3.80 min, 4.94 min and the 🔴 note', [tt.includes('2314'), tt.includes('609 p/min'), tt.includes('3.80 min'), tt.includes('4.94 min'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xtr_en', '3000'); w.calcResult('nfpa130'); tt = txt(w, 'xtr_results');
+check('a heavy platform shows the failed test mark', [tt.includes('✘')], [true]);
+check('other reference codes open nfpa130 too', others('nfpa130', 'xtr_results'), [true, true, true]);
+}
+// ---------- part 244: NFPA 86-2015 Class A ovens (`nfpa86`: safety ventilation for solvent vapors in continuous and batch ovens, 25 / 50 % LFL, products of combustion, temperature and altitude corrections) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xovCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({type: 0, solv: 0.5, sg: 0.87, vd: 3.7, lfl: 1.0, t: 150, alt: 0, ctrl: 0, direct: 0, kw: 0}, o));
+  check('xylene-like solvent (SpGr 0.87, VD 3.7, LFL 1.0 %): vapor 0.1956 m3/L; LFL at 150 C = 1.0 x (1 - 0.000784 x 125) = 0.902 %; barely explosive 21.68 m3/L', [near(a({}).vap, 0.19555, 1e-4), near(a({}).lflT, 0.902, 1e-3), near(a({}).barely, 21.68, 0.01)], [true, true, true]);
+  check('the diluted mixture at 25 % LFL is 4 times that (86.7 m3/L); at 50 % with a continuous indicator 2 times (43.4)', [near(a({}).dil, 86.72, 0.05), near(a({ctrl: 1}).dil, 43.36, 0.05), a({}).limit, a({ctrl: 1}).limit], [true, true, 25, 50]);
+  check('continuous oven at 0.5 L/min: 43.4 standard m3/min; corrected for 150 C (423 / 294 = 1.439) it is 62.4 m3/min; with the controller 31.2', [near(a({}).std, 43.36, 0.05), near(a({}).tf, 1.4388, 1e-3), near(a({}).act, 62.38, 0.1), near(a({ctrl: 1}).act, 31.19, 0.1)], [true, true, true, true]);
+  check('the LFL correction table: 100 C gives 0.94, 149 C 0.90, 204 C 0.86, 260 C 0.81', [[100, 0.94], [149, 0.90], [204, 0.86], [260, 0.81]].map(p => near(a({t: p[0]}).lflF, p[1], 0.01)), [true, true, true, true]);
+  check('direct-fired: 586.2 kW gives 10.36 standard m3/min of products of combustion added before the corrections', [near(a({direct: 1, kw: 586.2}).poc, 10.36, 0.01), near(a({direct: 1, kw: 586.2}).stdTot, 43.36 + 10.36, 0.06), a({direct: 0, kw: 586.2}).poc], [true, true, 0]);
+  check('altitude factors: none below 305 m, 1.04 at 305 m, 1.06 at 457.5 m, 1.20 at 1524 m, 1.45 at 3048 m and above', [200, 305, 457.5, 1524, 3048, 4000].map(h => Math.round(J('xovAlt(' + h + ')') * 1000) / 1000), [1, 1.04, 1.06, 1.2, 1.45, 1.45]);
+  check('the altitude correction multiplies the flow: at 1524 m the 62.4 m3/min becomes 1.20 times that', [near(a({alt: 1524}).act, 62.38 * 1.2, 0.1), a({alt: 1524}).af], [true, 1.2]);
+  check('estimating method C (340 m3 per 3.8 L): applies for ethanol at 100 C and sea level (barely explosive 13.2 m3/L) but not for the xylene-like solvent', [a({sg: 0.79, vd: 1.6, lfl: 3.3, t: 100}).estOk, near(a({sg: 0.79, vd: 1.6, lfl: 3.3, t: 100}).barely, 13.22, 0.05), a({}).estOk, near(a({sg: 0.79, vd: 1.6, lfl: 3.3, t: 100}).est, 44.74, 0.05), a({sg: 0.79, vd: 1.6, lfl: 3.3, t: 100, alt: 400}).estOk, a({sg: 0.79, vd: 1.6, lfl: 3.3, t: 200}).estOk], [true, true, false, true, false, false]);
+  const b = o => a(Object.assign({type: 1, solv: 10}, o));
+  check('batch oven: 3.29 standard m3/min per litre (440 scfm/gal) of solvent in the batch, increased in proportion when the dilution volume exceeds 19.75 m3/L', [near(b({sg: 0.79, vd: 1.6, lfl: 3.3, t: 100}).std, 32.9, 0.01), near(b({}).ratio, 21.68 / 19.75, 1e-3), near(b({}).std, 3.29 * 10 * 21.68 / 19.75, 0.05)], [true, true, true]);
+  check('batch multiplier 1.4 for 121 to 260 C; none below 121; above 260 C by test', [b({t: 150}).mult, b({t: 120}).mult, b({t: 260}).mult, b({t: 300}).mult, b({t: 300}).high], [1.4, 1, 1.4, 1, true]);
+  check('batch at 150 C: 36.1 standard m3/min x 1.439 x 1.4 = 72.7 m3/min; unit conversions to m3/h and L/s', [near(b({}).act, 72.7, 0.2), near(b({}).actH, b({}).act * 60, 1e-9), near(b({}).actLs, b({}).act * 1000 / 60, 1e-9)], [true, true, true]);
+}
+let tt;
+w.renderCalc('nfpa86'); w.calcResult('nfpa86');
+tt = txt(w, 'xov_results');
+check('the default page shows the corrected flow 62.4 m3/min, the 0.902 % LFL and the 🔴 note', [tt.includes('62.4 m³/min'), tt.includes('0.90 %'), tt.includes('🔴')], [true, true, true]);
+set('xov_m', '1'); w.calcResult('nfpa86'); tt = txt(w, 'xov_results');
+check('the batch mode shows 3.29 m3/min per litre and switches the groups', [tt.includes('3.29 m³/min'), doc.getElementById('xov_g1').style.display === '', doc.getElementById('xov_g0').style.display === 'none'], [true, true, true]);
+check('other reference codes open nfpa86 too', others('nfpa86', 'xov_results'), [true, true, true]);
+}
+// ---------- part 245: NFPA 90A-2015 smoke detectors, dampers and duct materials (`nfpa90a`: 944 / 7080 L/s thresholds, isolation dampers and exemptions, fire damper rating, fusible link, flexible and gypsum ducts, service openings) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xdaCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({sup: 2500, ret: 2500, stories: 1, ahu: 0, rating: 2, tmax: 40, tsc: 0, t: 35, vert: 0, conn: 3, len: 30, risers: 2, vel: 6, filtered: 0, noProc: 0, inlet: 0}, o));
+  check('supply detector: required above 944 L/s (2000 cfm); not at 944 or below', [a({}).detSup, a({sup: 944}).detSup, a({sup: 944.1}).detSup, a({sup: 500}).detSup], [true, false, true, false]);
+  check('return detectors: more than 7080 L/s and more than one story only', [a({ret: 8000, stories: 3}).detRet, a({ret: 8000, stories: 1}).detRet, a({ret: 8000, stories: 1}).detRetCap, a({ret: 7080, stories: 3}).detRet, a({}).detRet], [true, false, true, false, false]);
+  check('isolation dampers: over 7080 L/s on either side; exempt for a unit on the floor it serves or on the roof serving the floor below', [a({sup: 8000}).iso, a({sup: 2500, ret: 8000}).iso, a({sup: 8000, ahu: 1}).iso, a({sup: 8000, ahu: 2}).iso, a({sup: 8000, ahu: 1}).isoOver, a({sup: 7080}).iso, a({}).sys], [true, true, false, false, true, false, 2500]);
+  check('fire damper rating: 1.5 h for walls under 3 h, 3 h for 3 h and over; none without a rated barrier', [a({}).fdRating, a({rating: 2.99}).fdRating, a({rating: 3}).fdRating, a({rating: 4}).fdRating, a({rating: 0}).fdRated, a({}).fdRated], [1.5, 1.5, 3, 3, false, true]);
+  check('fusible link: 28 C above the maximum, not less than 71 C: 40 C gives 71, 60 C gives 88', [a({}).link, a({tmax: 60}).link, a({tmax: 43}).link, a({tmax: 44}).link], [71, 88, 71, 72]);
+  check('smoke control combination damper: 28 C above the design temperature and not over 177 C: 149 C passes (177), 150 C fails (178), none passes', [a({tsc: 149}).linkSC, a({tsc: 149}).linkSCok, a({tsc: 150}).linkSC, a({tsc: 150}).linkSCok, a({}).linkSCok], [177, true, 178, false, true]);
+  check('flexible Class 0 or 1 ducts up to 121 C, or vertical serving no more than two stories; gypsum board ducts up to 52 C', [a({t: 121}).flexOk, a({t: 130}).flexOk, a({t: 130, vert: 1}).flexOk, a({t: 52}).gypOk, a({t: 53}).gypOk], [true, false, true, true, false]);
+  check('air connector runs up to 4.27 m (14 ft)', [a({conn: 4.27}).connOk, a({conn: 4.3}).connOk, a({conn: 0}).connOk], [true, false, true]);
+  check('service openings at 6.1 m (20 ft) intervals plus one at the base of each vertical riser: 30 m gives 4 + 2 = 6; 6.1 m gives 1', [a({}).openRun, a({}).openings, a({len: 6.1, risers: 0}).openings, a({len: 12.2, risers: 0}).openings, a({len: 6, risers: 1}).openings], [4, 6, 1, 2, 1]);
+  check('service opening exemptions: filtered supply, or all three of no dust process, inlets 2.13 m or screened and 5.08 m/s (1000 fpm)', [a({}).soExempt, a({filtered: 1}).soExempt, a({noProc: 1, inlet: 1}).soExempt, a({noProc: 1, inlet: 1, vel: 5}).soExempt, a({noProc: 1, inlet: 1, vel: 5.08}).soExempt, a({noProc: 1, vel: 9}).soExempt], [false, true, true, false, true, false]);
+}
+let tt;
+w.renderCalc('nfpa90a'); w.calcResult('nfpa90a');
+tt = txt(w, 'xda_results');
+check('the default page shows the 1.5 h damper, the 71 °C link, Class II, 6 openings and the 🔴 note', [tt.includes('1.5 h'), tt.includes('71 °C'), tt.includes('Class II'), tt.includes('6 فتحة'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xda_ts', '150'); w.calcResult('nfpa90a'); tt = txt(w, 'xda_results');
+check('a smoke control design temperature of 150 C shows the 178 °C link and the failed mark', [tt.includes('178 °C'), tt.includes('✘')], [true, true]);
+set('xda_np', '1'); set('xda_in', '1'); w.calcResult('nfpa90a'); tt = txt(w, 'xda_results');
+check('the three exemption conditions replace the service opening count', [tt.includes('غير مطلوبة'), tt.includes('6 فتحة')], [true, false]);
+check('other reference codes open nfpa90a too', others('nfpa90a', 'xda_results'), [true, true, true]);
+}
+// ---------- part 246: NFPA 85-2015 boiler enclosure and component purge (`nfpa85`: 25 to 40 % purge rate, 5 minutes and 5 volume changes, parallel component purge, mandatory trip level, emergency and all-fan-trip procedures) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xbpCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({F: 400, pct: 30, fuel: 0, V: 8000, Vc: 1500, rho: 1.2, trip: 0, cur: 20}, o));
+  check('purge rate 30 % of 400 kg/s = 120 kg/s = 100 m3/s; the limits are 100 kg/s (25 %) and 160 kg/s (40 % for coal)', [a({}).Q, near(a({}).Qv, 100), a({}).minQ, a({}).maxQ, a({}).pctOk], [120, true, 100, 160, true]);
+  check('boiler enclosure of 8000 m3: five volume changes take 400 s = 6.67 min, longer than 5 min', [near(a({}).t5v, 6.667, 0.005), near(a({}).tB, 6.667, 0.005), a({}).govB], [true, true, 1]);
+  check('a small enclosure of 4000 m3 needs only 3.33 min for five changes, so 5 minutes governs', [near(a({V: 4000}).t5v, 3.333, 0.005), a({V: 4000}).tB, a({V: 4000}).govB], [true, 5, 0]);
+  check('component of 1500 m3: 75 s per change set = 1.25 min, so 5 min governs; with the enclosure purge in parallel the total is 6.67 and no extra wait', [near(a({}).t5c, 1.25), a({}).tC, a({}).govC, near(a({}).total, 6.667, 0.005), a({}).extra], [true, 5, 0, true, 0]);
+  check('annex example: a 5 minute enclosure purge and a 7 minute precipitator purge leave the precipitator waiting 2 minutes', [a({V: 4000, Vc: 8400}).tB, near(a({V: 4000, Vc: 8400}).tC, 7), near(a({V: 4000, Vc: 8400}).extra, 2), near(a({V: 4000, Vc: 8400}).total, 7)], [5, true, true, true]);
+  check('no component volume gives no component purge', [a({Vc: 0}).tC, a({Vc: 0}).extra, near(a({Vc: 0}).total, 6.667, 0.005)], [0, 0, true]);
+  check('purge rate limits: 24 % fails, 25 % passes; 41 % fails for coal but gas or oil units may exceed 40 %', [a({pct: 24}).pctOk, a({pct: 25}).pctOk, a({pct: 40}).pctOk, a({pct: 41}).pctOk, a({pct: 41, fuel: 1}).pctOk, a({fuel: 1}).maxQ], [false, true, true, false, true, 0]);
+  check('the mandatory trip level is 5 percentage points below the purge rate: 30 % gives 25 % = 100 kg/s', [a({}).mftPct, a({}).mftQ, a({pct: 35}).mftPct], [25, 100, 30]);
+  check('emergency shutdown with fans in service: below the purge rate holds 5 min first, above it ramps down at once; all-fan trip holds 15 min', [a({trip: 1, cur: 20}).hold, a({trip: 1, cur: 20}).below, a({trip: 1, cur: 50}).hold, a({trip: 1, cur: 50}).below, a({trip: 2}).hold, a({trip: 0}).hold], [5, true, 0, false, 15, 0]);
+  check('time from the trip: 5 + 6.67 = 11.67 min (below purge rate); 15 + 6.67 = 21.67 min after an all-fan trip', [near(a({trip: 1, cur: 20}).fromTrip, 11.667, 0.005), near(a({trip: 2}).fromTrip, 21.667, 0.005), near(a({trip: 0}).fromTrip, 6.667, 0.005)], [true, true, true]);
+}
+let tt;
+w.renderCalc('nfpa85'); w.calcResult('nfpa85');
+tt = txt(w, 'xbp_results');
+check('the default page shows 100.0 kg/s, 160.0 kg/s, 6.7 min, 25.0 % trip level and the 🔴 note', [tt.includes('100.0 kg/s'), tt.includes('160.0 kg/s'), tt.includes('6.7 min'), tt.includes('25.0 % = 100.0 kg/s'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xbp_tr', '2'); w.calcResult('nfpa85'); tt = txt(w, 'xbp_results');
+check('an all-fan trip shows the 15 minute hold and 21.7 min', [tt.includes('15 min'), tt.includes('21.7 min')], [true, true]);
+set('xbp_p', '45'); w.calcResult('nfpa85'); tt = txt(w, 'xbp_results');
+check('45 % for coal shows the failed mark', [tt.includes('✘')], [true]);
+check('other reference codes open nfpa85 too', others('nfpa85', 'xbp_results'), [true, true, true]);
+}
+// ---------- part 247: NFPA 220-2015 types of construction (`nfpa220`: Table 4.1.1 fire resistance ratings for Types I to V, heavy timber allowable dimensions of Type IV 2HH) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const rate = (t, r) => J('xncRating(' + t + ',' + r + ')');
+const chk = (i, b, d) => J('xncCheck(' + i + ',' + b + ',' + d + ')');
+{
+  check('Type I (442): exterior bearing walls 4 h, columns supporting more than one floor 4 h, columns supporting a roof only 3 h, roof-ceiling 2 h', [rate(0, 0).s, rate(0, 6).s, rate(0, 8).s, rate(0, 13).s], ['4', '4', '3', '2']);
+  check('Type I (332): beams supporting one floor only 2 h, roof-ceiling assemblies 1.5 h; Type II (222) roof-ceiling 1 h', [rate(1, 10).s, rate(1, 13).s, rate(1, 13).hours, rate(2, 13).s], ['2', '1.5', 1.5, '1']);
+  check('Type II (222): exterior bearing walls 2 h but 1 h supporting a roof only; Type II (111) all 1 h; Type II (000) all 0', [rate(2, 0).s, rate(2, 2).s, rate(3, 0).s, rate(3, 8).s, rate(4, 3).s, rate(4, 6).s], ['2', '1', '1', '1', '0', '0']);
+  check('Type III (211): exterior bearing walls 2 h and interior elements 1 h; Type III (200): interior elements 0', [rate(5, 0).s, rate(5, 3).s, rate(5, 12).s, rate(6, 0).s, rate(6, 3).s], ['2', '1', '1', '2', '0']);
+  check('Type IV (2HH): exterior bearing walls 2 h, interior bearing walls 2, 1, 1 h, columns, beams and floors heavy timber', [rate(7, 0).s, rate(7, 2).s, rate(7, 3).s, rate(7, 4).s, rate(7, 5).s, rate(7, 6).s, rate(7, 9).s, rate(7, 12).s, rate(7, 13).s, rate(7, 6).timber, rate(7, 0).timber], ['2', '2', '2', '1', '1', 'H', 'H', 'H', 'H', true, false]);
+  check('Type V (111): all structural elements 1 h; Type V (000): 0; exterior bearing walls of Types II (000), III and V (000) marked 0b', [rate(8, 0).s, rate(8, 13).s, rate(9, 0).s, rate(9, 0).cond, rate(4, 0).cond, rate(6, 0).cond, rate(0, 15).cond, rate(0, 14).s], ['1', '1', '0b', true, true, false, true, '0']);
+  check('every row holds ten ratings, one per construction type', [J('XNC_R.length'), J('XNC_R.every(r => r[1].length === 10)'), J('XNC_T.length')], [16, true, 10]);
+  check('heavy timber columns supporting floor loads: 205 mm in any dimension; 200 mm fails; a 205 x 300 section passes', [chk(0, 205, 205).ok, chk(0, 200, 300).ok, chk(0, 300, 205).ok, chk(0, 205, 204).ok], [true, false, true, false]);
+  check('roof columns 150 x 205 mm; floor beams 150 x 255 mm; roof beams 100 x 150 mm', [chk(1, 150, 205).ok, chk(1, 149, 205).ok, chk(1, 150, 204).ok, chk(2, 150, 255).ok, chk(2, 150, 254).ok, chk(3, 100, 150).ok, chk(3, 100, 149).ok], [true, false, false, true, false, true, false]);
+  check('arches: floor-loaded 205 mm; roof arches from grade 150 x 205 (lower half) and 150 x 150 (upper half); from the walls 100 x 150', [chk(4, 205, 205).ok, chk(5, 150, 205).ok, chk(6, 150, 150).ok, chk(6, 150, 149).ok, chk(7, 100, 150).ok, chk(7, 99, 150).ok], [true, true, true, false, true, false]);
+  check('thicknesses: splice plates 75 mm, floor planks 75 mm, roof decks 51 mm, stair treads 51 mm, spaced pieces 75 mm', [chk(8, 0, 75).ok, chk(8, 0, 74).ok, chk(9, 0, 75).ok, chk(10, 0, 51).ok, chk(10, 0, 50).ok, chk(11, 0, 51).ok, chk(12, 0, 75).ok, chk(12, 0, 60).ok], [true, false, true, true, false, true, true, false]);
+}
+let tt;
+w.renderCalc('nfpa220'); w.calcResult('nfpa220');
+tt = txt(w, 'xnc_results');
+check('the default page (Type II 222) shows 2 h, 1 h, 0 (ب) and the 🔴 note', [tt.includes('2 h'), tt.includes('1 h'), tt.includes('0 (ب)'), tt.includes('🔴')], [true, true, true, true]);
+set('xnc_t', '7'); w.calcResult('nfpa220'); tt = txt(w, 'xnc_results');
+check('Type IV shows the heavy timber entries', [tt.includes('خشب ثقيل'), tt.includes('النوع IV (2HH)')], [true, true]);
+set('xnc_m', '1'); w.calcResult('nfpa220'); tt = txt(w, 'xnc_results');
+check('the heavy timber mode shows 205 × 205 mm with a pass mark and switches the groups', [tt.includes('205 × 205 mm'), tt.includes('✔'), doc.getElementById('xnc_g1').style.display === '', doc.getElementById('xnc_g0').style.display === 'none'], [true, true, true, true]);
+set('xnc_w', '100'); set('xnc_d', '100'); w.calcResult('nfpa220'); tt = txt(w, 'xnc_results');
+check('a 100 × 100 mm column fails', [tt.includes('✘')], [true]);
+check('other reference codes open nfpa220 too', others('nfpa220', 'xnc_results'), [true, true, true]);
+}
+// ---------- part 248: NFPA 418-2016 rooftop heliports (`nfpa418`: category by helicopter length, foam rate 4.1 L/min m2, 10 minute fixed and 2 minute hose line, extinguisher rating, water demand of the largest system, geometric and construction limits) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xhpCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({len: 12, area: 200, conc: 3, hangarQ: 0, pitch: 1, ang: 120, sep: 12, tank: 20, fuel: 10, smoke: 16, roof: 16, heat: 4, hpitch: 0.5}, o));
+  check('categories by overall length: under 15.2 m is H-1, 15.2 up to 24.4 is H-2, 24.4 up to 36.6 is H-3, 36.6 m and more is outside', [10, 12, 15.1, 15.2, 24.3, 24.4, 36.5, 36.6, 50].map(l => a({len: l}).cat), [0, 0, 0, 1, 1, 2, 2, -1, -1]);
+  check('critical fire areas and extinguishers: H-1 34.8 m2 and 4-A:80-B, H-2 78.0 m2 and 10-A:120-B, H-3 133.8 m2 and 30-A:240-B', [a({len: 12}).A, a({len: 12}).ext, a({len: 20}).A, a({len: 20}).ext, a({len: 30}).A, a({len: 30}).ext, a({len: 40}).A], [34.8, '4-A:80-B', 78, '10-A:120-B', 133.8, '30-A:240-B', 0]);
+  check('fixed foam on a 200 m2 pad: 820 L/min, 8200 L of solution in 10 minutes, 246 L of 3 % concentrate and 7954 L of water', [near(a({}).fixedQ, 820), near(a({}).fixedSol, 8200), near(a({}).fixedConc, 246), near(a({}).fixedWater, 7954)], [true, true, true, true]);
+  check('hose line for an H-1 helicopter: 4.1 x 34.8 = 142.7 L/min for 2 minutes = 285.4 L of solution, 8.56 L of 3 % concentrate', [near(a({}).hoseQ, 142.68, 0.01), near(a({}).hoseSol, 285.36, 0.01), near(a({}).hoseConc, 8.5608, 0.001)], [true, true, true]);
+  check('concentrate percentages: 1 % gives 82, 6 % gives 492 L for the fixed system', [near(a({conc: 1}).fixedConc, 82), near(a({conc: 6}).fixedConc, 492)], [true, true]);
+  check('H-1 may use two portable foam extinguishers instead of the system; H-2 and H-3 may not', [a({len: 12}).h1port, a({len: 20}).h1port, a({len: 30}).h1port], [true, false, false]);
+  check('the water demand is that of the largest system: pad 820 L/min unless the hangar system is larger', [Math.round(a({}).demand), a({}).demandBy, a({hangarQ: 1000}).demand, a({hangarQ: 1000}).demandBy, a({hangarQ: 820}).demandBy], [820, 0, 1000, 1, 0]);
+  check('pad pitch from 0.5 to 2 percent', [a({pitch: 0.5}).pitchOk, a({pitch: 0.4}).pitchOk, a({pitch: 2}).pitchOk, a({pitch: 2.1}).pitchOk], [true, false, true, false]);
+  check('egress points at least 90 degrees and 9.1 m apart', [a({ang: 90}).angOk, a({ang: 89}).angOk, a({sep: 9.1}).sepOk, a({sep: 9}).sepOk], [true, false, true, false]);
+  check('tanks 15.2 m from the FATO edge, fueling equipment 7.6 m from hangars, no smoking and Class A roof covering within 15.2 m, heaters 3 m from engines, hangar floor pitch 0.5 %', [a({tank: 15.2}).tankOk, a({tank: 15}).tankOk, a({fuel: 7.6}).fuelOk, a({fuel: 7.5}).fuelOk, a({smoke: 15.2}).smokeOk, a({smoke: 15}).smokeOk, a({roof: 15.2}).roofOk, a({heat: 3}).heatOk, a({heat: 2.9}).heatOk, a({hpitch: 0.5}).hpitchOk, a({hpitch: 0.4}).hpitchOk], [true, false, true, false, true, false, true, true, false, true, false]);
+}
+let tt;
+w.renderCalc('nfpa418'); w.calcResult('nfpa418');
+tt = txt(w, 'xhp_results');
+check('the default page shows H-1, 820 L/min, 8200 L, 4-A:80-B and the 🔴 note', [tt.includes('H-1'), tt.includes('820 L/min'), tt.includes('8200 L'), tt.includes('4-A:80-B'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xhp_m', '1'); w.calcResult('nfpa418'); tt = txt(w, 'xhp_results');
+check('the site mode shows 1.0 % with a pass mark, the 2 h structure and switches the groups', [tt.includes('1.0 %'), tt.includes('✔'), tt.includes('2 h'), doc.getElementById('xhp_g1').style.display === '', doc.getElementById('xhp_g0').style.display === 'none'], [true, true, true, true, true]);
+set('xhp_p', '3'); w.calcResult('nfpa418'); tt = txt(w, 'xhp_results');
+check('a 3 % pitch shows the failed mark', [tt.includes('✘')], [true]);
+check('other reference codes open nfpa418 too', others('nfpa418', 'xhp_results'), [true, true, true]);
+}
+// ---------- part 249: NFPA 51B-2014 hot work (`nfpa51b`: 11 m clearance, fire watch conditions, 30 minute watch after the work, 24 hour permit) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xhwCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({d: 8, spark: 0, easy: 0, open: 0, opp: 0, unobs: 0, combFloor: 0, permit: 8}, o));
+  check('default: 11 m radius (380 m2 circle), combustibles at 8 m are inside, fire watch required for one reason, 30 minutes afterwards', [a({}).radius, near(a({}).areaM2, 380.13, 0.05), a({}).near, a({}).c1, a({}).reasons, a({}).watch, a({}).after, a({}).finalCheck], [11, true, true, true, 1, true, 0.5, false]);
+  check('combustibles at exactly 11 m or farther are outside the radius and need no fire watch on their own: the PAI makes a final check after 30 minutes', [a({d: 11}).near, a({d: 11}).c1, a({d: 11}).watch, a({d: 11}).finalCheck, a({d: 10.9}).watch, a({d: 30}).near], [false, false, false, true, true, false]);
+  check('the other three conditions each require a fire watch even when nothing is within 11 m', [a({d: 30, easy: 1}).watch, a({d: 30, open: 1}).watch, a({d: 30, opp: 1}).watch, a({d: 30, easy: 1, open: 1, opp: 1}).reasons, a({d: 30, easy: 1}).finalCheck], [true, true, true, 3, false]);
+  check('extended spark travel of 20 m enlarges the clearance radius to 20 m (1257 m2); a travel of 5 m does not reduce it', [a({spark: 20}).radius, a({spark: 20}).extended, near(a({spark: 20}).areaM2, 1256.64, 0.05), a({spark: 5}).radius, a({spark: 5}).extended, a({spark: 20, d: 15}).near, a({spark: 20, d: 15}).c1], [20, true, true, 11, false, true, false]);
+  check('a second fire watch is needed when materials cannot be observed by the first, only where a fire watch applies', [a({unobs: 1}).multi, a({d: 30, unobs: 1}).multi, a({}).multi], [true, false, false]);
+  check('a permit is valid up to 24 hours', [a({permit: 24}).permitOk, a({permit: 24.1}).permitOk, a({permit: 8}).permitOk], [true, false, true]);
+  check('combustible floors require sweeping and wetting', [a({combFloor: 1}).sweep, a({}).sweep], [true, false]);
+}
+let tt;
+w.renderCalc('nfpa51b'); w.calcResult('nfpa51b');
+tt = txt(w, 'xhw_results');
+check('the default page shows 11.0 m, the fire watch, 30 min, 24 and the 🔴 note', [tt.includes('11.0 m'), tt.includes('مطلوب'), tt.includes('30 min'), tt.includes('24'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xhw_d', '30'); w.calcResult('nfpa51b'); tt = txt(w, 'xhw_results');
+check('with nothing within 11 m the final check by the PAI is shown instead of the 30 minute watch', [tt.includes('غير مطلوب بالشروط الأربعة'), tt.includes('لا توجد')], [true, true]);
+set('xhw_p', '30'); w.calcResult('nfpa51b'); tt = txt(w, 'xhw_results');
+check('a 30 hour permit shows the failed mark', [tt.includes('✘')], [true]);
+check('other reference codes open nfpa51b too', others('nfpa51b', 'xhw_results'), [true, true, true]);
+}
+// ---------- part 250: Syrian Arab Code annex 1 chapter 1 dead loads (`syrdl`: unit weights of materials, wall weights per m2, hollow-block weights, equivalent loads of heavy partitions) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsdCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({mode: 0, grp: 0, mat: 0, V: 1, t: 0.1, row: 0, plaster: 2, H: 3, Lw: 5, open: 0, hb: 0, tb: 0, sz: 0, nb: 8, A: 20, slab: 0, cont: 0, w: 4, L: 5, hp: 0.2, h: 0.5, sumW: 40}, o));
+  check('plain concrete 24 kN/m3: 2 m3 weigh 48 kN, a 0.1 m layer 2.4 kN/m2; not a range', [a({V: 2}).wLo, near(a({}).aLo, 2.4), a({}).range, a({}).name], [48, true, false, 'الخرسانة العادية دون التسليح']);
+  check('hollow block 14 to 19 kN/m3 is a range: 1 m3 weighs 14 to 19 kN', [a({mat: 7}).range, a({mat: 7}).wLo, a({mat: 7}).wHi], [true, 14, 19]);
+  check('table sizes: 18 common materials, 41 construction materials, 27 metals, 17 woods', [J('XSD_M.map(g => g.length)'), J('XSD_M[1].findIndex(m => m[0].includes("20 cm"))')], [[18, 41, 27, 17], 29]);
+  check('construction table: concrete block hollow 20 cm 13.5, reinforced concrete 2 % 25.3 and 5 % 26, mortar 22, lightweight 12 to 20', [a({grp: 1, mat: 29}).lo, a({grp: 1, mat: 37}).lo, a({grp: 1, mat: 38}).lo, a({grp: 1, mat: 34}).lo, a({grp: 1, mat: 39}).hi], [13.5, 25.3, 26, 22, 20]);
+  check('metals and woods: steel 77 kN/m3 (metals 16), lead 114, oak 7.2, pine 5.3', [a({grp: 2, mat: 16}).lo, a({grp: 2, mat: 11}).lo, a({grp: 3, mat: 0}).lo, a({grp: 3, mat: 16}).lo], [77, 114, 7.2, 5.3]);
+  check('wall table: every plastered value is the bare wall plus 0.44 (one face) and 0.88 (two faces) of 20 mm mortar at 22 kN/m3', [J('XSD_W.every(w => Math.abs(w[4] - w[3] - 0.44) < 0.005 && (w[5] === null || Math.abs(w[5] - w[3] - 0.88) < 0.005))'), J('XSD_W.length')], [true, 29]);
+  check('solid clay brick 120 mm wall: 2.44 bare, 2.88 and 3.32 plastered; 3 m x 5 m less a 2 m2 opening = 13 m2 gives 43.16 kN and 9.96 kN/m', [a({mode: 1}).w0, a({mode: 1, plaster: 1}).w, a({mode: 1}).w, near(a({mode: 1, open: 2}).total, 43.16, 0.005), near(a({mode: 1}).line, 9.96), a({mode: 1}).net, a({mode: 1, open: 2}).net], [2.44, 2.88, 3.32, true, true, 15, 13]);
+  check('stone wall has no plastered-both-faces value; light and heavy classification at 1.5 kN/m2', [a({mode: 1, row: 26, plaster: 2}).ok, a({mode: 1, row: 26, plaster: 1}).w, a({mode: 1, row: 2}).heavy, a({mode: 1, row: 2, plaster: 0}).heavy, a({mode: 1, row: 2, plaster: 0}).w], [false, 8.14, true, false, 1.22]);
+  check('hollow blocks: h1 14 cm 2.5 cm 38/35 10 kg; 3 cm 35/32 10.9 kg; h1 36 cm 3 cm 38/35 19.6; 8 per m2 of the first = 80 kg/m2', [a({mode: 2}).W, a({mode: 2, tb: 1, sz: 1}).W, a({mode: 2, hb: 12, tb: 1}).W, a({mode: 2}).perM2, a({mode: 2}).total], [10, 10.9, 19.6, 80, 1600]);
+  check('heavy wall on a one-way slab perpendicular to the span: Wp = 4 x 3 = 12 kN/m; We = 2 Wp/L = 4.8, 1.75 Wp/L = 4.2 and 1.5 Wp/L = 3.6 kN/m2', [a({mode: 3}).Wp, near(a({mode: 3}).We, 4.8), near(a({mode: 3, cont: 1}).We, 4.2), near(a({mode: 3, cont: 2}).We, 3.6)], [12, true, true, true]);
+  check('wall parallel to the span: e = hp + 0.3 L + h = 0.2 + 1.5 + 0.5 = 2.2 m and We = 12 / 2.2; h limited to 0.3 L gives e = hp + 0.6 L = 3.2 m', [near(a({mode: 3, slab: 1}).e, 2.2), near(a({mode: 3, slab: 1}).We, 5.4545, 0.001), near(a({mode: 3, slab: 1, h: 2}).e, 3.2), near(a({mode: 3, slab: 1, h: 2}).emax, 3.2)], [true, true, true, true]);
+  check('two-way slab: We = 1.5 x 40 / 20 = 3 kN/m2; classification heavy from 1.5 kN/m2 of wall', [a({mode: 3, slab: 2}).We, a({mode: 3, w: 1.4}).heavy, a({mode: 3, w: 1.5}).heavy], [3, false, true]);
+}
+let tt;
+w.renderCalc('syrdl'); w.calcResult('syrdl');
+tt = txt(w, 'xsd_results');
+check('the default page shows 24.0 kN/m³, 2.40 kN/m² and the 🔴 note', [tt.includes('24.0 kN/m³'), tt.includes('2.40 kN/m²'), tt.includes('🔴')], [true, true, true]);
+set('xsd_gr', '3'); w.calcResult('syrdl');
+check('choosing the woods group rebuilds the material list to 17 entries', [doc.getElementById('xsd_mt').options.length], [17]);
+set('xsd_m', '1'); w.calcResult('syrdl'); tt = txt(w, 'xsd_results');
+check('the wall mode shows 3.320 kN/m², 9.96 kN/m and 49.8 kN and switches the groups', [tt.includes('3.320 kN/m²'), tt.includes('9.96 kN/m'), tt.includes('49.8 kN'), doc.getElementById('xsd_g1').style.display === '', doc.getElementById('xsd_g0').style.display === 'none'], [true, true, true, true, true]);
+set('xsd_m', '2'); w.calcResult('syrdl'); tt = txt(w, 'xsd_results');
+check('the hollow block mode shows 13.3 kg', [tt.includes('13.3 kg')], [true]);
+set('xsd_m', '3'); w.calcResult('syrdl'); tt = txt(w, 'xsd_results');
+check('the heavy partition mode shows 4.80 kN/m² and the heavy classification', [tt.includes('4.80 kN/m²'), tt.includes('ثقيل')], [true, true]);
+check('other reference codes open syrdl too', others('syrdl', 'xsd_results'), [true, true, true]);
+}
+// ---------- part 251: Syrian Arab Code annex 1 chapter 2 live loads (`syrll`: Table 2-1 loads by use, Table 2-2 reduction in multi-storey buildings, light partition equivalent load, balcony barrier forces) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xslCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({mode: 0, use: 5, hs: 3, A: 100, n: 8, P: 2, w: 1.2, qLive: 2, kind: 0, len: 10, hb: 1}, o));
+  check('table has 46 uses; residential rooms 2 kN/m2 and 1.4 kN concentrated; 100 m2 carry 200 kN', [J('XSL_U.length'), a({}).q, a({}).Q, a({}).total, a({}).kind, a({}).Qkind], [46, 2, 1.4, 200, 'f', 'f']);
+  check('hotel corridors 5 and 4.5, hospital operating rooms at least 3 and 4.5, archives at least 5 with a computed concentrated load', [a({use: 8}).q, a({use: 8}).Q, a({use: 13}).kind, a({use: 13}).q, a({use: 13}).Q, a({use: 16}).kind, a({use: 16}).q, a({use: 16}).Qkind], [5, 4.5, 'm', 3, 4.5, 'm', 5, 'c']);
+  check('roofs: 1.0 kN/m2 flat, 0.5 kN/m2 steep, accessible roofs at least 2; balconies 4 and 5', [a({use: 0}).q, a({use: 1}).q, a({use: 2}).q, a({use: 2}).kind, a({use: 3}).q, a({use: 4}).q, a({use: 0}).Qkind], [1, 0.5, 2, 'm', 4, 5, 'n']);
+  check('book stores: 2.4 per metre of height but not less than 7 (3 m gives 7.2, 2 m gives 7); paper stores 4 per metre (12); cold stores 5 per metre not less than 15 (2 m gives 15, 4 m gives 20)', [near(a({use: 30}).q, 7.2), a({use: 30, hs: 2}).q, a({use: 31}).q, a({use: 32, hs: 2}).q, a({use: 32, hs: 4}).q, a({use: 30}).byH, a({use: 29}).byH], [true, 7, 12, 15, 20, true, false]);
+  check('the starred uses (dancing, sports stands, stage) carry a dynamic factor 1.1: 6.6 kN/m2; others do not', [a({use: 24}).dyn, a({use: 26}).dyn, a({use: 27}).dyn, a({use: 23}).dyn, near(a({use: 24}).qDyn, 6.6), a({use: 23}).qDyn], [true, true, true, false, true, 6]);
+  check('car parks: 6 kN/m2 and 9 kN for light cars; heavier cars computed not less than 6 and 9; the car flag applies to both', [a({use: 38}).q, a({use: 38}).Q, a({use: 38}).kind, a({use: 39}).kind, a({use: 39}).Qkind, a({use: 38}).car, a({use: 39}).car, a({use: 5}).car], [6, 9, 'f', 'm', 'm', true, true, false]);
+  check('machine rooms 7.5 kN/m2 and 4.5 kN; printing presses at least 20; studios 4 with a computed concentrated load', [a({use: 43}).q, a({use: 43}).Q, a({use: 45}).q, a({use: 45}).kind, a({use: 44}).q, a({use: 44}).Qkind], [7.5, 4.5, 20, 'm', 4, 'c']);
+  check('Table 2-2 factors by level from the top: 1, 1, 0.9, 0.8, 0.7, 0.6, then 0.5 for the sixth below and lower', [0, 1, 2, 3, 4, 5, 6, 7, 15].map(k => J('xslFactor(' + k + ')')), [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.5, 0.5]);
+  check('eight storeys with 2 kN each: factors sum 6.0, so 12 kN instead of 16 kN, saving 4 kN, last factor 0.5', [a({mode: 1}).allowed, near(a({mode: 1}).sum, 6), near(a({mode: 1}).sumP, 12), a({mode: 1}).full, near(a({mode: 1}).saving, 4), a({mode: 1}).last], [true, true, true, 16, true, 0.5]);
+  check('five storeys or fewer: no reduction; six storeys give factors summing 5.0', [a({mode: 1, n: 5}).allowed, a({mode: 1, n: 5}).sum, a({mode: 1, n: 5}).saving, a({mode: 1, n: 6}).allowed, near(a({mode: 1, n: 6}).sum, 5)], [false, 5, 0, true, true]);
+  check('light partition equivalent load: 0.75 at 1.0 kN/m2 up to 1.75 at 1.5 (1.15 at 1.2; 0.95 at 1.1); below 1.0 the chart minimum 0.75; heavy above 1.5', [a({mode: 2, w: 1}).eq, near(a({mode: 2, w: 1.2}).eq, 1.15), near(a({mode: 2, w: 1.1}).eq, 0.95), near(a({mode: 2, w: 1.5}).eq, 1.75), a({mode: 2, w: 0.8}).eq, a({mode: 2, w: 0.8}).below, a({mode: 2, w: 1.6}).light, a({mode: 2, w: 1.5}).light], [0.75, true, true, true, 0.75, true, false, true]);
+  check('the equivalent load is neglected when the live load exceeds 6 kN/m2', [a({mode: 2, qLive: 6.5}).neglect, a({mode: 2, qLive: 6.5}).total, a({mode: 2, qLive: 6}).neglect, near(a({mode: 2, qLive: 3}).total, 1.15), a({mode: 2, w: 1.7}).total], [true, 0, false, true, 0]);
+  check('balcony barriers: 1 kN/m in ordinary buildings, 3 kN/m at panic barriers; 10 m gives 10 or 30 kN; overturning 1.5 times the moment at 1 m', [a({mode: 3}).F, a({mode: 3, kind: 1}).F, a({mode: 3}).line, a({mode: 3, kind: 1}).line, a({mode: 3, kind: 1}).M, a({mode: 3, kind: 1}).Mreq, near(a({mode: 3, hb: 1.2}).Mreq, 1.8)], [1, 3, 10, 30, 3, 4.5, true]);
+}
+let tt;
+w.renderCalc('syrll'); w.calcResult('syrll');
+tt = txt(w, 'xsl_results');
+check('the default page shows 2.0 kN/m², 1.4 kN, 200.0 kN and the 🔴 note', [tt.includes('2.0 kN/m²'), tt.includes('1.4 kN'), tt.includes('200.0 kN'), tt.includes('🔴')], [true, true, true, true]);
+set('xsl_m', '1'); w.calcResult('syrll'); tt = txt(w, 'xsl_results');
+check('the reduction mode shows 12.0 kN and 16.0 kN and switches the groups', [tt.includes('12.0 kN'), tt.includes('16.0 kN'), doc.getElementById('xsl_g1').style.display === '', doc.getElementById('xsl_g0').style.display === 'none'], [true, true, true, true]);
+set('xsl_m', '2'); w.calcResult('syrll'); tt = txt(w, 'xsl_results');
+check('the light wall mode shows 1.15 kN/m²', [tt.includes('1.15 kN/m²')], [true]);
+set('xsl_m', '3'); w.calcResult('syrll'); tt = txt(w, 'xsl_results');
+check('the barrier mode shows 1.0 kN/m and 10.0 kN', [tt.includes('1.0 kN/m'), tt.includes('10.0 kN')], [true, true]);
+check('other reference codes open syrll too', others('syrll', 'xsl_results'), [true, true, true]);
+}
+// ---------- part 252: Syrian Arab Code annex 1 chapters 3 and 4 (`syrdyn`: machinery factor alpha, lifts and cranes, car park barriers, snow load, thermal and shrinkage effects) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsyCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({mode: 0, useA: 1, L: 5, G: 20, P: 10, Pd: 10, W: 20, crane: 1, wheel: 100, drive: 100, trolley: 60, empty: 80, mass: 1500, v: 4.5, dc: 100, rampL: 15, alt: 600, slope: 20, depth: 0, zone: 1, dt: 15, len: 30}, o));
+  check('alpha = 0.4 / (1 + L/5) + 0.6 / (1 + G/P) = 0.2 + 0.2 = 0.4; the dynamic load 10 grows to 14; the simplified alpha 0.3 gives 13', [near(a({}).alpha, 0.4), near(a({}).Pd, 14), near(a({}).add, 4), a({useA: 0}).alpha, near(a({useA: 0}).Pd, 13)], [true, true, true, 0.3, true]);
+  check('a long element and a heavy permanent load lower alpha: L 20, G 100, P 10 gives 0.4/5 + 0.6/11 = 0.1345', [near(a({L: 20, G: 100}).alpha, 0.08 + 0.6 / 11, 0.0005)], [true]);
+  check('lifts: 20 kN moving weight needs 40 kN of equivalent dynamic load, 60 kN in total', [a({mode: 1}).dynLift, a({mode: 1}).totLift], [40, 60]);
+  check('cranes: factors 1.1, 1.25 and 1.35; a 100 kN wheel becomes 125 kN; longitudinal 20 % of 100 = 20, lateral 20 % of 60 = 12, end stop half of 80 = 40', [a({mode: 1, crane: 0}).cf, a({mode: 1}).cf, a({mode: 1, crane: 2}).cf, a({mode: 1}).vert, a({mode: 1}).longi, near(a({mode: 1}).lat, 12), a({mode: 1}).stop], [1.1, 1.25, 1.35, 125, 20, true, 40]);
+  check('car park barrier: cars up to 1500 kg use 150 kN over 1.5 m = 100 kN/m; the formula gives 151.9 kN for 1500 kg at 4.5 m/s; 16.2 km/h', [a({mode: 2}).heavy, a({mode: 2}).F, near(a({mode: 2}).F0, 151.875), a({mode: 2}).per, near(a({mode: 2}).vkmh, 16.2)], [false, 150, true, 100, true]);
+  check('a 2000 kg car: F = 0.5 x 2000 x 4.5^2 / 100 = 202.5 kN, applied at 0.375 m; a 3000 kg car 303.75 kN at the bumper level', [a({mode: 2, mass: 2000}).heavy, near(a({mode: 2, mass: 2000}).F, 202.5), a({mode: 2, mass: 2000}).hF, near(a({mode: 2, mass: 3000}).F, 303.75), a({mode: 2, mass: 3000}).hF], [true, true, 0.375, true, null]);
+  check('ramps: half the force at 61 cm; ramp end barriers twice the force for ramps over 20 m', [a({mode: 2}).ramp, a({mode: 2}).rampEnd, a({mode: 2, rampL: 20}).rampEnd, a({mode: 2, rampL: 25}).rampEnd, a({mode: 2}).rampH], [75, 150, 150, 300, 0.61]);
+  check('snow Table 4-1: nothing to 250 m; (h/1000) - 0.25 up to 500 m; (h/400) - 1 up to 1500; (h/250) - 3.25 up to 2500', [0, 200, 250, 300, 500, 600, 1000, 1500, 2000, 2500].map(h => Math.round(J('xsySnow(' + h + ')') * 10000) / 10000), [0, 0, 0, 0.05, 0.25, 0.5, 1.5, 2.75, 4.75, 6.75]);
+  check('snow slope factor (75 - a)/50: 1 up to 25 degrees, 0.9, 0.8, 0.7 and 0.6 at 30, 35, 40 and 45; the design load at 600 m and 20 degrees is 0.5 kN/m2 (50 kgf/m2)', [20, 25, 30, 35, 40, 45].map(s => Math.round(J('xsySlope(' + s + ')') * 100) / 100), [1, 1, 0.9, 0.8, 0.7, 0.6]);
+  check('design snow load: 600 m flat roof 0.5 kN/m2; 1000 m at 35 degrees 1.5 x 0.8 = 1.2 kN/m2; depth 0.4 m of snow at 2.5 kN/m3 = 1 kN/m2; beyond-table flags', [a({mode: 3}).s, near(a({mode: 3, alt: 1000, slope: 35}).s, 1.2), a({mode: 3}).kgf, a({mode: 3, depth: 0.4}).depth, a({mode: 3, alt: 2600}).over, a({mode: 3, slope: 50}).beyond, a({mode: 3}).over], [0.5, true, 50, 1, true, true, false]);
+  check('Table 4-3: very humid +-15 and +5 / -25; humid +-20 and +10 / -30; medium +-25 and +10 / -35; dry +-30 and +10 / -45', [0, 1, 2, 3].map(z => a({mode: 4, zone: z})).map(r => [r.dt, r.rise, r.drop]), [[15, 5, -25], [20, 10, -30], [25, 10, -35], [30, 10, -45]]);
+  check('thermal strain 1e-5 x 15 = 1.5e-4: 4.5 mm over 30 m; a humid zone +-20 gives 6 mm; the drop of 30 gives 9 mm; the shrinkage case -20 C gives 6 mm', [near(a({mode: 4}).eps, 1.5e-4, 1e-9), near(a({mode: 4}).dL, 4.5), near(a({mode: 4}).dLT, 6), near(a({mode: 4}).dLdrop, 9), near(a({mode: 4}).dLshr, 6)], [true, true, true, true, true]);
+}
+let tt;
+w.renderCalc('syrdyn'); w.calcResult('syrdyn');
+tt = txt(w, 'xsy_results');
+check('the default page shows alpha 0.400, the corrected load 14.00 and the 🔴 note', [tt.includes('0.400'), tt.includes('14.00'), tt.includes('🔴')], [true, true, true]);
+set('xsy_m', '1'); w.calcResult('syrdyn'); tt = txt(w, 'xsy_results');
+check('the lift and crane mode shows 60.0 kN and 125.0 kN and switches the groups', [tt.includes('60.0 kN'), tt.includes('125.0 kN'), doc.getElementById('xsy_g1').style.display === '', doc.getElementById('xsy_g0').style.display === 'none'], [true, true, true, true]);
+set('xsy_m', '2'); w.calcResult('syrdyn'); tt = txt(w, 'xsy_results');
+check('the barrier mode shows 150 kN and 100.0 kN/m', [tt.includes('150 kN'), tt.includes('100.0 kN/m')], [true, true]);
+set('xsy_m', '3'); w.calcResult('syrdyn'); tt = txt(w, 'xsy_results');
+check('the snow mode shows 0.50 kN/m²', [tt.includes('0.50 kN/m²')], [true]);
+set('xsy_m', '4'); w.calcResult('syrdyn'); tt = txt(w, 'xsy_results');
+check('the thermal mode shows ± 20 °C and 4.5 mm', [tt.includes('± 20 °C'), tt.includes('4.5 mm')], [true, true]);
+check('other reference codes open syrdyn too', others('syrdyn', 'xsy_results'), [true, true, true]);
+}
+// ---------- part 253: Syrian Arab Code annex 1 chapter 5 wind loads (`syrwind`: station speeds, S1 S2 S3, dynamic pressure q = 0.613 Vs2, wall and roof pressure coefficients, force coefficient Cf and friction) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xswCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({mode: 0, st: 17, V: 45, S1: 1, cat: 0, cls: 1, H: 12, S3: 1, Cp: 1, h: 12, w: 10, l: 15, ang: 0, q: 700, cpi: 0, angle: 20, b: 20, d: 15, hh: 30, surf: 0}, o));
+  check('20 stations; Mezzeh (Damascus) 55 and 48 m/s; Salamiyah (Salnfah) 67 and 58; Raqqa 40 and 35; and V = 1.15 Vk holds within 0.6 m/s for every station', [J('XSW_ST.length'), J('XSW_ST[17]'), J('XSW_ST[11]'), J('XSW_ST[8]'), J('XSW_ST.every(s => Math.abs(s[1] - 1.15 * s[2]) <= 0.6)')], [20, ['المزة (دمشق)', 55, 48], ['صلنفة', 67, 58], ['الرقة', 40, 35], true]);
+  check('S2 table corners: category 1 class A 0.83 at 3 m and 1.27 at 200 m; category 4 class C 0.47 at 3 m and 1.18 at 200 m; category 3 class B at 100 m 1.12', [J('xswS2(0,0,3)'), J('xswS2(0,0,200)'), J('xswS2(3,2,3)'), J('xswS2(3,2,200)'), J('xswS2(2,1,100)')], [0.83, 1.27, 0.47, 1.18, 1.12]);
+  check('S2 is flat below 3 m and above 200 m and interpolates linearly: category 1 class B at 12.5 m = 0.97, at 1 m 0.78, at 250 m 1.24', [near(J('xswS2(0,1,12.5)'), 0.97), J('xswS2(0,1,1)'), J('xswS2(0,1,250)'), a({H: 1}).s2Below, a({H: 250}).s2Above, a({}).s2Above], [true, 0.78, 1.24, true, true, false]);
+  check('every row of the S2 table has twelve values that never decrease with height within a column', [J('XSW_S2.every(r => r.length === 12)'), J('XSW_S2.every((r, i) => i === 0 || r.every((x, c) => x >= XSW_S2[i - 1][c]))')], [true, true]);
+  check('Mezzeh, category 1 class B at 10 m: V 55, S2 0.95, Vs 52.25 m/s, q = 0.613 x 52.25^2 = 1673.5 N/m2 = 170.6 kgf/m2', [a({H: 10}).V, a({H: 10}).S2, near(a({H: 10}).Vs, 52.25), near(a({H: 10}).q, 1673.5, 0.1), near(a({H: 10}).kgf, 170.6, 0.1)], [55, 0.95, true, true, true]);
+  check('manual V of 45 m/s gives Vk = 39.1; S1 1.2 and S3 1.1 multiply the speed; Cp 0.8 scales the pressure', [near(a({st: -1}).Vk, 39.13, 0.01), near(a({st: -1, H: 10, S1: 1.2, S3: 1.1}).Vs, 45 * 0.95 * 1.2 * 1.1, 0.001), near(a({H: 10, Cp: 0.8}).p, 0.8 * a({H: 10}).q, 0.001)], [true, true, true]);
+  check('ratio bands: h/w up to 0.5 band 0, up to 1.5 band 1, beyond band 2; l/w up to 1.5 band 0 else band 1; out-of-table flags', [[5, 10, 10].concat([0]).slice(0, 3), [0.5, 0.51, 1.5, 1.51].map(r => J('xswBands(' + r * 10 + ',10,15).hb')), [1.5, 1.51].map(r => J('xswBands(10,10,' + r * 10 + ').lb')), J('xswBands(60,10,15).hwOut'), J('xswBands(10,10,40).lwOut'), J('xswBands(10,10,10).lwOut')].slice(1), [[0, 1, 1, 2], [0, 1], true, true, false]);
+  check('wall Cpe for h/w 1.2 and l/w 1.5: 0 degrees A +0.7, B -0.25, C -0.6, D -0.6 (local -1.1); 90 degrees -0.6, -0.6, +0.7, -0.25', [a({mode: 1}).vals, a({mode: 1, ang: 1}).vals, a({mode: 1}).loc], [[0.7, -0.25, -0.6, -0.6], [-0.6, -0.6, 0.7, -0.25], -1.1]);
+  check('wall table corners: low squat 0 degrees +0.7 -0.2 -0.5 -0.5 (local -0.8); tall slender l/w 1.2 gives +0.8 and local -1.2; tall long B -0.4', [a({mode: 1, h: 2, w: 10, l: 12}).vals, a({mode: 1, h: 2, w: 10, l: 12}).loc, a({mode: 1, h: 30, w: 10, l: 12}).vals[0], a({mode: 1, h: 30, w: 10, l: 12}).loc, a({mode: 1, h: 30, w: 10, l: 30}).vals[1]], [[0.7, -0.2, -0.5, -0.5], -0.8, 0.8, -1.2, -0.4]);
+  check('net wall pressure with Cpi -0.3 at q = 700: A (0.7 + 0.3) x 700 = 700, B 35, C -210; with Cpi +0.2: A 350', [near(a({mode: 1}).net[0], 700), near(a({mode: 1}).net[1], 35), near(a({mode: 1}).net[2], -210), a({mode: 1}).cpi, a({mode: 1, cpi: 1}).cpi, near(a({mode: 1, cpi: 1}).net[0], 350)], [true, true, true, -0.3, 0.2, true]);
+  check('roof, band 1 at 20 degrees: EF -0.7, GH -0.5, EG -0.8, FH -0.6, local -1.5 -1.5 -1.5 -1.0; interpolated at 15 degrees EF -0.9', [a({mode: 2}).gen, a({mode: 2}).loc, near(a({mode: 2, angle: 15}).gen[0], -0.9)], [[-0.7, -0.5, -0.8, -0.6], [-1.5, -1.5, -1.5, -1], true]);
+  check('roof, low building: 45 degrees EF +0.3 and 60 degrees +0.7; tall band 40 degrees EF -0.2 and 50 degrees +0.2; beyond the last angle flagged', [a({mode: 2, h: 2, w: 10, l: 12, angle: 45}).gen[0], a({mode: 2, h: 2, w: 10, l: 12, angle: 60}).gen[0], a({mode: 2, h: 30, w: 10, l: 12, angle: 40}).gen[0], a({mode: 2, h: 30, w: 10, l: 12, angle: 50}).gen[0], a({mode: 2, angle: 70}).over, a({mode: 2, angle: 60}).over], [0.3, 0.7, -0.2, 0.2, true, false]);
+  check('Cf at b/d 1: 0.9 up to h/b 1/2, 0.95 at 1, 1.05 at 4, 1.4 at 20, 1.025 at 3; b/d 3 at h/b 2 gives 1.25; b/d 4 and over 1.2 to 1.6; b/d 1/4 and under 0.7', [J('xswCf(1,0.5)'), J('xswCf(1,1)'), J('xswCf(1,4)'), J('xswCf(1,20)'), near(J('xswCf(1,3)'), 1.025), J('xswCf(3,2)'), J('xswCf(5,0.5)'), J('xswCf(5,6)'), J('xswCf(0.2,6)')], [0.9, 0.95, 1.05, 1.4, true, 1.25, 1.2, 1.6, 0.75]);
+  check('Cf interpolates between b/d rows: b/d 1.25 at h/b 1 is 0.975; the example b 20, d 15, h 30 gives Cf 1.0083, Ae 600 m2, F 423.5 kN', [near(J('xswCf(1.25,1)'), 0.975), near(a({mode: 3}).Cf, 1.00833, 0.0005), a({mode: 3}).Ae, near(a({mode: 3}).F / 1000, 423.5, 0.1)], [true, true, 600, true]);
+  check('friction: surface coefficients 0.01, 0.02, 0.04; none when d is under 4h; b 20, h 10, d 60 gives 0.01 x 700 x [20 x 20 + 2 x 10 x 20] = 5.6 kN', [a({mode: 3, surf: 1}).cfr, a({mode: 3, surf: 2}).cfr, a({mode: 3}).long, a({mode: 3}).Ff, a({mode: 3, hh: 10, d: 60}).long, near(a({mode: 3, hh: 10, d: 60}).Ff / 1000, 5.6, 0.001)], [0.02, 0.04, false, 0, true, true]);
+}
+let tt;
+w.renderCalc('syrwind'); w.calcResult('syrwind');
+tt = txt(w, 'xsw_results');
+check('the default page shows 55.0 m/s, the design speed 53.1 m/s and the 🔴 note', [tt.includes('55.0 m/s'), tt.includes('53.1 m/s'), tt.includes('🔴')], [true, true, true]);
+set('xsw_m', '1'); w.calcResult('syrwind'); tt = txt(w, 'xsw_results');
+check('the wall mode shows +0.70, 700 N/m² and switches the groups', [tt.includes('+0.70'), tt.includes('700 N/m²'), doc.getElementById('xsw_g1').style.display === '', doc.getElementById('xsw_g0').style.display === 'none'], [true, true, true, true]);
+set('xsw_m', '2'); w.calcResult('syrwind'); tt = txt(w, 'xsw_results');
+check('the roof mode shows 0.70 for the EF zone and the local coefficients', [tt.includes('0.70'), tt.includes('المعاملات الموضعية')], [true, true]);
+set('xsw_m', '3'); w.calcResult('syrwind'); tt = txt(w, 'xsw_results');
+check('the force mode shows 423.5 kN', [tt.includes('423.5 kN')], [true]);
+check('other reference codes open syrwind too', others('syrwind', 'xsw_results'), [true, true, true]);
+}
+// ---------- part 254: Syrian Arab Code for unreinforced load-bearing walls chapter 5 (`syrwall`: basic allowable compressive stresses Tables 5-1 to 5-3, effective height and slenderness, buckling reduction Table 5-4, eccentricity factor, wind and concentrated load) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsaCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+const red = (sb, lam) => J('xsaRed(' + sb + ',' + lam + ')');
+{
+  const a = o => calc(Object.assign({mat: 2, a: 1, b: 1, H: 3, t: 0.25, L: 0, open: 0, ho: 0, k: 1.5, eq: 0, N: 100, e: 0.02, wind: 0, P: 0, lb: 20, wb: 25}, o));
+  check('Table 5-1 rubble stone: 150 kgf/cm2 stone gives 2 2 2 3 across the mortars; 250 gives 3 3 4 5; 600 and over gives 5 7 8 10', [[0, 1, 2, 3].map(m => J('xsaBasic(0,0,' + m + ')')), [0, 1, 2, 3].map(m => J('xsaBasic(0,1,' + m + ')')), [0, 1, 2, 3].map(m => J('xsaBasic(0,3,' + m + ')'))], [[2, 2, 2, 3], [3, 3, 4, 5], [5, 7, 8, 10]]);
+  check('Table 5-1 dressed stone: 150 gives 7 9 11 13; 400 gives 14 17 20 23; 600 and over gives 18 23 27 31', [[0, 1, 2, 3].map(m => J('xsaBasic(1,0,' + m + ')')), [0, 1, 2, 3].map(m => J('xsaBasic(1,2,' + m + ')')), [0, 1, 2, 3].map(m => J('xsaBasic(1,3,' + m + ')'))], [[7, 9, 11, 13], [14, 17, 20, 23], [18, 23, 27, 31]]);
+  check('Table 5-2 artificial stone: 75 gives 8 9 10 11; 100 gives 9 10 11 12; 150 gives 10 12 14 16; 200 gives 12 15 17 19', [0, 1, 2, 3].map(s => [0, 1, 2, 3].map(m => J('xsaBasic(2,' + s + ',' + m + ')'))), [[8, 9, 10, 11], [9, 10, 11, 12], [10, 12, 14, 16], [12, 15, 17, 19]]);
+  check('Table 5-3 concrete: 100 / 120 / 150 give 18 / 22 / 27 plain and 15 / 18 / 22 for concrete with embedded stones', [[0, 1, 2].map(c => J('xsaBasic(3,' + c + ',0)')), [0, 1, 2].map(c => J('xsaBasic(4,' + c + ',0)'))], [[18, 22, 27], [15, 18, 22]]);
+  check('Table 5-4 nodes: slenderness 12 gives 6 7 8 10 11 12 13 15 22 for basic stresses 8 to 30; 14 gives 4 5 6 7 8 8 9 10 14; 16 gives 3 3 4 5 6 6 6 7 10; 18 gives 3 3 4 4 4 5 7 from 12; 20 gives 3 and 5 at 22 and 30', [[8, 10, 12, 14, 16, 18, 20, 22, 30].map(s => red(s, 12).v), [8, 10, 12, 14, 16, 18, 20, 22, 30].map(s => red(s, 14).v), [8, 10, 12, 14, 16, 18, 20, 22, 30].map(s => red(s, 16).v), [12, 14, 16, 18, 20, 22, 30].map(s => red(s, 18).v), [red(22, 20).v, red(30, 20).v]], [[6, 7, 8, 10, 11, 12, 13, 15, 22], [4, 5, 6, 7, 8, 8, 9, 10, 14], [3, 3, 4, 5, 6, 6, 6, 7, 10], [3, 3, 4, 4, 4, 5, 7], [3, 5]]);
+  check('no reduction up to slenderness 10; linear interpolation between rows and columns: 8.5 at 11 for basic 10, 6.5 at 12 for basic 9', [red(10, 8).v, red(10, 10).v, near(red(10, 11).v, 8.5), near(red(9, 12).v, 6.5), near(red(11, 13).v, (5.5 + 8.5 + 4.5 + 6.5) / 4 - 0.25 + 0, 2)], [10, 10, true, true, true]);
+  check('not permitted: slenderness over 20, a basic stress below 8 above slenderness 10, and cells the table leaves blank; a basic stress over 30 uses the 30 column', [red(10, 21).ok, red(7, 12).ok, red(10, 18).ok, red(8, 16).ok, red(14, 20).ok, red(31, 12).over, red(31, 12).v, red(5, 8).ok, red(5, 8).v], [false, false, false, true, false, true, 22, true, 5]);
+  check('default: effective height 3, slenderness 12, basic stress 10 reduced to 7; centre stress 4.08, edges 6.04 and 2.12, factor eta 1.5, limit 10.5', [a({}).sb, a({}).Ho, a({}).Hb, a({}).lam, a({}).red, near(a({}).sc, 4.0789, 0.001), near(a({}).s1, 6.0367, 0.001), near(a({}).s2, 2.121, 0.001), a({}).eta, near(a({}).edgeLim, 10.5), a({}).okC, a({}).okE], [10, 3, 3, 12, 7, true, true, true, 1.5, true, true, true]);
+  check('wall between vertical supports: L 4 m and H 3 m (H/L 0.75) gives Hb = 3 / 1.75 = 1.714 and slenderness 6.86, no reduction; H/L under 0.5 or a wide opening treats it as a column', [a({L: 4}).wallOk, near(a({L: 4}).Hb, 1.7143), near(a({L: 4}).lam, 6.857, 0.001), a({L: 4}).red, a({L: 8}).wallOk, a({L: 8}).Hb, a({L: 6, open: 2.5}).wallOk, a({L: 6, open: 2}).wallOk], [true, true, true, 10, false, 3, false, true]);
+  check('support conditions: free at the top Ho = 2H = 6 (slenderness 24 is not permitted); partial restraint 1.5 H = 4.5 gives slenderness 18', [a({ho: 2}).Ho, a({ho: 2}).lam, a({ho: 2}).redOk, a({ho: 1}).Ho, a({ho: 1}).lam, a({ho: 1}).redOk], [6, 24, false, 4.5, 18, false]);
+  check('equivalent slenderness overrides the computed one: 10 gives the full 10, 12 gives 7, 14 gives 5 for basic 10', [a({eq: 1}).lam, a({eq: 1}).red, a({eq: 2}).lam, a({eq: 2}).red, a({eq: 3}).lam, a({eq: 3}).red], [10, 10, 12, 7, 14, 5]);
+  check('eccentricity outside the middle third: e = 0.1 m with 100 kN/m gives edge stress 2 N / (3 x 0.025) = 27.2 kgf/cm2; e at half the thickness is unstable; with e = 0 eta is 1', [a({e: 0.1, N: 100}).core, near(a({e: 0.1, N: 100}).s1, 27.19, 0.01), a({e: 0.1, N: 100}).s2, a({e: 0.125}).s1 === null, a({e: 0}).eta, near(a({e: 0}).s1, a({e: 0}).sc, 1e-9)], [false, true, 0, true, 1, true]);
+  check('wind raises the edge limit by 25 %: 13.125 instead of 10.5; the centre check is unchanged', [near(a({wind: 1}).edgeLim, 13.125), near(a({wind: 1}).red, 7), a({N: 200}).okC, a({N: 100}).okC], [true, true, false, true]);
+  check('a concentrated load of 50 kN on 20 x 25 cm gives 10.2 kgf/cm2 against 1.5 x 7 = 10.5; 60 kN fails; a bearing of 20 cm exceeds max(15, 2/3 of 25 cm = 16.7)', [near(a({P: 50}).bearS, 10.197, 0.01), near(a({P: 50}).bearLim, 10.5), a({P: 50}).okB, a({P: 60}).okB, near(a({}).bearL, 16.667, 0.001), a({t: 0.2}).bearL, a({P: 50, lb: 15}).okB], [true, true, true, false, true, 15, false]);
+}
+let tt;
+w.renderCalc('syrwall'); w.calcResult('syrwall');
+tt = txt(w, 'xsa_results');
+check('the default page shows 10.0 kgf/cm², the reduced 7.0 kgf/cm², the centre stress 4.08 and the 🔴 note', [tt.includes('10.0 kgf/cm²'), tt.includes('7.0 kgf/cm²'), tt.includes('4.08 kgf/cm²'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xsa_m', '0'); w.calcResult('syrwall'); tt = txt(w, 'xsa_results');
+check('rubble stone with a basic stress of 2 at slenderness 12 is not permitted and the stone group is shown', [tt.includes('غير مسموح'), doc.getElementById('xsa_g0').style.display === '', doc.getElementById('xsa_g1').style.display === 'none'], [true, true, true]);
+set('xsa_m', '3'); w.calcResult('syrwall'); tt = txt(w, 'xsa_results');
+check('plain concrete shows 18.0 kgf/cm² and hides the mortar field', [tt.includes('18.0 kgf/cm²'), doc.getElementById('xsa_mo').parentNode.style.display === 'none', doc.getElementById('xsa_g2').style.display === ''], [true, true, true]);
+check('other reference codes open syrwall too', others('syrwall', 'xsa_results'), [true, true, true]);
+}
+// ---------- part 255: Syrian Arab Code for unreinforced load-bearing walls chapters 1 and 3 (`syrwall2`: minimum thickness by wall type, building limits, Table 3-1 supporting walls, wall and tie spacing) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsbCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({w: 4, t: 25, t2: 20, st: 3, live: 2, L: 20, B: 10, part: 20, H: 10, hs: 3.2, setb: 0, hf: 3, sp: 5, tie: 0, ss: 5, ts: 15, ls: 1, tp: 4, course: 25}, o));
+  check('13 wall types; minimum thickness: rubble without mortar 50 (one storey), rubble with mortar 25, dressed stone 20, mixed 35, brick 20, block 20, concrete 20 (two storeys), cyclopean 25', [J('XSB_W.length'), J('XSB_W.map(x => x[1])'), J('XSB_W.map(x => x[3])')], [13, [50, 25, 20, 35, 20, 20, 20, 20, 20, 20, 25, 20, 25], [1, 99, 99, 99, 99, 99, 99, 99, 99, 2, 99, 99, 99]]);
+  check('a 25 cm brick wall in a regular three-storey building passes everything; no failures', [a({}).fail, a({}).okT, a({}).okFree, a({}).okSp, a({}).okSup, a({}).okSupL], [0, true, true, true, true, true]);
+  check('thickness limits: brick 19 cm fails, 20 cm passes; rubble stone with mortar 24 cm fails and the course height under 25 cm fails', [a({t: 19}).okT, a({t: 20}).okT, a({w: 1, t: 24}).okT, a({w: 1, t: 25, course: 24}).okCourse, a({w: 1, t: 25, course: 25}).okCourse, a({w: 4, course: 1}).okCourse], [false, true, false, false, true, true]);
+  check('double walls need both leaves: brick (20 + cavity + 20) with a 19 cm outer leaf fails; the stone double wall needs 15 cm', [a({w: 5, t2: 19}).okO, a({w: 5, t2: 20}).okO, a({w: 8, t2: 15}).okO, a({w: 8, t2: 14}).okO, a({w: 4, t2: 1}).okO], [false, true, true, false, true]);
+  check('storey limits: rubble without mortar one storey only; plain concrete two; seven storeys at most (including the cellar)', [a({w: 0, t: 50, st: 1}).okSt, a({w: 0, t: 50, st: 2}).okSt, a({w: 9, st: 2}).okSt, a({w: 9, st: 3}).okSt, a({st: 7}).okN, a({st: 8}).okN], [true, false, true, false, true, false]);
+  check('building limits: live load 5 kN/m2, length 3.5 times the width, parts 30 m, height 24 m, storey 4.25 m, setback 25 %', [a({live: 5}).okLive, a({live: 5.1}).okLive, a({L: 35}).okPlan, a({L: 35.1}).okPlan, a({part: 30}).okPart, a({part: 31}).okPart, a({H: 24}).okH, a({H: 24.5}).okH, a({hs: 4.25}).okSh, a({hs: 4.3}).okSh, a({setb: 25}).okSet, a({setb: 26}).okSet], [true, false, true, false, true, false, true, false, true, false, true, false]);
+  check('Table 3-1: 20 to 25 cm walls up to 3.25 m free and supports 6 m apart; 25 to 30 cm up to 3.5 m and 8 m; 30 cm and over 4.15 m and 8 m; under 20 cm is outside', [J('xsbRow(20)'), J('xsbRow(24.9)'), J('xsbRow(25)'), J('xsbRow(29)'), J('xsbRow(30)'), J('xsbRow(40)'), J('xsbRow(19)')], [[20, 3.25, 6], [20, 3.25, 6], [25, 3.5, 8], [25, 3.5, 8], [30, 4.15, 8], [30, 4.15, 8], null]);
+  check('free height by thickness: a 22 cm wall 3.3 m fails (3.25), a 25 cm wall 3.5 m passes, a 30 cm wall 4.15 passes and 4.2 fails; 19 cm has no row', [a({t: 22, hf: 3.3}).okFree, a({t: 22, hf: 3.25}).okFree, a({hf: 3.5}).okFree, a({t: 30, hf: 4.15}).okFree, a({t: 30, hf: 4.2}).okFree, a({t: 19}).okFree], [false, true, true, true, false, false]);
+  check('support spacing: 6 m for 20 to 25 cm and 8 m above; the supporting wall 15 cm thick and at least a fifth of the free height long', [a({t: 22, ss: 6}).okSup, a({t: 22, ss: 6.5}).okSup, a({ss: 8}).okSup, a({ss: 8.5}).okSup, a({ts: 14}).okSupT, a({ts: 15}).okSupT, a({hf: 3, ls: 0.6}).okSupL, a({hf: 3, ls: 0.5}).okSupL], [true, false, true, false, false, true, true, false]);
+  check('bearing wall spacing: 4 m for rubble without mortar, 6 m otherwise, extended to 8 m with vertical ties', [a({w: 0, t: 50, sp: 4}).okSp, a({w: 0, t: 50, sp: 4.5}).okSp, a({sp: 6}).okSp, a({sp: 7}).okSp, a({sp: 7}).spExt, a({sp: 7, tie: 1}).spExt, a({sp: 8.5, tie: 1}).spExt, a({w: 0, t: 50, sp: 5, tie: 1}).spExt], [true, false, true, false, false, true, false, true]);
+  check('vertical ties no more than 5 m apart; the failure count adds up', [a({tp: 5}).okTie, a({tp: 5.5}).okTie, a({t: 19, hf: 9, sp: 9}).fail], [true, false, 5]);
+}
+let tt;
+w.renderCalc('syrwall2'); w.calcResult('syrwall2');
+tt = txt(w, 'xsb_results');
+check('the default page shows the brick wall, 25 cm, the all-pass message, 3.50 m and the 🔴 note', [tt.includes('جدار آجر بسيط') || tt.includes('Simple brick wall'), tt.includes('25 cm'), tt.includes('3.50 m'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xsb_t', '18'); set('xsb_hf', '5'); w.calcResult('syrwall2'); tt = txt(w, 'xsb_results');
+check('a thin tall wall shows failed marks', [tt.includes('✘')], [true]);
+check('other reference codes open syrwall2 too', others('syrwall2', 'xsb_results'), [true, true, true]);
+}
+// ---------- part 256: Syrian Arab Code annex 2 seismic code chapters 3 and 4 (`syrseis`: zone factor, Ca and Cv with the near-source factors, importance, period, base shear with its limits, vertical distribution, drift) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xseCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({zone: 2, soil: 3, src: 2, dist: 10, occ: 2, sys: 1, R: 5.5, omega: 2.8, n: 5, hs: 3.2, w: 4000, wr: 3000, T: 0, D: 0, rmax: 0, AB: 0, dS: 0}, o));
+  check('zone factors Z: 0.075 0.15 0.20 0.25 0.30 0.40 for zones 1 2A 2B 2C 3 4', [J('XSE_Z'), J('XSE_ZN')], [[0.075, 0.15, 0.2, 0.25, 0.3, 0.4], ['1', '2A', '2B', '2C', '3', '4']]);
+  check('Table 3-9 Ca rows: SA 0.06 0.12 0.16 0.20 0.24 0.32; SD 0.12 0.22 0.28 0.32 0.36 0.44; SE 0.19 0.30 0.34 0.35 0.36 0.36', [J('XSE_CA[0]'), J('XSE_CA[3]'), J('XSE_CA[4]')], [[0.06, 0.12, 0.16, 0.2, 0.24, 0.32], [0.12, 0.22, 0.28, 0.32, 0.36, 0.44], [0.19, 0.3, 0.34, 0.35, 0.36, 0.36]]);
+  check('Table 3-10 Cv rows: SC 0.13 0.25 0.32 0.38 0.45 0.56; SD 0.18 0.32 0.40 0.47 0.54 0.64; SE 0.26 0.50 0.64 0.74 0.84 0.96', [J('XSE_CV[2]'), J('XSE_CV[3]'), J('XSE_CV[4]')], [[0.13, 0.25, 0.32, 0.38, 0.45, 0.56], [0.18, 0.32, 0.4, 0.47, 0.54, 0.64], [0.26, 0.5, 0.64, 0.74, 0.84, 0.96]]);
+  check('Na and Nv: source A at 3.5 km, source B, source C and distances beyond the table', [near(J('xseNear(XSE_NA[0], 3.5)'), 1.35), J('xseNear(XSE_NA[0], 10)'), J('xseNear(XSE_NA[0], 30)'), J('xseNear(XSE_NA[1], 2)'), J('xseNear(XSE_NV[0], 2)'), J('xseNear(XSE_NV[0], 5)'), J('xseNear(XSE_NV[0], 10)'), J('xseNear(XSE_NV[0], 15)'), near(J('xseNear(XSE_NV[0], 7.5)'), 1.4), J('xseNear(XSE_NV[2], 2)')], [true, 1, 1, 1.3, 2, 1.6, 1.2, 1, true, 1]);
+  check('default (zone 2B, soil SD, concrete frame, 5 storeys of 3.2 m): hn 16, T = 0.0731 x 8 = 0.5848 s, Ca 0.28, Cv 0.40, W 19000 kN', [a({}).hn, near(a({}).T, 0.58480, 0.0001), a({}).Ca, a({}).Cv, a({}).I, a({}).W, a({}).zone4], [16, true, 0.28, 0.4, 1, 19000, false]);
+  check('base shear: Cv I W / (R T) = 2362.9, upper limit 2.5 Ca I W / R = 2418.2, lower limit 0.11 Ca I W = 585.2; the first governs and there is no top force below 0.7 s', [near(a({}).V1, 2362.9, 0.1), near(a({}).V2, 2418.18, 0.1), near(a({}).V3, 585.2, 0.1), near(a({}).V, 2362.9, 0.1), a({}).gov, a({}).Ft], [true, true, true, true, 0, 0]);
+  check('a short period is capped by 2.5 Ca I W / R: T = 0.2 s gives 2418.2; a long period hits the minimum 0.11 Ca I W: T = 5 s with Cv/R small', [near(a({T: 0.2}).V, 2418.18, 0.1), a({T: 0.2}).gov, near(a({T: 8, R: 8.5}).V, a({T: 8, R: 8.5}).V3, 1e-9), a({T: 8, R: 8.5}).gov], [true, 1, true, 2]);
+  check('top force Ft = 0.07 T V for T over 0.7 s and at most 0.25 V: T = 1.0 gives 0.07 V; T = 4 gives 0.25 V', [a({T: 1}).Ft === a({T: 1}).V * 0.07, near(a({T: 4}).Ft, 0.25 * a({T: 4}).V, 1e-9), a({T: 0.7}).Ft], [true, true, 0]);
+  check('vertical distribution: forces sum to V and the shear at the base equals V; the moment is the sum of Fx hx', [near(a({}).floors.reduce((s, f) => s + f.F, 0), a({}).V, 1e-6), near(a({}).floors[0].Vx, a({}).V, 1e-6), near(a({}).M, a({}).floors.reduce((s, f) => s + f.F * f.h, 0), 1e-6), a({}).floors.length, a({}).floors[4].i], [true, true, true, 5, 5]);
+  check('for T over 0.7 s the top floor also carries Ft and the storey shear at the top equals Fx of the roof', [near(a({T: 1}).floors[4].F, a({T: 1}).Ft + (a({T: 1}).V - a({T: 1}).Ft) * 3000 * 16 / (4000 * (3.2 + 6.4 + 9.6 + 12.8) + 3000 * 16), 1e-6), near(a({T: 1}).floors[4].Vx, a({T: 1}).floors[4].F, 1e-9)], [true, true]);
+  check('zone 4, soil SC, source A at 2 km: Na 1.5, Nv 2.0, Ca = 0.40 x 1.5 = 0.60, Cv = 0.56 x 2.0 = 1.12, minimum 0.8 Z Nv I W / R', [a({zone: 5, soil: 2, src: 0, dist: 2}).zone4, a({zone: 5, soil: 2, src: 0, dist: 2}).Na, a({zone: 5, soil: 2, src: 0, dist: 2}).Nv, near(a({zone: 5, soil: 2, src: 0, dist: 2}).Ca, 0.6), near(a({zone: 5, soil: 2, src: 0, dist: 2}).Cv, 1.12), near(a({zone: 5, soil: 2, src: 0, dist: 2, occ: 2}).V4, 0.8 * 0.4 * 2 * 19000 / 5.5, 0.01), a({zone: 4, soil: 2}).Na], [true, 1.5, 2, true, true, true, 1]);
+  check('redundancy factor: 1 for zones 1 to 2C; zone 4 with r_max 0.1 and AB 400 m2: 2 - 6.1 / (0.1 x 20) = -1.05 so 1; r_max 0.5: 2 - 6.1 / 10 = 1.39', [a({rmax: 0.5, AB: 100}).rho, a({zone: 5, rmax: 0.1, AB: 400}).rho, near(a({zone: 5, rmax: 0.5, AB: 400}).rho, 2 - 6.1 / (0.5 * 20), 1e-9), a({zone: 5}).rho, a({zone: 5, rmax: 1, AB: 150}).rho], [1, 1, true, 1, 1.5]);
+  check('vertical component 0.5 Ca I D, Em = Omega0 x E, drift: dM = 0.7 R dS = 0.7 x 5.5 x 20 = 77 mm over 3200 = 0.0241 (limit 0.025 below 0.7 s, 0.020 from 0.7 s)', [near(a({D: 10000}).Ev, 0.5 * 0.28 * 10000, 1e-9), near(a({}).Em, 2.8 * a({}).V, 1e-6), near(a({dS: 20}).dM, 77, 1e-9), near(a({dS: 20}).drift, 0.0240625, 1e-7), a({dS: 20}).okDrift, a({dS: 20, T: 1}).okDrift, a({dS: 20, T: 1}).limit, a({dS: 20}).limit], [true, true, true, true, true, false, 0.02, 0.025]);
+  check('simplified method: 3.0 Ca W / R = 3 x 0.28 x 19000 / 5.5 = 2901.8', [near(a({}).simpl, 2901.82, 0.01), near(a({}).coef, a({}).V / 19000, 1e-12)], [true, true]);
+}
+let tt;
+w.renderCalc('syrseis'); w.calcResult('syrseis');
+tt = txt(w, 'xse_results');
+check('the default page shows Z 0.200, Ca 0.280, T 0.585 s, V 2363 kN and the 🔴 note', [tt.includes('0.200'), tt.includes('0.280'), tt.includes('0.585 s'), tt.includes('2363 kN'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xse_z', '5'); set('xse_s', '2'); set('xse_sr', '0'); set('xse_d', '2'); w.calcResult('syrseis'); tt = txt(w, 'xse_results');
+check('zone 4 shows the near-source factors Na = 1.50 and Nv = 2.00', [tt.includes('Na = 1.50'), tt.includes('Nv = 2.00')], [true, true]);
+set('xse_ds', '20'); w.calcResult('syrseis'); tt = txt(w, 'xse_results');
+check('a story drift input shows a check mark or a failed mark', [tt.includes('✔') || tt.includes('✘')], [true]);
+check('other reference codes open syrseis too', others('syrseis', 'xse_results'), [true, true, true]);
+}
+// ---------- part 257: Syrian Arab Code annex 2 Tables 3-6 and 3-8 (`syrseis2`: R, Omega0 and height limits of the lateral force resisting systems, non-building structures) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xssCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({mode: 0, sys: 17, zone: 2, h: 20, nb: 0}, o));
+  check('Table 3-6 has 41 building systems in six groups; all have Omega0 2.8, 2.2 or 2.0 and R between 2.2 and 8.5', [J('XSS_S.length'), J('XSS_G.length'), J('XSS_S.every(s => [2.8, 2.2, 2.0].includes(s[3]))'), J('Math.min(...XSS_S.map(s => s[2]))'), J('Math.max(...XSS_S.map(s => s[2]))')], [41, 6, true, 2.2, 8.5]);
+  check('group counts: bearing walls 8, building frame 9, moment frames 7, dual 15, cantilever columns 1, mixed 1', [0, 1, 2, 3, 4, 5].map(g => J('XSS_S.filter(s => s[0] === ' + g + ').length')), [8, 9, 7, 15, 1, 1]);
+  check('moment frames: SMRF steel and concrete 8.5 with no height limit; MMRWF 6.5 and 49 m; IMRF concrete 5.5; OMRF steel 4.5 and 49 m; OMRF concrete 3.5; STMF 6.5 and 73 m', [17, 18, 19, 20, 21, 22, 23].map(i => a({sys: i})).map(r => [r.R, r.omega, r.hl]), [[8.5, 2.8, null], [8.5, 2.8, null], [6.5, 2.8, 49], [5.5, 2.8, -1], [4.5, 2.8, 49], [3.5, 2.8, -1], [6.5, 2.8, 73]]);
+  check('bearing and frame systems: concrete shear walls 4.5 / 49 m and 5.5 / 73 m; masonry 4.5 / 49 and 5.5 / 49; EBF 7.0 / 73; special concentrically braced 6.4 / 73; cantilever columns 2.2, 2.0 and 11 m', [a({sys: 2}), a({sys: 11}), a({sys: 3}), a({sys: 12}), a({sys: 8}), a({sys: 16}), a({sys: 39})].map(r => [r.R, r.omega, r.hl]), [[4.5, 2.8, 49], [5.5, 2.8, 73], [4.5, 2.8, 49], [5.5, 2.8, 49], [7, 2.8, 73], [6.4, 2.2, 73], [2.2, 2, 11]]);
+  check('dual systems: concrete walls with SMRF 8.5, with steel OMRF 4.2 / 49, with concrete IMRF 6.5 / 49; masonry with MMRWF 6.0; steel EBF with SMRF 8.5 and with OMRF 4.2; special braced with SMRF 7.5', [24, 25, 26, 30, 31, 32, 37, 38].map(i => a({sys: i})).map(r => [r.R, r.hl]), [[8.5, null], [4.2, 49], [6.5, 49], [6, 49], [8.5, null], [4.2, 49], [7.5, null], [4.2, 49]]);
+  check('SMRF is allowed in zones 3 and 4 at any height; a 73 m dual system is allowed at 70 m and not at 80 m in zone 4', [a({zone: 5, h: 200}).ok, a({sys: 8, zone: 5, h: 70}).ok, a({sys: 8, zone: 5, h: 80}).ok, a({sys: 8, zone: 5, h: 80}).hOk, a({sys: 8, zone: 2, h: 80}).ok, a({sys: 8, zone: 5, h: 70}).margin], [true, true, false, false, true, 3]);
+  check('systems with a dash are prohibited in zones 3 and 4 but allowed below: concrete IMRF, concrete OMRF, braced concrete frames, masonry with IMRF; concrete walls with IMRF carry footnote 5', [a({sys: 20, zone: 4}).prohibited, a({sys: 20, zone: 3}).prohibited, a({sys: 22, zone: 5}).ok, a({sys: 29, zone: 4}).ok, a({sys: 35, zone: 5}).ok, a({sys: 26, zone: 4}).prohibited, a({sys: 26, zone: 3}).ok, a({sys: 26, zone: 3}).prohibited], [true, false, false, false, false, true, true, false]);
+  check('the mixed (interactive) system is prohibited in zones 2A, 2B, 2C, 3 and 4 but allowed in zone 1; the zone 1 steel OMRF takes R = 8', [a({sys: 40, zone: 0}).ok, a({sys: 40, zone: 1}).prohibited, a({sys: 40, zone: 5}).ok, a({sys: 21, zone: 0}).R, a({sys: 21, zone: 0}).zone1, a({sys: 21, zone: 1}).R, a({sys: 21, zone: 1}).zone1], [true, true, false, 8, true, 4.5, false]);
+  check('Table 3-8 has 11 non-building structures with Omega0 2.0: vessels 2.2, silos 3.6, cantilever 2.9, lattice towers 2.9, cantilever columns 2.2, cooling towers 3.6, hoppers 2.9, racks 3.6, signs 3.6, amusement 2.2, others 2.9', [J('XSS_N.length'), J('XSS_N.map(n => n[1])'), a({mode: 1, nb: 5}).R, a({mode: 1}).omega], [11, [2.2, 3.6, 2.9, 2.9, 2.2, 3.6, 2.9, 3.6, 3.6, 2.2, 2.9], 3.6, 2]);
+}
+let tt;
+w.renderCalc('syrseis2'); w.calcResult('syrseis2');
+tt = txt(w, 'xss_results');
+check('the default page shows SMRF, R 8.5, Omega0 2.8, no height limit and the 🔴 note', [tt.includes('8.5'), tt.includes('2.8'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true]);
+set('xss_s', '20'); set('xss_z', '5'); w.calcResult('syrseis2'); tt = txt(w, 'xss_results');
+check('the concrete IMRF in zone 4 shows the failed prohibited mark', [tt.includes('✘')], [true]);
+set('xss_m', '1'); w.calcResult('syrseis2'); tt = txt(w, 'xss_results');
+check('the non-building mode shows R 2.2 and switches the groups', [tt.includes('2.2'), doc.getElementById('xss_g1').style.display === '', doc.getElementById('xss_g0').style.display === 'none'], [true, true, true]);
+check('other reference codes open syrseis2 too', others('syrseis2', 'xss_results'), [true, true, true]);
+}
+// ---------- part 258: Syrian Arab Code annex 2 chapter 5 (`syrspec`: design response spectrum from Ca and Cv, vertical component, minimum dynamic base shear 90 / 80 / 100 %, SRSS combination, mass participation) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+const calc = o => J('xspCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({Ca: 0.28, Cv: 0.40, T: 0.6, na: 1, case: 0, Vs: 2400, Vd: 1800, modes: [120, 60, 30], mass: [70, 15, 8]}, o));
+  check('Ts = Cv / (2.5 Ca) = 0.40 / 0.70 = 0.5714 s, T0 = 0.2 Ts = 0.1143 s, plateau 2.5 Ca = 0.70 g', [near(a({}).Ts, 0.571429, 1e-5), near(a({}).T0, 0.114286, 1e-5), near(a({}).plateau, 0.7)], [true, true, true]);
+  check('spectrum: Ca at T = 0 (0.28), 0.70 at T0, flat to Ts, then Cv / T (0.40 at 1 s, 0.20 at 2 s, 0.1333 at 3 s); halfway up the rise at T0 / 2 gives 0.49', [near(J('xspSa(0,0.28,0.4)'), 0.28), near(J('xspSa(0.1142857,0.28,0.4)'), 0.7, 1e-4), near(J('xspSa(0.3,0.28,0.4)'), 0.7), near(J('xspSa(1,0.28,0.4)'), 0.4), near(J('xspSa(2,0.28,0.4)'), 0.2), near(J('xspSa(3,0.28,0.4)'), 0.13333, 1e-4), near(J('xspSa(0.0571429,0.28,0.4)'), 0.49, 1e-4)], [true, true, true, true, true, true, true]);
+  check('the spectrum is continuous at Ts: Cv / Ts equals 2.5 Ca; T = 0.6 s lies just past Ts: 0.4 / 0.6 = 0.6667 g = 6.54 m/s2; vertical 2/3 of it', [near(a({T: 0.5714286}).Sa, 0.7, 1e-4), near(a({}).Sa, 0.666667, 1e-5), near(a({}).SaMs2, 6.543, 0.001), near(a({}).SaV, 0.444444, 1e-5), a({}).vertFactor, a({na: 1.2}).vertFactor], [true, true, true, true, '2/3', 'site']);
+  check('minimum dynamic base shear: 90 % of 2400 = 2160 for a regular structure, 80 % = 1920, 100 % = 2400; 1800 fails with factors 1.2, 1.0667 and 1.3333', [a({}).minVd, a({case: 1}).minVd, a({case: 2}).minVd, a({}).okVd, near(a({}).scale, 1.2), near(a({case: 1}).scale, 1.066667, 1e-5), near(a({case: 2}).scale, 1.333333, 1e-5)], [2160, 1920, 2400, false, true, true, true]);
+  check('a dynamic shear above the minimum needs no scaling: 2300 against 2160 gives factor 1', [a({Vd: 2300}).okVd, a({Vd: 2300}).scale, a({Vd: 2160}).scale], [true, 1, 1]);
+  check('SRSS of 120, 60 and 30 = sqrt(14400 + 3600 + 900) = 137.48; the absolute sum is 210; scaled 1.2 x 137.48 = 164.98', [near(a({}).srss, 137.477, 0.001), a({}).abs, near(a({}).dS, 164.973, 0.001), near(a({modes: [3, 4]}).srss, 5, 1e-9)], [true, 210, true, true]);
+  check('mass participation: 70 + 15 + 8 = 93 % passes the 90 % rule; 85 % fails; the parser splits commas, spaces and Arabic semicolons', [a({}).mass, a({}).massOk, a({mass: [50, 35]}).massOk, J('xspParse("1, 2.5; 3")'), J('xspParse("4 5")'), J('xspParse("")')], [93, true, false, [1, 2.5, 3], [4, 5], []]);
+  check('sample points: 7 periods at 0, T0, Ts, 1, 2, 3 and 4 s', [a({}).pts.length, near(a({}).pts[2].Sa, 0.7, 1e-4), near(a({}).pts[6].Sa, 0.1)], [7, true, true]);
+}
+let tt;
+w.renderCalc('syrspec'); w.calcResult('syrspec');
+tt = txt(w, 'xsp_results');
+check('the default page shows Ts 0.571 s, 0.700 g, 0.667 g, the 2160.0 kN minimum, the factor 1.200 and the 🔴 note', [tt.includes('0.571 s'), tt.includes('0.700 g'), tt.includes('0.667 g'), tt.includes('2160.0 kN'), tt.includes('1.200'), tt.includes('🔴')], [true, true, true, true, true, true]);
+set('xsp_vd', '2300'); w.calcResult('syrspec'); tt = txt(w, 'xsp_results');
+check('a sufficient dynamic shear shows the pass mark', [tt.includes('✔')], [true]);
+check('other reference codes open syrspec too', others('syrspec', 'xsp_results'), [true, true, true]);
+}
+// ---------- part 259: Syrian Arab Code annex 5 foundations (`syrfound`: Es and K tables, rigidity ratio, contact pressure with partial uplift and step ratio, pile allowable stresses, plain concrete classes) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsfCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({mode: 0, es: 2, k: 5, E: 25000, Esoil: 50, d: 0.6, B: 2, L: 2.5, P: 600, Mx: 0, My: 60, qa: 200, fc: 100, fy: 4200, st: 0, Ac: 700, As: 10, fs: 1000, sleeve: 1, fa: 30, faAll: 60, fb: 10, fbAll: 80, cl: 1}, o));
+  check('Table 6-7 has 11 rows: soft clay 0.5 to 2, medium 1.5 to 6, stiff 2.5 to 10, very stiff 5 to 20, hard 10 to 40; sands 10-25, 25-75, 75-150, 150-400; gravel 100 to 400; organic 0.5 to 2', [J('XSF_ES.length'), J('XSF_ES.map(e => e[2] + "-" + e[3])')], [11, ['0.5-2', '1.5-6', '2.5-10', '5-20', '10-40', '10-25', '25-75', '75-150', '150-400', '100-400', '0.5-2']]);
+  check('Table 8-1 has 8 rows of K: clay 0.5 to 1, fill 1 to 2, wet clay 2 to 3, damp clay 4 to 5, coarse sand 8 to 10, gravel with fine sand 10 to 12, with coarse sand 12 to 15, large gravel 15 to 20 kgf/cm3', [J('XSF_K.length'), J('XSF_K.map(k => k[1] + "-" + k[2])')], [8, ['0.5-1', '1-2', '2-3', '4-5', '8-10', '10-12', '12-15', '15-20']]);
+  check('Es of stiff clay 2.5 to 10 MN/m2 (25.5 to 102 kgf/cm2), geometric mean 5; K of coarse sand and gravel 10 to 12 kgf/cm3 = 981 to 1177 MN/m3', [a({}).es[2], a({}).es[3], near(a({}).esMid, 5), near(a({}).esKg[0], 25.49, 0.01), near(a({}).esKg[1], 101.97, 0.01), a({}).kk[1], near(a({}).kN[0], 980.665, 0.01), near(a({}).kN[1], 1176.8, 0.1)], [2.5, 10, true, true, true, 10, true, true]);
+  check('rigidity ratio Kr = (25000 / 50) x (0.6 / 2)^3 = 13.5 gives a very rigid footing; Kr 0.135 moderately rigid; Kr 0.005 or less flexible', [near(a({}).Kr, 13.5), a({}).cls, a({Esoil: 200000}).cls, near(a({Esoil: 200000}).Kr, 0.003375, 1e-9), a({Esoil: 5000}).cls, near(a({Esoil: 5000}).Kr, 0.135)], [true, 0, 2, true, 1, true]);
+  check('Kr of 0.05 is moderately rigid; the boundaries 2 and 0.005 belong to the rigid and flexible classes', [near(a({E: 5000, Esoil: 100, d: 0.2, B: 2}).Kr, 0.05), a({E: 5000, Esoil: 100, d: 0.2, B: 2}).cls, a({E: 2000, Esoil: 1000, d: 1, B: 1}).Kr, a({E: 2000, Esoil: 1000, d: 1, B: 1}).cls, a({E: 5, Esoil: 1000, d: 1, B: 1}).cls], [true, 1, 2, 0, 2]);
+  const c = o => a(Object.assign({mode: 1}, o));
+  check('full contact: P 600 kN on 2 x 2.5 m with My 60 kN m: ex 0.1, P/A 120, sigma max 120 x (1 + 0.3) = 156 and min 84 kPa; the step ratio is 2:1 for 1.59 kgf/cm2; tension 1.25 sqrt(100) = 12.5', [near(c({}).ex, 0.1), c({}).ey, c({}).s0, c({}).full, near(c({}).smax, 156, 1e-9), near(c({}).smin, 84, 1e-9), c({}).stepRatio, c({}).okQ, c({}).tension], [true, 0, 120, true, true, true, [2, 1], true, 12.5]);
+  check('biaxial within the middle third: Mx 30 and My 60 give ey 0.05 and ex 0.1, kern 0.05 + 0.02 and sigma max 120 x (1 + 0.3 + 0.12) = 170.4', [near(c({Mx: 30}).ey, 0.05), near(c({Mx: 30}).kern, 0.07), near(c({Mx: 30}).smax, 170.4, 1e-9), near(c({Mx: 30}).smin, 69.6, 1e-9)], [true, true, true, true]);
+  check('partial uplift: My 300 kN m gives ex 0.5 over the middle third; sigma max = 2 x 600 / (3 x 2.5 x (1 - 0.5)) = 320 kPa, contact length 1.5 m of 2; fails 200 kPa', [c({My: 300}).full, c({My: 300}).partial, c({My: 300}).mode, near(c({My: 300}).smax, 320, 1e-9), c({My: 300}).smin, near(c({My: 300}).contact, 0.75), c({My: 300}).okQ], [false, true, 1, true, 0, true, false]);
+  check('the bending in the other direction uses the other side: Mx 300 gives ey 0.5 on L = 2.5: 2 x 600 / (3 x 2 x (1.25 - 0.5)) = 266.7; e at half the dimension is unstable; both eccentricities outside the kern needs software', [near(c({Mx: 300, My: 0}).smax, 266.667, 0.001), c({Mx: 750, My: 0}).mode, c({My: 210}).mode, c({Mx: 60, My: 300}).mode, c({Mx: 60, My: 300}).smax], [true, 2, 1, 3, null]);
+  check('step ratios by contact pressure: under 2 kgf/cm2 2:1; 2 to 4 gives 1:1.5; above 4 gives 1:1', [J('xsfStep(1.9)'), J('xsfStep(2)'), J('xsfStep(4)'), J('xsfStep(4.1)')], [[2, 1], [1, 1.5], [1, 1.5], [1, 1]]);
+  const p = o => a(Object.assign({mode: 2, fc: 250}, o));
+  check('Table 9-1: concrete compression 0.30 / 0.44 and 0.40 / 0.53 of f\'c; steel 0.35 / 0.47, 0.40 / 0.53, 0.50 / 0.67 of fy; tension of plain and reinforced concrete 0; prestressed temporary 9.5 sqrt(f\'c); bending 0.45 / 0.55 f\'c, 5 and 19 sqrt(f\'c)', [J('XSF_P.length'), J('XSF_P.map(x => x[1] + "/" + x[2])')], [14, ['0.3/0.44', '0.4/0.53', '0.35/0.47', '0.4/0.53', '0.5/0.67', '0/0', '0/null', '0/9.5', '0.5/0.67', '0.5/0.67', '0.5/0.67', '0.45/0.55', '0/5', '0/19']]);
+  check('pile stresses for f\'c 250: unconfined concrete 75 permanent and 110 temporary; confined concrete 100 and 132.5; steel bars at fy 4200: 1680 and 2226; prestressed temporary tension 9.5 x 15.81 = 150.2', [near(p({}).fall, 75), near(p({}).fallT, 110), near(p({st: 1}).fall, 100), near(p({st: 1}).fallT, 132.5), near(p({st: 3}).fall, 1680), near(p({st: 3}).fallT, 2226), near(p({st: 7}).fallT, 150.2, 0.1), p({st: 6}).fallT], [true, true, true, true, true, true, true, null]);
+  check('pile capacity: confined 0.33 x 250 x 700 + 1000 x 10 = 67 750 kgf; unconfined 0.85 x (0.3 x 250 x 700 + 10 000) = 53 125 kgf; the combined check 30/60 + 10/80 = 0.625 passes and fails above one', [p({}).Pall1, p({}).Pall2, p({}).Pall, p({sleeve: 0}).Pall, near(p({}).inter, 0.625), p({}).okI, p({fa: 50}).okI, near(p({fa: 50}).inter, 0.9583, 0.001)], [67750, 53125, 67750, 53125, true, true, true, true]);
+  check('concrete classes: C8 80 / 90 / 12, C10 100 / 110 / 14, C12 120 / 130 / 15 kgf/cm2; tension 14 kgf/cm2 = 1.4 sqrt(100)', [J('XSF_C.map(c => c[1] + "/" + c[2] + "/" + c[3])'), a({mode: 3}).fc, a({mode: 3}).fcm, a({mode: 3}).ft, near(a({mode: 3}).ftSqrt, 1.4), a({mode: 3, cl: 2}).c[0]], [['80/90/12', '100/110/14', '120/130/15'], 100, 110, 14, true, 'C12']);
+}
+let tt;
+w.renderCalc('syrfound'); w.calcResult('syrfound');
+tt = txt(w, 'xsf_results');
+check('the default page shows 2.5 إلى 10.0 MN/m², 13.500 and the 🔴 note', [tt.includes('2.5 إلى 10.0 MN/m²') || tt.includes('2.5 to 10.0 MN/m²'), tt.includes('13.500'), tt.includes('🔴')], [true, true, true]);
+set('xsf_m', '1'); w.calcResult('syrfound'); tt = txt(w, 'xsf_results');
+check('the contact mode shows 156.0 kPa and 84.0 kPa and switches the groups', [tt.includes('156.0 kPa'), tt.includes('84.0 kPa'), doc.getElementById('xsf_g1').style.display === '', doc.getElementById('xsf_g0').style.display === 'none'], [true, true, true, true]);
+set('xsf_my', '300'); w.calcResult('syrfound'); tt = txt(w, 'xsf_results');
+check('a large moment shows the partial contact stress 320.0 kPa and a failed mark', [tt.includes('320.0 kPa'), tt.includes('✘')], [true, true]);
+set('xsf_m', '2'); w.calcResult('syrfound'); tt = txt(w, 'xsf_results');
+check('the pile mode shows 67750 kgf and 0.63', [tt.includes('67750 kgf'), tt.includes('0.63')], [true, true]);
+set('xsf_m', '3'); w.calcResult('syrfound'); tt = txt(w, 'xsf_results');
+check('the concrete mode shows C10 and 14 kgf/cm²', [tt.includes('C10'), tt.includes('14 kgf/cm²')], [true, true]);
+check('other reference codes open syrfound too', others('syrfound', 'xsf_results'), [true, true, true]);
+}
+// ---------- part 260: Syrian Arab Code annex 2 chapter 6 and Table 3-7 (`syrnsc`: lateral force on non-structural components and equipment, ap and Rp, limits 0.7 and 4.0 Ca Ip Wp) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsnCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({el: 16, ap: 0, Rp: 0, ip: 0, Ca: 0.28, Wp: 10, hx: 10, hr: 16}, o));
+  check('Table 3-7 has 24 rows; every ap is 1.0 or 2.5 and every Rp is 1.5, 3.0 or 4.0', [J('XSN_E.length'), J('XSN_E.every(e => e[2] === 1 || e[2] === 2.5)'), J('XSN_E.every(e => [1.5, 3, 4].includes(e[3]))')], [24, true, true]);
+  check('selected rows: parapets 2.5 / 3.0; interior partitions 1.0 / 3.0; appendages 2.5 / 4.0; storage racks 2.5 / 4.0; flexible chimneys below the centre of mass 2.5 / 3.0; non-ductile rigid links 1.0 / 1.5; flexible ductile links 2.5 / 3.0', [0, 2, 3, 9, 6, 21, 22].map(i => [J('XSN_E[' + i + '][2]'), J('XSN_E[' + i + '][3]')]), [[2.5, 3], [1, 3], [2.5, 4], [2.5, 4], [2.5, 3], [1, 1.5], [2.5, 3]]);
+  check('equipment default: ap 1.0, Rp 3.0, Ip 1.0, Ca 0.28, Wp 10 kN at hx 10 of hr 16: Fp = 1 x 0.28 / 3 x (1 + 1.875) x 10 = 2.683 kN', [a({}).ap, a({}).Rp, a({}).Ip, near(a({}).Fp2, 0.28 / 3 * 2.875 * 10, 1e-9), near(a({}).Fp, 2.6833, 0.001), a({}).govMin, a({}).govMax], [1, 3, 1, true, true, false, false]);
+  check('limits: minimum 0.7 Ca Ip Wp = 1.96 and maximum 4.0 Ca Ip Wp = 11.2 kN; at the ground (hx 0) the formula gives 0.933 and the minimum 1.96 governs', [near(a({}).min, 1.96), near(a({}).max, 11.2), near(a({hx: 0}).Fp2, 0.9333, 0.001), a({hx: 0}).govMin, near(a({hx: 0}).Fp, 1.96)], [true, true, true, true, true]);
+  check('a flexible element (ap 2.5, Rp 1.5) at the roof: 2.5 x 0.28 / 1.5 x 4 x 10 = 18.67 which is capped at 11.2 kN', [near(a({el: 23, hx: 16}).Fp2, 18.667, 0.001), a({el: 23, hx: 16}).govMax, near(a({el: 23, hx: 16}).Fp, 11.2)], [true, true, true]);
+  check('important buildings: Ip 1.5 multiplies the force by 1.5; the simple relation 4.0 Ca Ip Wp = 16.8 kN; the vertical component 0.5 Ca Ip Wp = 2.1 kN', [a({ip: 1}).Ip, near(a({ip: 1}).Fp2, 1.5 * a({}).Fp2, 1e-9), near(a({ip: 1}).Fp1, 16.8), near(a({ip: 1}).Fv, 2.1), near(a({}).Fv, 1.4)], [1.5, true, true, true, true]);
+  check('manual ap and Rp override the table and ap is checked between 1.0 and 2.5; hx is clamped between 0 and hr', [a({ap: 2, Rp: 2}).ap, a({ap: 2, Rp: 2}).Rp, a({ap: 2.6}).apOk, a({ap: 0.9}).apOk, a({ap: 1}).apOk, a({hx: 40}).hx, near(a({hx: 40}).Fp2, 0.28 / 3 * 4 * 10, 1e-9)], [2, 2, false, false, true, 16, true]);
+}
+let tt;
+w.renderCalc('syrnsc'); w.calcResult('syrnsc');
+tt = txt(w, 'xsn_results');
+check('the default page shows ap = 1.00, Rp = 3.00, Fp 2.68 kN and the 🔴 note', [tt.includes('ap = 1.00'), tt.includes('Rp = 3.00'), tt.includes('2.68 kN'), tt.includes('🔴')], [true, true, true, true]);
+set('xsn_ip', '1'); w.calcResult('syrnsc'); tt = txt(w, 'xsn_results');
+check('the important-building factor shows 4.03 kN', [tt.includes('4.03 kN')], [true]);
+check('other reference codes open syrnsc too', others('syrnsc', 'xsn_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
