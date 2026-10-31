@@ -2228,6 +2228,78 @@ set('xsn_ip', '1'); w.calcResult('syrnsc'); tt = txt(w, 'xsn_results');
 check('the important-building factor shows 4.03 kN', [tt.includes('4.03 kN')], [true]);
 check('other reference codes open syrnsc too', others('syrnsc', 'xsn_results'), [true, true, true]);
 }
+// ---------- part 261: Syrian Arab Code annex 2 clause 4-13 (`syrtors`: centre of rigidity, torsional moment with accidental eccentricity, distribution of the storey shear to the resisting elements) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+const els = [{X: 0, Y: 5, Kx: 0, Ky: 100}, {X: 20, Y: 5, Kx: 0, Ky: 200}, {X: 10, Y: 0, Kx: 100, Ky: 0}, {X: 10, Y: 10, Kx: 100, Ky: 0}];
+const calc = o => J('xsrCalc(' + JSON.stringify(Object.assign({els, Xcm: 10, Ycm: 5, Lx: 20, Ly: 10, Vx: 0, Vy: 1000, acc: 1}, o)) + ')');
+{
+  check('the parser reads X, Y, Kx, Ky per line with commas, semicolons or spaces and ignores short lines', [J('xsrParse("0, 5, 0, 100\\n20 5 0 200\\nbad line\\n1,2,3")').length, J('xsrParse("0, 5, 0, 100\\n20 5 0 200")')[1], J('xsrParse("1,1,-5,3")')[0].Kx], [2, {X: 20, Y: 5, Kx: 0, Ky: 200}, 0]);
+  check('centre of rigidity: Xcr = (0 x 100 + 20 x 200) / 300 = 13.333; Ycr = (0 + 10) x 100 / 200 = 5; sums 200 and 300', [near(calc({}).Xcr, 13.3333, 1e-4), calc({}).Ycr, calc({}).sKx, calc({}).sKy, calc({}).n], [true, 5, 200, 300, 4]);
+  check('eccentricity ex = 10 - 13.333 = -3.333, ey = 0; accidental 0.05 x 20 = 1 gives Xc = -4.333 and Mt = 1000 x -4.333 = -4333.3 kN m; without it -3333.3', [near(calc({}).exc, -3.33333, 1e-4), calc({}).eyc, near(calc({}).Xc, -4.33333, 1e-4), near(calc({}).Mt, -4333.33, 0.01), near(calc({acc: 0}).Mt, -3333.33, 0.01), calc({acc: 0}).ax], [true, 0, true, true, true, 0]);
+  check('torsional stiffness J = 100 x 13.333^2 + 200 x 6.667^2 + 2 x 100 x 5^2 = 31 666.7', [near(calc({}).J, 31666.67, 0.01)], [true]);
+  check('forces in the y walls: wall at x = 0 carries 333.3 + 182.5 = 515.8 kN and the wall at x = 20 carries 666.7 - 182.5 = 484.2 kN; the x walls carry nothing; the sum is 1000', [near(calc({}).rows[0].dy, 333.333, 0.001), near(calc({}).rows[0].ty, 182.456, 0.001), near(calc({}).rows[0].Fy, 515.789, 0.001), near(calc({}).rows[1].Fy, 484.211, 0.001), calc({}).rows[2].Fy, near(calc({}).sumFy, 1000, 1e-9), calc({}).okSum], [true, true, true, true, 0, true, true]);
+  check('without the accidental eccentricity: 473.7 and 526.3 kN; a symmetric layout has no torsion: 500 and 500', [near(calc({acc: 0}).rows[0].Fy, 473.684, 0.001), near(calc({acc: 0}).rows[1].Fy, 526.316, 0.001), near(calc({els: [{X: 0, Y: 5, Kx: 0, Ky: 100}, {X: 20, Y: 5, Kx: 0, Ky: 100}, {X: 10, Y: 0, Kx: 100, Ky: 0}, {X: 10, Y: 10, Kx: 100, Ky: 0}], acc: 0}).rows[0].Fy, 500, 1e-9), near(calc({els: [{X: 0, Y: 5, Kx: 0, Ky: 100}, {X: 20, Y: 5, Kx: 0, Ky: 100}], acc: 0}).Mt, 0, 1e-9)], [true, true, true, true]);
+  check('shear in x: Vx = 500 and Vy = 0 with the accidental 0.05 x 10 = 0.5 m: Mt = -250; the x walls carry 250 +- 3.95 kN and the sum is 500', [calc({Vx: 500, Vy: 0}).Yc, near(calc({Vx: 500, Vy: 0}).Mt, -250, 1e-9), near(calc({Vx: 500, Vy: 0}).rows[2].Fx, 246.053, 0.001), near(calc({Vx: 500, Vy: 0}).rows[3].Fx, 253.947, 0.001), near(calc({Vx: 500, Vy: 0}).sumFx, 500, 1e-9), calc({Vx: 500, Vy: 0}).okSum], [0.5, true, true, true, true, true]);
+  check('both directions together superpose: Mt = Vy Xc - Vx Yc = -4333.3 - 250 and the sums equal both shears', [near(calc({Vx: 500}).Mt, -4333.333 - 250, 0.01), near(calc({Vx: 500}).sumFx, 500, 1e-9), near(calc({Vx: 500}).sumFy, 1000, 1e-9)], [true, true, true]);
+  check('eccentricity ratios 3.33 / 20 = 0.167 and 0; a lone element has no torsion and carries all the shear', [near(calc({}).eccRatioX, 0.16667, 1e-4), calc({}).eccRatioY, calc({els: [{X: 0, Y: 0, Kx: 50, Ky: 50}], Xcm: 0, Ycm: 0, acc: 0}).rows[0].Fy, calc({els: [{X: 0, Y: 0, Kx: 50, Ky: 50}], Xcm: 0, Ycm: 0, acc: 0}).J], [true, 0, 1000, 0]);
+}
+let tt;
+w.renderCalc('syrtors'); w.calcResult('syrtors');
+tt = txt(w, 'xsr_results');
+check('the default page shows Xcr = 13.333, Mt -4333.3, 515.8 and 484.2 and the 🔴 note', [tt.includes('Xcr = 13.333'), tt.includes('-4333.3'), tt.includes('515.8'), tt.includes('484.2'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xsr_ac', '0'); w.calcResult('syrtors'); tt = txt(w, 'xsr_results');
+check('without the accidental eccentricity the page shows 473.7 and 526.3', [tt.includes('473.7'), tt.includes('526.3')], [true, true]);
+set('xsr_el', ''); w.calcResult('syrtors'); tt = txt(w, 'xsr_results');
+check('an empty element list shows the prompt', [tt.includes('X, Y, Kx, Ky')], [true]);
+check('other reference codes open syrtors too', others('syrtors', 'xsr_results'), [true, true, true]);
+}
+// ---------- part 262: Syrian Arab Code annex 2 Tables 3-4 and 3-5 and clause 3-9 (`syrirr`: vertical and plan irregularity checks, choice of the analysis method) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsiCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const v = o => calc(Object.assign({mode: 0, k1: 100, kUp: 100, k2: 100, k3: 100, k4: 100, W: 3000, Wadj: 3000, roof: false, Bs: 20, Badj: 20, off: 0, Lel: 5, cap1: 100, capUp: 100, ratioUp: 0, stories: 5, H: 16}, o));
+  check('a regular storey: no irregularity of any kind and no weak storey limit', [v({}).count, v({}).soft, v({}).weight, v({}).geoIrr, v({}).dis, v({}).weak], [0, false, false, false, false, false]);
+  check('soft storey: stiffness under 70 % of the storey above (69 of 100) or under 80 % of the mean of the three above (79 of 100)', [v({k1: 69}).soft, v({k1: 70, k2: 80, k3: 80, k4: 80}).soft, v({k1: 79}).soft, v({k1: 80}).soft, near(v({k1: 69}).r1, 0.69), v({k1: 90, k2: 120, k3: 120, k4: 120}).soft, near(v({k1: 90, k2: 120, k3: 120, k4: 120}).avg3, 120)], [true, false, true, false, true, true, true]);
+  check('weight irregularity: over 150 % of the adjacent storey (4600 of 3000); the lighter last roof is ignored', [v({W: 4600}).weight, v({W: 4500}).weight, near(v({W: 4600}).wr, 1.5333), v({W: 4600, roof: true}).weight], [true, false, true, false]);
+  check('geometric irregularity: horizontal dimension over 130 % of the adjacent storey (26.1 of 20), 26 passes', [v({Bs: 26.1}).geoIrr, v({Bs: 26}).geoIrr, near(v({Bs: 26.1}).geo, 1.305)], [true, false, true]);
+  check('in-plane discontinuity: an offset greater than the element length (5.1 against 5 m) counts', [v({off: 5.1}).dis, v({off: 5}).dis, v({off: 5.1}).count], [true, false, 1]);
+  check('weak storey: strength under 80 % of the storey above (79 of 100); the limit of two storeys or 9 m', [v({cap1: 79}).weak, v({cap1: 80}).weak, v({cap1: 79}).limit5, v({cap1: 79, stories: 2, H: 9}).limit5, v({cap1: 79, stories: 2, H: 9.5}).limit5, v({cap1: 79, stories: 3, H: 8}).limit5, v({cap1: 90, stories: 9, H: 30}).limit5], [true, false, true, false, true, true, false]);
+  check('the drift ratio exception (up to 1.3) removes the soft and the weight irregularities only', [v({k1: 60, ratioUp: 1.3}).soft, v({k1: 60, ratioUp: 1.31}).soft, v({k1: 60, ratioUp: 1.2}).softRaw, v({W: 5000, ratioUp: 1.25}).weight, v({W: 5000, ratioUp: 1.25}).weightRaw, v({cap1: 60, ratioUp: 1.2}).weak, v({Bs: 30, ratioUp: 1.2}).geoIrr, v({k1: 60}).count], [false, true, true, false, true, true, true, 1]);
+  const p = o => calc(Object.assign({mode: 1, dmax: 12, davg: 10, px: 0, py: 0, Lx: 30, Ly: 20, Aop: 0, Atot: 600, dstiff: 0, outp: 0, npar: 0, ecc: 0, Lmax: 30}, o));
+  check('torsional irregularity: maximum drift over 1.2 times the average (12.1 of 10); 12 passes', [p({}).torsion, p({dmax: 12.1}).torsion, near(p({dmax: 12.1}).dr, 1.21), p({dmax: 12.1}).count], [false, true, true, 1]);
+  check('re-entrant corners: a projection over 15 % of the plan dimension in both directions (5 of 30 and 4 of 20 gives 0.167 and 0.2); one direction alone is not enough', [p({px: 5, py: 4}).reentrant, p({px: 5, py: 2}).reentrant, p({px: 4.5, py: 3}).reentrant, near(p({px: 5, py: 4}).reX, 0.1667, 1e-3), p({px: 4.5, py: 3}).reentrant], [true, false, false, true, false]);
+  check('diaphragm discontinuity: openings over 50 % of the area (301 of 600) or a stiffness change above 50 %', [p({Aop: 301}).dia, p({Aop: 300}).dia, p({dstiff: 0.51}).dia, p({dstiff: 0.5}).dia, near(p({Aop: 301}).openR, 0.5017, 1e-3)], [true, false, true, false, true]);
+  check('out-of-plane offsets and non-parallel systems each count; the count adds up', [p({outp: 1}).out, p({npar: 1}).nonpar, p({outp: 1, npar: 1, dmax: 13}).count, p({}).count], [true, true, 3, 0]);
+  check('stiffness eccentricity: 6.5 m of 30 m = 21.7 % exceeds 20 %; 6 m is exactly 20 %', [p({ecc: 6.5}).ecc20, p({ecc: 6}).ecc20, near(p({ecc: 6.5}).eccPct, 21.667, 0.001)], [true, false, true]);
+  const m = o => calc(Object.assign({mode: 2, irrV: 0, irrH: 0, irrNonStd: 0, zone: 2, occ: 2, resind: false, sysTable: 1, light: 0, homo: 1, softSoil: 0, T: 0.5, stories: 5, H: 16, eccPct: 0}, o));
+  check('a regular 5-storey 16 m building of Table 3-6 in zone 2B (occupancy 3): equivalent static method; the zone 2 rule alone also allows it', [m({}).static, m({}).dyn, m({}).method, m({}).b, m({}).a], [true, false, 1, true, true]);
+  check('simplified static: occupancy 3, regular, up to two storeys (three for light-frame family houses); not for occupancy 1 or 2', [m({stories: 2, H: 7}).simp, m({stories: 2, H: 7}).method, m({stories: 3, H: 10}).simp, m({stories: 3, H: 10, light: 1}).simp, m({stories: 2, H: 7, occ: 0}).simp, m({stories: 2, H: 7, irrV: 1}).simp], [true, 0, false, true, false, false]);
+  check('over 73 m dynamic analysis is required; at 73 m it is still static for a regular building', [m({H: 73.5}).dyn, m({H: 73.5}).dynA, m({H: 73}).dyn, m({H: 73.5}).method], [true, true, false, 2]);
+  check('vertical irregularity requires the dynamic analysis; horizontal only when not described in the tables', [m({irrV: 1}).dyn, m({irrV: 1}).dynB, m({irrH: 1}).dynB, m({irrH: 1, irrNonStd: 1}).dynB, m({irrH: 1}).dyn], [true, true, false, true, false]);
+  check('in zone 3 an irregular structure is static only up to five storeys or 20 m; beyond that it is dynamic', [m({zone: 4, irrH: 1, stories: 5, H: 20}).c, m({zone: 4, irrH: 1, stories: 5, H: 20}).dyn, m({zone: 4, irrH: 1, stories: 6, H: 20}).c, m({zone: 4, irrH: 1, stories: 6, H: 20}).dyn, m({zone: 4, irrH: 1, stories: 5, H: 21}).dyn], [true, false, false, true, true]);
+  check('zone 1 allows the static method for everything, zone 2 for occupancy 3 except residential and industrial; zone 3 and 4 irregular beyond the limit is dynamic', [m({zone: 0, irrH: 1, stories: 8, H: 30}).a, m({zone: 0, irrH: 1, stories: 8, H: 30}).static, m({zone: 0, irrH: 1, stories: 8, H: 30}).dyn, m({zone: 1, resind: true, sysTable: 0}).a, m({zone: 1, resind: true, sysTable: 0}).dyn, m({zone: 1, sysTable: 0}).a, m({zone: 4, stories: 8, H: 25, homo: 0}).dynC, m({zone: 4, stories: 8, H: 25, homo: 1}).dynC], [true, true, false, false, true, true, true, false]);
+  check('soil SF or a period above 0.7 s requires the dynamic analysis; eccentricity over 20 % recommends it', [m({softSoil: 1}).dynD, m({T: 0.71}).dynD, m({T: 0.7}).dynD, m({T: 0.71}).method, m({eccPct: 21}).recomm, m({eccPct: 20}).recomm, m({eccPct: 21}).method], [true, true, false, 2, true, false, 1]);
+}
+let tt;
+w.renderCalc('syrirr'); w.calcResult('syrirr');
+tt = txt(w, 'xsi_results');
+check('the default vertical page shows 0.80 for the soft storey ratio, the count 0 and the 🔴 note', [tt.includes('0.80'), tt.includes('✔'), tt.includes('🔴')], [true, true, true]);
+set('xsi_m', '1'); set('xsi_dm', '13'); w.calcResult('syrirr'); tt = txt(w, 'xsi_results');
+check('the plan mode shows 1.30 and the failed mark and switches the groups', [tt.includes('1.30'), tt.includes('✘'), doc.getElementById('xsi_g1').style.display === '', doc.getElementById('xsi_g0').style.display === 'none'], [true, true, true, true]);
+set('xsi_m', '2'); w.calcResult('syrirr'); tt = txt(w, 'xsi_results');
+check('the method mode names the equivalent static method for the default building', [tt.includes('3-9-3')], [true]);
+set('xsi_h2', '80'); w.calcResult('syrirr'); tt = txt(w, 'xsi_results');
+check('a building over 73 m shows the dynamic method', [tt.includes('3-9-4')], [true]);
+check('other reference codes open syrirr too', others('syrirr', 'xsi_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
