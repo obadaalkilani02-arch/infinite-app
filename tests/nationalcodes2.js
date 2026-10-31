@@ -670,7 +670,7 @@ check('the results show the requirements table, the general alarm rules and the 
 setv(w, 'fr_occ', 'hotel'); w.frOcc();
 check('fields that do not apply are hidden (hotel shows rooms, hides sales area)', [doc.getElementById('fr_f_units').style.display, doc.getElementById('fr_f_sales').style.display], ['', 'none']);
 w = boot('intl'); w.renderCalc('fireprot');
-check('the three new calculators are available with every code; the fire category now has eighty-seven', [!!w.document.getElementById('fr_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 87]);
+check('the three new calculators are available with every code; the fire category now has eighty-nine', [!!w.document.getElementById('fr_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 89]);
 
 // ---------- Jordanian fire alarm code: detector layout, zones, sounders ----------
 w = boot('jo'); doc = w.document; w.renderCalc('fadetect');
@@ -712,7 +712,7 @@ w = boot('intl'); w.renderCalc('fadetect');
 check('the detector layout is available with every code', !!w.document.getElementById('fd_results'), true);
 
 w = boot('intl'); w.renderCalc('egress');
-check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 87]);
+check('the egress calculator is available with every code', [!!w.document.getElementById('eg_results'), w.document.getElementById('fire-category').querySelectorAll('.calc-card').length], [true, 89]);
 
 // ---------- Jordan: septic tank, collecting pit, inspection chamber, Table 7 (sanitary drainage code 6/2, 6/3, 4/3) ----------
 w = boot('jo'); doc = w.document; w.renderCalc('septic');
@@ -992,7 +992,7 @@ w.calcResult('natvent');
 check('crack results: the three leakage rates and the Table 5 reference', ['9.82', '2.81', '37.42', 'المعادلة 1'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
 w.renderCalc('natvent'); w.calcResult('natvent');
 check('two-openings results: the wind and temperature flows, the governing effect, the air changes and the Table 11 note', ['7.14', '4.18', 'الحاكم: الريح', '12.9', 'الجدول 11 صورة نقطية'].every(s => doc.getElementById('nv_results').textContent.includes(s)), true);
-check('HVAC category: 50 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('87 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
+check('HVAC category: 50 calculators and the natural ventilation card', [doc.getElementById('main-categories-grid').textContent.includes('89 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('natvent')")], [true, true]);
 
 // ---------- Jordan: mechanical ventilation and air conditioning code, Tables 23 (persons), 12 (duct velocities) and 16 (outlet velocities) ----------
 w = boot('jo'); doc = w.document;
@@ -1086,7 +1086,7 @@ check('choosing zone 1 (Table A) fills the winter design temperature 6 C and the
 check('Table 21: group 2 needs 0.06 g/(MN s) for every element; group 3: walls 0.06, ceiling underside 0.02, roof back 0.02, metal construction 0.002; group 1 needs none', [w.eval('JO_BARRIER[2]'), w.eval('JO_BARRIER[3]'), w.eval('JO_BARRIER[1]') === undefined], [[0.06, 0.06, 0.06, 0.06], [0.06, 0.02, 0.02, 0.002], true]);
 w.renderCalc('condensation'); w.addNcLayer();
 check('the form: four default layers and the add button gives a fifth; the zone list has four zones', [doc.querySelectorAll('#nc-tbody tr').length, doc.getElementById('nc_zone').options.length], [5, 5]);
-check('HVAC category: 50 calculators and the condensation card', [doc.getElementById('main-categories-grid').textContent.includes('87 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('condensation')")], [true, true]);
+check('HVAC category: 50 calculators and the condensation card', [doc.getElementById('main-categories-grid').textContent.includes('89 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('condensation')")], [true, true]);
 
 // ---------- Jordan: shelters code (Table 6, 3/2/2, chapter 5, 6/3/4, 6/4), `shelter` ----------
 w = boot('jo'); doc = w.document; w.renderCalc('shelter');
@@ -1104,7 +1104,7 @@ w.calcResult('shelter');
 check('the results show the units, the ventilation flows and the notes (the 300 m2 fan area is flagged as unusable)', ['100', '600', '300', '118.0', '5000', 'غير معقول'].every(t => doc.getElementById('sh_results').textContent.includes(t)), true);
 setv(w, 'sh_occ', 5); w.shToggle();
 check('the office / shop occupancy shows the second quantity (area); the others hide it', [doc.getElementById('sh_q2').closest('.field').style.display, (setv(w, 'sh_occ', 1), w.shToggle(), doc.getElementById('sh_q2').closest('.field').style.display)], ['', 'none']);
-check('HVAC category: 50 calculators and the shelter card', [doc.getElementById('main-categories-grid').textContent.includes('87 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('shelter')")], [true, true]);
+check('HVAC category: 50 calculators and the shelter card', [doc.getElementById('main-categories-grid').textContent.includes('89 حاسبة متاحة'), doc.getElementById('hvac-category').innerHTML.includes("showCalc('shelter')")], [true, true]);
 
 // ---------- Jordan: acoustics code, Table 20 (recommended noise criteria of the spaces) in the duct sizing sound check ----------
 w = boot('jo'); doc = w.document;
@@ -1204,7 +1204,7 @@ check('other codes: the Syrian chimney check and fields stay (no Table 3 fields)
 
 // ---------- Jordan: fire protection code chapter 17 (fire resistance of concrete, Tables 13 - 19): the concrete fire resistance calculator ----------
 w = boot('jo'); doc = w.document;
-check('fire category: 57 calculators and the concrete fire resistance card', [doc.getElementById('main-categories-grid').textContent.includes('87 حاسبة متاحة'), doc.getElementById('fire-category').innerHTML.includes("showCalc('concretefire')")], [true, true]);
+check('fire category: 57 calculators and the concrete fire resistance card', [doc.getElementById('main-categories-grid').textContent.includes('89 حاسبة متاحة'), doc.getElementById('fire-category').innerHTML.includes("showCalc('concretefire')")], [true, true]);
 const CFD = w.eval('JSON.parse(JSON.stringify({H: JO_CF_H, E: JO_CF, T17: JO_CF_T17}))');
 const cfv = (el, i, j) => CFD.E[el][2][i][2][j][1];
 check('Table 13 (reinforced beams): 4 rows; plain concrete cover 15 / 25 / 35 / 45 / 55 / 65 and width 80 / 110 / 140 / 180 / 240 / 280; lightweight aggregate cover 15 / 20 / 30 / 35 / 45 / 50', [CFD.H, CFD.E.beamRC[2].length, cfv('beamRC', 0, 0), cfv('beamRC', 0, 1), cfv('beamRC', 3, 0)], [[0.5, 1, 1.5, 2, 3, 4], 4, [15, 25, 35, 45, 55, 65], [80, 110, 140, 180, 240, 280], [15, 20, 30, 35, 45, 50]]);

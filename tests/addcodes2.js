@@ -2300,6 +2300,122 @@ set('xsi_h2', '80'); w.calcResult('syrirr'); tt = txt(w, 'xsi_results');
 check('a building over 73 m shows the dynamic method', [tt.includes('3-9-4')], [true]);
 check('other reference codes open syrirr too', others('syrirr', 'xsi_results'), [true, true, true]);
 }
+// ---------- part 263: NFPA 25-2014 chapter 5 sprinkler systems (`nfpa25`: sprinkler age testing and replacement, inspection and test frequencies, clearance to storage) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xitCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({mode: 0, t: 0, inst: 1995, year: 2026, n: 400, tested: 0, sinceTest: 5, it: 3, since: 2, kind: 0, mm: 460, rack: 0, less: 0}, o));
+  check('a standard response sprinkler installed 1995 is 31 years old: the first test at 50 years is 19 years away (2045); at 50 years it is due', [a({}).age, a({}).state, a({}).left, a({}).nextYear, a({inst: 1976}).state, a({inst: 1976}).age], [31, 'wait', 19, 2045, 'test', 50]);
+  check('after the 50 year test the interval is 10 years: tested 4 years ago leaves 6; tested 10 years ago is due; after 75 years it is every 5 years', [a({inst: 1960, tested: 1, sinceTest: 4}).left, a({inst: 1960, tested: 1, sinceTest: 4}).state, a({inst: 1960, tested: 1, sinceTest: 10}).state, a({inst: 1940, tested: 1, sinceTest: 4}).step, a({inst: 1940, tested: 1, sinceTest: 4}).state, a({inst: 1940, tested: 1, sinceTest: 5}).state, a({inst: 1940}).step75, a({inst: 1960}).step75], [6, 'wait', 'test', 5, 'wait', 'test', true, false]);
+  check('fast response: first action at 20 years, then every 10; dry sprinklers at 10 years then every 10', [a({t: 1, inst: 2007}).state, a({t: 1, inst: 2007}).left, a({t: 1, inst: 2006}).state, a({t: 2, inst: 2017}).left, a({t: 2, inst: 2016}).state, a({t: 1, tested: 1, sinceTest: 10}).state], ['wait', 1, 'test', 1, 'test', 'test']);
+  check('extra-high temperature solder sprinklers and harsh environments: every 5 years from installation; after a test every 5 years', [a({t: 3, inst: 2021}).state, a({t: 3, inst: 2021}).left, a({t: 3, inst: 2022}).left, a({t: 3, inst: 2020}).state, a({t: 4, inst: 2000}).state, a({t: 4, tested: 1, sinceTest: 3}).left, a({t: 3}).step], [ 'test', 0, 1, 'test', 'test', 2, 5]);
+  check('sprinklers made before 1920 are replaced', [a({t: 5}).state, a({t: 5}).replaceNow, a({t: 0}).replaceNow], ['replace', true, false]);
+  check('sample size: at least four or 1 % of the sprinklers: 400 gives 4, 500 gives 5, 1000 gives 10, 50 gives 4; 401 gives 5', [a({n: 400}).sample, a({n: 500}).sample, a({n: 1000}).sample, a({n: 50}).sample, a({n: 401}).sample], [4, 5, 10, 4, 5]);
+  const f = o => a(Object.assign({mode: 1}, o));
+  check('frequency table: wet gauges quarterly, dry gauges weekly, supervised gauges monthly, sprinklers and pipes and hangers yearly, mechanical alarms quarterly tests, vane switches semiannual, gauges replaced every 5 years', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => f({it: i}).months), [12, 12, 12, 3, 0.25, 1, 3, 3, 12, 3, 6, 60]);
+  check('overdue: wet gauges inspected 4 months ago are late by 1; 3 months is on time; the weekly item is in days', [f({since: 4}).overdue, near(f({since: 4}).left, -1), f({since: 3}).overdue, f({it: 4, since: 1}).overdue, f({it: 4}).days, near(f({it: 4}).perYear, 48), f({it: 11, since: 59}).overdue, f({it: 11, since: 61}).overdue], [true, true, false, true, 8, true, false, true]);
+  const c = o => a(Object.assign({mode: 2}, o));
+  check('clearance to storage: 457 mm normally, 914 mm for special sprinklers and rubber tires; 460 passes ordinary, 900 fails special', [c({}).req, c({kind: 1}).req, c({kind: 2}).req, c({}).ok, c({kind: 1, mm: 900}).ok, near(c({kind: 1, mm: 900}).short, 14, 1e-9), c({mm: 457}).ok, c({mm: 456}).ok, c({rack: 1}).inRack, c({less: 1}).lessOk], [457, 914, 914, true, false, true, true, false, true, true]);
+}
+let tt;
+w.renderCalc('nfpa25'); w.calcResult('nfpa25');
+tt = txt(w, 'xit_results');
+check('the default page shows 31 سنة, 19.0 سنة, 2045, 4 رشاشات and the 🔴 note', [tt.includes('31 سنة'), tt.includes('19.0 سنة'), tt.includes('2045'), tt.includes('4 رشاشات'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xit_m', '1'); w.calcResult('nfpa25'); tt = txt(w, 'xit_results');
+check('the frequency mode shows quarterly and switches the groups', [tt.includes('3 شهرًا'), doc.getElementById('xit_g1').style.display === '', doc.getElementById('xit_g0').style.display === 'none'], [true, true, true]);
+set('xit_m', '2'); set('xit_mm', '300'); w.calcResult('nfpa25'); tt = txt(w, 'xit_results');
+check('the clearance mode shows 457 mm and the failed mark for 300 mm', [tt.includes('457 mm'), tt.includes('✘')], [true, true]);
+check('other reference codes open nfpa25 too', others('nfpa25', 'xit_results'), [true, true, true]);
+}
+// ---------- part 264: NFPA 111-2016 stored electrical energy emergency and standby power systems (`nfpa111`: type, class, level, battery capacity at end of life, recharge times, annual test, environment) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xbtCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({type: 1, cls: 3, hx: 4, level: 0, load: 20, eff: 0.9, vdc: 480, tech: 0, indoor: 1, temp: 25, rh: 50}, o));
+  check('Table 4.2.2: Type O and U 0 s, Type A 0.0042 s (quarter cycle), Type B 0.0167 s (one cycle), Type 10 10 s, Type M manual with no limit', [J('XBT_T.map(t => t[1])')], [[0, 0, 0.0042, 0.0167, 10, null]]);
+  check('Table 4.3: classes 0.033 h (2 min), 0.083 h (5 min), 0.25 h (15 min), 1.5 h (90 min) and class X by the user', [J('XBT_C.map(c => c[1])'), a({cls: 0}).min, a({cls: 1}).min, a({cls: 2}).min, a({cls: 3}).min, a({cls: 4}).hours, a({cls: 4, hx: 6}).hours], [[0.033, 0.083, 0.25, 1.5, 0], 1.98, 4.98, 15, 90, 4, 6]);
+  check('Level 1 is inspected monthly; Level 2 per the maintenance programme', [a({}).level1, a({level: 1}).level1, a({}).inspect, a({level: 1}).inspect], [true, false, 'شهريًا', 'بحسب برنامج الصيانة']);
+  check('20 kW for 1.5 h at 90 % efficiency: 30 kWh at the output, 33.33 kWh from the battery, 41.67 kWh rated (end of life at 80 %)', [near(a({}).kwh, 33.3333, 1e-3), near(a({}).rated, 41.6667, 1e-3)], [true, true]);
+  check('at 480 V: 86.8 Ah rated capacity and a discharge current of 46.3 A; no voltage gives no amp-hours', [near(a({}).ah, 86.806, 0.01), near(a({}).current, 46.296, 0.01), a({vdc: 0}).ah, a({vdc: 0}).current], [true, true, 0, 0]);
+  check('recharge: batteries 80 % within 12 times the discharge (18 h for 1.5 h) and 100 % within 48 h; ultracapacitors and flywheels 100 % within 1 hour', [a({}).recharge80, a({}).recharge100, a({tech: 1}).recharge100, a({tech: 2}).recharge100, near(a({}).chargeKw, 0.6944, 1e-3), near(a({tech: 1}).chargeKw, 33.3333, 1e-3)], [18, 48, 1, 1, true, true]);
+  check('tests: acceptance 100 % of the load for the class (1.5 h); annual either 100 % load for 60 % of the class (0.9 h) or 60 % load (12 kW) for the whole class', [a({}).accept.hours, a({}).accept.load, near(a({}).testA.hours, 0.9), a({}).testA.load, near(a({}).testB.load, 12), a({}).testB.hours], [1.5, 20, true, 20, true, 1.5]);
+  check('environment: indoor 10 to 40 C and outdoor -34 to 50 C; humidity 5 to 95 %', [a({temp: 10}).tempOk, a({temp: 9}).tempOk, a({temp: 40}).tempOk, a({temp: 41}).tempOk, a({indoor: 0, temp: -34}).tempOk, a({indoor: 0, temp: 50}).tempOk, a({indoor: 0, temp: 51}).tempOk, a({rh: 5}).rhOk, a({rh: 96}).rhOk, a({rh: 4}).rhOk], [true, false, true, false, true, true, false, true, false, false]);
+}
+let tt;
+w.renderCalc('nfpa111'); w.calcResult('nfpa111');
+tt = txt(w, 'xbt_results');
+check('the default page shows Type U, class 1.5 h, 41.7 kWh, 87 Ah, 46 A, 18.0 h and the 🔴 note', [tt.includes('النوع U'), tt.includes('1.50 h'), tt.includes('41.7 kWh'), tt.includes('87 Ah'), tt.includes('46 A'), tt.includes('18.0 h'), tt.includes('🔴')], [true, true, true, true, true, true, true]);
+set('xbt_tc', '1'); set('xbt_tp', '45'); w.calcResult('nfpa111'); tt = txt(w, 'xbt_results');
+check('ultracapacitors show 100 % within an hour and 45 C indoors shows the failed mark', [tt.includes('100 % خلال ساعة'), tt.includes('✘')], [true, true]);
+check('other reference codes open nfpa111 too', others('nfpa111', 'xbt_results'), [true, true, true]);
+}
+// ---------- part 265: Syrian Arab Code for reinforced concrete (4th ed.) chapter 6 (`syrcomb`: ultimate load combinations (a) to (f), secondary combinations, resistance reduction factors Omega, soil stress increase with earthquake) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xskCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({D: 100, L: 40, rs: 0, W: 0, E: 0, S: 0, T: 0, P: 0, H: 0, F: 0, f1: 0.5, f2: 0.2, useE: false, fc: 25, Ac: 90000, Nu: 500, smax: 150, smin: 100, qa: 200}, o));
+  check('gravity combinations: (a) 1.4 D = 140 and (b) 1.4 D + 1.7 L = 208; (b) governs at D 100 and L 40', [a({}).ca, a({}).cb, a({}).govern, a({}).max], [140, 208, '(b)', 208]);
+  check('combination (c): 1.2 D + 1.6 S + f1 L = 140 and with wind 1.2 D + 1.6 S + 0.8 W; the larger is taken', [a({}).c1, a({}).c2, a({}).cc, a({W: 30, f1: 1}).c1, a({W: 30, f1: 1}).c2, a({W: 30, f1: 1}).cc, a({rs: 10}).c1], [140, 120, 140, 160, 144, 160, 156]);
+  check('combination (d): 1.2 D + 1.3 W + f1 L + 0.5 S = 120 + 39 + 40 = 199 for W 30 and f1 1; with S 10 it adds 5', [a({W: 30, f1: 1}).cd, a({W: 30, f1: 1, rs: 10}).cd, a({}).cd], [199, 204, 140]);
+  check('wind versions of (f): 0.99 D + 1.3 W = 138 and 0.99 D - 1.3 W = 60; the wind case lists a to d and f plus and minus', [near(a({W: 30}).cfW, 138), near(a({W: 30}).cfWm, 60), a({W: 30}).sets.length, a({W: 30}).sets.map(s => s[0]).join(' ')], [true, true, 6, '(a) (b) (c) (d) (f) +W (f) −W']);
+  check('earthquake combinations: (e) 1.32 D + 1.1 E + 1.1 (f1 L + f2 S) = 132 + 55 + 22 = 209 for E 50; (f) 0.99 D +- 1.1 E = 154 and 44; (e) governs over 208', [near(a({E: 50, useE: true}).ce, 209), near(a({E: 50, useE: true}).cfE, 154), near(a({E: 50, useE: true}).cfEm, 44), a({E: 50, useE: true}).govern, a({E: 50, useE: true}).sets.length, near(a({E: 50, useE: true, S: 10}).ce, 211.2)], [true, true, true, '(e)', 7, true]);
+  check('secondary actions: 1.2 T + 1.2 P + 1.6 H + 1.3 F = 12 + 6 + 32 + 13 = 63 added to the governing combination: 271', [a({T: 10, P: 5, H: 20, F: 10}).second, a({T: 10, P: 5, H: 20, F: 10}).U, a({}).second], [63, 271, 0]);
+  check('resistance: compression capacity Nc = 0.85 x 25 x 90000 = 1912.5 kN; Omega = 0.9 - 0.5 x 500 / 1912.5 = 0.769; clamped to 0.65 at Nu 1900; 0.9 at Nu 0', [near(a({}).Nc, 1912.5), near(a({}).omegaAxial, 0.76931, 1e-4), a({Nu: 1900}).omegaAxial, a({Nu: 0}).omegaAxial, a({Nu: 500}).omegaAlt, a({Nu: 200}).omegaAlt, J('xskCalc({D:0,L:0,rs:0,W:0,E:0,S:0,T:0,P:0,H:0,F:0,f1:0.5,f2:0.2,useE:false,fc:25,Ac:0,Nu:0,smax:1,smin:1,qa:1}).omegaAxial')], [true, true, 0.65, 0.9, 0.65, 0.9, 0.65]);
+  check('the fixed factors: flexure 0.9, axial compression 0.65, shear and torsion 0.75', [a({}).omega.flex, a({}).omega.comp, a({}).omega.shear], [0.9, 0.65, 0.75]);
+  check('soil stress with earthquake: 1.6 for uniform stress, 2.0 from a ratio of 2, in between 1.6 + 0.4 (ratio - 1); with tension 2.0; 200 kPa x 1.8 = 360', [a({smax: 100, smin: 100}).soilFactor, a({smax: 200, smin: 100}).soilFactor, near(a({}).soilFactor, 1.8), near(a({}).soilAllow, 360), a({smax: 300, smin: 100}).soilFactor, a({smax: 100, smin: 0}).soilFactor, a({smax: 100, smin: -10}).tension, a({}).soilOk, a({smax: 450}).soilOk], [1.6, 2, true, true, 2, 2, true, true, false]);
+}
+let tt;
+w.renderCalc('syrcomb'); w.calcResult('syrcomb');
+tt = txt(w, 'xsk_results');
+check('the default page shows 208.0 for combination (b), the governing mark and the 🔴 note', [tt.includes('208.0'), tt.includes('(b)'), tt.includes('🔴')], [true, true, true]);
+set('xsk_m', '1'); w.calcResult('syrcomb'); tt = txt(w, 'xsk_results');
+check('the resistance mode shows 0.90, 0.65, 0.75, 1912.5 kN and 0.769 and switches the groups', [tt.includes('0.90'), tt.includes('0.75'), tt.includes('1912.5 kN'), tt.includes('0.769'), doc.getElementById('xsk_g1').style.display === '', doc.getElementById('xsk_g0').style.display === 'none'], [true, true, true, true, true, true]);
+set('xsk_m', '2'); w.calcResult('syrcomb'); tt = txt(w, 'xsk_results');
+check('the soil mode shows 1.80, 360.0 kPa and the pass mark', [tt.includes('1.80'), tt.includes('360.0 kPa'), tt.includes('✔')], [true, true, true]);
+check('other reference codes open syrcomb too', others('syrcomb', 'xsk_results'), [true, true, true]);
+}
+// ---------- part 266: Syrian Arab Code for reinforced concrete (4th ed.) clause 7-1 columns (`syrcol`: minimum dimensions, longitudinal steel limits, bars, ties and the seismic minimum transverse steel) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsqCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({shape: 0, b: 400, h: 400, fc: 25, fy: 420, Acr: 0, n: 8, dl: 18, sp: 150, lam: 20, face: 0, dt: 8, s: 150, legs: 2, coupler: 0, lap: 0, lapS: 0, seis: 0}, o));
+  check('a 400 x 400 mm column with 8 bars of 18 mm: area 160 000 mm2, steel 2036 mm2 (1.27 %), all requirements satisfied', [a({}).Ac, near(a({}).Ast, 2035.75, 0.01), near(a({}).rho, 0.012723, 1e-5), a({}).fail], [160000, true, true, 0]);
+  check('minimum dimensions: 200 mm and 0.09 m2: 200 x 450 gives 0.09 and passes, 190 x 500 fails, 200 x 440 fails by area; circular 350 passes, 340 fails', [a({b: 200, h: 450}).okDim, a({b: 190, h: 500}).okDim, a({b: 200, h: 440}).okDim, a({shape: 1, b: 350}).okDim, a({shape: 1, b: 340}).okDim, near(a({shape: 1, b: 400}).Ac, 125663.7, 0.1)], [true, false, false, true, false, true]);
+  check('maximum steel ratio: 2.5 % below 30 MPa, 3.5 % from 30 MPa, 4 % with mechanical couplers: 4000, 5600 and 6400 mm2', [a({}).AstMax, near(a({fc: 30}).AstMax, 5600), a({coupler: 1}).AstMax, a({fc: 29.9}).rhoMax, a({fc: 30}).rhoMax, a({n: 15}).okMax, a({n: 16}).okMax, a({n: 16, fc: 30}).okMax], [4000, true, 6400, 0.025, 0.035, true, false, true]);
+  check('minimum steel: 1 % of the required area but not under 0.6 % of the section: 1600 mm2 when the required area is the section; required 100 000 mm2 gives 1000 but the 960 floor is not binding; required 50 000 gives 960', [a({}).AstMin, a({Acr: 100000}).AstMin, a({Acr: 50000}).AstMin, a({n: 4}).okMin, a({n: 8, dl: 12}).okMin, a({Acr: 100000, n: 6, dl: 16}).okMin], [1600, 1000, 960, false, false, true]);
+  check('lap zone: all bars lapped doubles the area against 6 % (9600 mm2) or 7 % from 30 MPa: 8 bars of 18 give 4071 and pass; 16 bars of 25 give 15 708 and fail', [near(a({lap: 1}).Alap, 4071.5, 0.1), a({lap: 1}).okLap, a({lap: 1, n: 16, dl: 25}).okLap, a({lap: 1, n: 16, dl: 25, fc: 30}).okLap, a({lap: 1}).lapMax, near(a({lap: 1, fc: 30}).lapMax, 11200)], [true, true, false, false, 9600, true]);
+  check('bars: four in a rectangular and six in a circular column, diameter at least 12, spacing at most 300 mm', [a({n: 3}).okN, a({n: 4}).okN, a({shape: 1, b: 400, n: 5}).okN, a({shape: 1, b: 400, n: 6}).okN, a({dl: 10}).okDl, a({dl: 12}).okDl, a({sp: 300}).okSpace, a({sp: 310}).okSpace], [false, true, false, true, false, true, true, false]);
+  check('slender columns (lambda 40 or more) need 0.3 % of the section on each face: 0.003 x 400 x 400 = 480 mm2', [a({lam: 39}).slender, a({lam: 40}).slender, near(a({}).faceMin, 480), a({lam: 40, face: 479}).okFace, a({lam: 40, face: 480}).okFace, a({lam: 20, face: 0}).okFace, a({shape: 1, lam: 50}).slender], [false, true, true, false, true, true, false]);
+  check('tie diameter: a third of the bar diameter or 6 mm, 8 mm above 0.25 m2: 18 mm bars give 6; 28 mm bars give 9.33; 12 mm ties pass and 14 fail the maximum; 500 x 600 forces 8', [a({}).dtMin, near(a({dl: 28}).dtMin, 9.3333, 1e-3), a({dt: 6}).okDt, a({dt: 12}).okDt, a({dt: 14}).okDt, a({b: 500, h: 600}).dtMin, a({b: 500, h: 600, dt: 6}).okDt, a({dl: 28, dt: 8}).okDt, a({dl: 28, dt: 10}).okDt], [6, true, true, true, false, 8, false, false, true]);
+  check('tie spacing: at most the least of 15 bar diameters, the smaller column dimension and 300 mm; at least 100; 150 in lap zones: 18 mm bars give 270; 12 mm bars give 180', [a({}).sMax, a({dl: 12}).sMax, a({b: 250, h: 600, dl: 20}).sMax, a({shape: 1, b: 350}).sMax, a({s: 270}).okS, a({s: 280}).okS, a({s: 90}).okS, a({s: 160, lapS: 1}).okS, a({s: 150, lapS: 1}).okS, a({lapS: 1}).sMaxLap], [270, 180, 250, 270, true, false, false, false, true, 150]);
+  check('seismic minimum transverse steel: Ast = 0.35 b s / fy = 0.35 x 400 x 150 / 420 = 50 mm2; two 8 mm legs give 100.5 and pass; a 6 mm single leg gives 28 and fails at s 150 with fy 240', [near(a({}).AtMin, 50), near(a({}).Atie, 100.53, 0.01), a({seis: 1}).okAt, a({seis: 1, dt: 6, legs: 1, fy: 240}).okAt, near(a({fy: 240}).AtMin, 87.5), a({seis: 0, dt: 6, legs: 1, fy: 240}).okAt], [true, true, true, false, true, true]);
+}
+let tt;
+w.renderCalc('syrcol'); w.calcResult('syrcol');
+tt = txt(w, 'xsq_results');
+check('the default page shows the all-satisfied result, 160000 mm², 2036 mm² and the 🔴 note', [tt.includes('تتحقق كل الاشتراطات'), tt.includes('160000 mm²'), tt.includes('2036 mm²'), tt.includes('🔴')], [true, true, true, true]);
+set('xsq_sh', '1'); set('xsq_b', '300'); w.calcResult('syrcol'); tt = txt(w, 'xsq_results');
+check('a 300 mm circular column fails the minimum dimension and hides the depth field', [tt.includes('✘'), doc.getElementById('xsq_h').parentNode.style.display === 'none'], [true, true]);
+set('xsq_se', '1'); w.calcResult('syrcol'); tt = txt(w, 'xsq_results');
+check('the seismic option shows 0.35 b s / fy', [tt.includes('0.35')], [true]);
+check('other reference codes open syrcol too', others('syrcol', 'xsq_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
