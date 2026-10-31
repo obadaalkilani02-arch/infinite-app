@@ -1260,6 +1260,333 @@ set('xt_ed', '10'); w.calcResult('nfpa1142'); tt = txt(w, 'xt_results');
 check('an exposure hazard shows the 11355 L floor', [tt.includes('11355 L'), tt.includes('يوجد')], [true, true]);
 check('other reference codes open nfpa1142 too', others('nfpa1142', 'xt_results'), [true, true, true]);
 }
+// ---------- part 232: NFPA 70E-2015 electrical safety (`nfpa70e`: shock approach boundaries for ac and dc, arc flash PPE category and boundary for ac equipment and dc sources, minimum arc rating) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xuCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({mode: 0, v: 2, mov: 0, d: 2}, o));
+  check('ac 151 to 750 V: limited 1.0 m (3 ft 6 in) fixed or 3.0 m movable, restricted 0.3 m (1 ft 0 in)', [a({}).lab, a({}).labFt, a({mov: 1}).lab, a({}).rab, a({}).rabFt], [1, '3 ft 6 in', 3, 0.3, '1 ft 0 in']);
+  check('ac 751 V to 15 kV: 1.5 m and 0.7 m; 765 to 800 kV: 7.2 m and 4.9 m (15 ft 11 in)', [a({v: 3}).lab, a({v: 3}).rab, a({v: 13}).lab, a({v: 13}).rab, a({v: 13}).rabFt], [1.5, 0.7, 7.2, 4.9, '15 ft 11 in']);
+  check('ac 50 to 150 V: avoid contact (no restricted distance); below 50 V nothing is specified', [a({v: 1}).avoid, a({v: 1}).lab, a({v: 0}).none, a({v: 0}).lab], [true, 1, true, null]);
+  check('a person at 0.5 m from a 480 V fixed part is inside the limited and outside the restricted boundary; at 0.2 m inside both', [a({d: 0.5}).inLab, a({d: 0.5}).inRab, a({d: 0.2}).inRab, a({d: 1.5}).inLab], [true, false, true, false]);
+  const d = o => calc(Object.assign({mode: 1, v: 2, mov: 0, d: 2}, o));
+  check('dc 301 V to 1 kV: limited 1.0 m, restricted 0.3 m; 1.1 to 5 kV: 1.5 m and 0.5 m (1 ft 5 in); 500.1 to 800 kV: 8.0 m and 5.0 m', [d({}).lab, d({}).rab, d({v: 3}).lab, d({v: 3}).rab, d({v: 3}).rabFt, d({v: 10}).lab, d({v: 10}).rab], [1, 0.3, 1.5, 0.5, '1 ft 5 in', 8, 5]);
+  check('dc 100 to 300 V avoids contact; dc 250.1 to 500 kV restricted 3.5 m (11 ft 6 in) and movable limited 6.0 m (20 ft 0 in)', [d({v: 1}).avoid, d({v: 9}).rab, d({v: 9}).rabFt, d({v: 9, mov: 1}).lab, d({v: 9, mov: 1}).labFt], [true, 3.5, '11 ft 6 in', 6, '20 ft 0 in']);
+  const f = o => calc(Object.assign({mode: 2, eq: 1, ik: 20, t: 0.03, wd: 455, cl: 0}, o));
+  check('panelboards above 240 V to 600 V within 25 kA, 0.03 s and 455 mm: category 2, boundary 900 mm, 8 cal/cm2; panelboards 240 V and below: category 1, 485 mm, 4 cal/cm2', [f({}).within, f({}).cat, f({}).bnd, f({}).rate, f({eq: 0}).cat, f({eq: 0}).bnd, f({eq: 0}).rate], [true, 2, 900, 8, 1, 485, 4]);
+  check('a short-circuit current of 30 kA, a clearing time of 0.05 s or a working distance of 400 mm takes the panelboard outside the table', [f({ik: 30}).within, f({ik: 30}).badI, f({t: 0.05}).within, f({t: 0.05}).badT, f({wd: 400}).within, f({wd: 400}).badW, f({ik: 25}).within], [false, true, false, true, false, true, true]);
+  check('MCC 600 V class: 65 kA at 0.03 s is category 2 (1.5 m); 40 kA at 0.2 s is category 4 (4.3 m); 50 kA at 0.2 s is outside the table', [f({eq: 2, ik: 60}).cat, f({eq: 2, ik: 60}).bnd, f({eq: 2, ik: 40, t: 0.2}).cat, f({eq: 2, ik: 40, t: 0.2}).bnd, f({eq: 2, ik: 50, t: 0.2}).within, f({eq: 2, ik: 30, t: 0.03}).cat], [2, 1500, 4, 4300, false, 2]);
+  check('600 V switchgear and switchboards up to 35 kA and 0.5 s: category 4, 6 m; other 600 V equipment 65 kA: category 2, 1.5 m', [f({eq: 3, ik: 35, t: 0.5}).cat, f({eq: 3, ik: 35, t: 0.5}).bnd, f({eq: 3, ik: 36, t: 0.5}).within, f({eq: 4, ik: 65}).cat, f({eq: 4, ik: 65}).bnd], [4, 6000, false, 2, 1500]);
+  check('NEMA E2 starters, metal-clad switchgear and other 1 to 15 kV equipment: category 4, 12 m at 910 mm; 455 mm is too close', [f({eq: 5, ik: 35, t: 0.24, wd: 910}).cat, f({eq: 6, ik: 35, t: 0.24, wd: 910}).bnd, f({eq: 9, ik: 20, t: 0.2, wd: 910}).cat, f({eq: 9, ik: 20, t: 0.2, wd: 455}).within], [4, 12000, 4, false]);
+  check('arc-resistant switchgear with the doors closed has no category (N/A); with the doors open it is category 4 and 12 m', [f({eq: 7, ik: 35, t: 0.24, wd: 910}).closed, f({eq: 7, ik: 35, t: 0.24, wd: 910}).cat, f({eq: 8, ik: 35, t: 0.24, wd: 910}).cat, f({eq: 8, ik: 35, t: 0.24, wd: 910}).bnd, f({eq: 8, ik: 35, t: 0.24, wd: 910}).closed], [true, null, 4, 12000, false]);
+  check('a current-limiting source of 200 A or less lowers a 600 V category by one but never below 1 and does not apply above 1 kV', [f({cl: 1}).cat, f({cl: 1}).red, f({eq: 0, cl: 1}).cat, f({eq: 3, ik: 35, t: 0.5, cl: 1}).cat, f({eq: 6, ik: 35, t: 0.24, wd: 910, cl: 1}).cat, f({cl: 1}).bnd], [1, true, 1, 3, 4, 900]);
+  check('the minimum arc ratings of categories 1 to 4 are 4, 8, 25 and 40 cal/cm2', [1, 2, 3, 4].map(c => J('XU_RATING')[c]), [4, 8, 25, 40]);
+  const e = o => calc(Object.assign({mode: 3, dv: 0, ik: 3, dur: 2, wd: 455}, o));
+  check('dc 100 V to under 250 V: below 4 kA category 1 (900 mm), 4 to 7 kA category 2 (1.2 m), 7 to 15 kA category 3 (1.8 m), 15 kA is outside', [e({}).cat, e({}).bnd, e({ik: 5}).cat, e({ik: 5}).bnd, e({ik: 10}).cat, e({ik: 10}).bnd, e({ik: 15}).within, e({ik: 4}).cat], [1, 900, 2, 1200, 3, 1800, false, 2]);
+  check('dc 250 to 600 V: 1.5 kA category 2; 2 kA category 2; 5 kA category 3; 8 kA category 4 (2.5 m); 10 kA is outside', [e({dv: 1, ik: 1}).cat, e({dv: 1, ik: 2}).cat, e({dv: 1, ik: 5}).cat, e({dv: 1, ik: 8}).cat, e({dv: 1, ik: 8}).bnd, e({dv: 1, ik: 10}).within, e({dv: 1, ik: 1.5}).cat], [1, 2, 3, 4, 2500, false, 2]);
+  check('dc: an arc longer than 2 s or a working distance under 455 mm takes the source outside the table', [e({dur: 3}).within, e({dur: 3}).badT, e({wd: 400}).within, e({wd: 400}).badW, e({dur: 2}).within], [false, true, false, true, true]);
+}
+let tt;
+w.renderCalc('nfpa70e'); w.calcResult('nfpa70e');
+tt = txt(w, 'xu_results');
+check('the default page shows the 1.00 m limited and 0.30 m restricted boundaries and the 🔴 note', [tt.includes('1.00 m'), tt.includes('0.30 m'), tt.includes('3 ft 6 in'), tt.includes('🔴')], [true, true, true, true]);
+set('xu_mv', '1'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
+check('a movable conductor shows the 3.00 m boundary', [tt.includes('3.00 m'), tt.includes('10 ft 0 in')], [true, true]);
+set('xu_m', '2'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
+check('the arc flash mode shows category 2, the 0.90 m boundary and the 8 cal/cm2 rating, and the groups switch', [tt.includes('فئة 2'), tt.includes('0.90 m'), tt.includes('8 cal/cm²'), doc.getElementById('xu_g2').style.display === '', doc.getElementById('xu_g0').style.display === 'none'], [true, true, true, true, true]);
+set('xu_ik', '40'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
+check('40 kA leaves the table and asks for an incident energy analysis', [tt.includes('تحليل طاقة القوس'), tt.includes('✘') || tt.includes('خارج المعايير')], [true, true]);
+set('xu_m', '3'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
+check('the dc mode defaults (250 to 600 V, 5 kA, 2 s, 455 mm) give category 3, the 1.80 m boundary and 25 cal/cm2', [tt.includes('فئة 3'), tt.includes('1.80 m'), tt.includes('25 cal/cm²')], [true, true, true]);
+check('other reference codes open nfpa70e too', others('nfpa70e', 'xu_results'), [true, true, true]);
+}
+// ---------- part 233: NFPA 30-2015 aboveground tanks (`nfpa30t`: distance to property lines and buildings, shell-to-shell spacing, dike capacity and subdivision) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xvCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.02);
+{
+  const a = o => calc(Object.assign({mode: 0, cat: 0, r0: 6, r1: 0, r2: 0, r3: 0, cap: 200, dia: 8, half: 0}, o));
+  check('Table 22.4.1.1(b): 275 gal 5/5 ft; 751 to 12000 gal 15/5; 52834 gal (200 m3) 50/15; 100001 to 500000 gal 80/25; 2.64 million gal 165/55; over 3 million gal 175/60', [a({cap: 0.5}).tP, a({cap: 0.5}).tB, a({cap: 5}).tP, a({cap: 5}).tB, a({}).tP, a({}).tB, a({cap: 1000}).tP, a({cap: 1000}).tB, a({cap: 10000}).tP, a({cap: 10000}).tB, a({cap: 20000}).tP, a({cap: 20000}).tB], [5, 5, 15, 5, 50, 15, 80, 25, 165, 55, 175, 60]);
+  check('horizontal or vertical tank with relief to 2.5 psi: protection for exposures gives the table value, no protection twice the property-line value, inerting half', [a({}).pFt, a({}).bFt, a({r0: 7}).pFt, a({r0: 7}).bFt, a({r0: 5}).pFt, a({r0: 5}).bFt, a({r0: 8}).pFt], [50, 15, 100, 15, 25, 7.5, 25]);
+  check('floating roof 8 m (26.25 ft): exposures protection half a diameter but not under 5 ft; no protection one diameter; the building column is a sixth of the diameter with a 5 ft minimum', [near(a({r0: 0}).pFt, 13.12), a({r0: 0}).bFt, near(a({r0: 1}).pFt, 26.25), a({r0: 1}).bFt], [true, 5, true, 5]);
+  check('weak roof-to-shell seam 8 m: foam half a diameter, exposures one diameter (a third for the building), none two diameters', [near(a({r0: 2}).pFt, 13.12), near(a({r0: 3}).pFt, 26.25), near(a({r0: 3}).bFt, 8.75), near(a({r0: 4}).pFt, 52.49), near(a({r0: 4}).bFt, 8.75)], [true, true, true, true, true]);
+  check('a 60 m tank: floating roof without protection is capped at 175 ft; weak seam without protection at 350 ft; the foam row does not apply over 45 m', [a({dia: 60, r0: 1}).pFt, a({dia: 60, r0: 1}).capP, a({dia: 60, r0: 4}).pFt, a({dia: 60, r0: 2}).warn, a({dia: 30, r0: 2}).warn], [175, true, 350, 'foam', '']);
+  check('a Class IIIA vertical weak-seam tank away from Class I and II dikes takes half the distances', [near(a({r0: 3, half: 1}).pFt, 13.12), a({r0: 3, half: 1}).bFt, a({r0: 6, half: 1}).pFt], [true, 5, 50]);
+  check('the distance in metres is the feet times 0.3048', [near(a({}).pM, 15.24), near(a({}).bM, 4.572)], [true, true]);
+  check('pressure above 2.5 psi: with exposure protection 1.5 times the table value but at least 25 ft; without, 3 times and at least 50 ft for the property line', [a({cat: 1, r1: 0}).pFt, a({cat: 1, r1: 0}).bFt, a({cat: 1, r1: 1}).pFt, a({cat: 1, r1: 1}).bFt, a({cat: 1, r1: 0, cap: 0.5}).pFt, a({cat: 1, r1: 1, cap: 0.5}).pFt], [75, 25, 150, 25, 25, 50]);
+  check('boil-over liquids, 8 m: floating roof without protection one diameter; fixed roof with foam a diameter and a third; with exposures 2 diameters and two thirds; none 4 diameters (capped at 350 ft)', [near(a({cat: 2, r2: 1}).pFt, 26.25), near(a({cat: 2, r2: 2}).pFt, 26.25), near(a({cat: 2, r2: 2}).bFt, 8.75), near(a({cat: 2, r2: 3}).pFt, 52.49), near(a({cat: 2, r2: 3}).bFt, 17.5), near(a({cat: 2, r2: 4}).pFt, 104.99), near(a({cat: 2, r2: 4, dia: 40}).pFt, 350, 0.01)], [true, true, true, true, true, true, true]);
+  check('a fixed roof over 45 m storing boil-over liquid without inerting is flagged; a floating roof is not', [a({cat: 2, r2: 4, dia: 50}).warn, a({cat: 2, r2: 3, dia: 50}).warn, a({cat: 2, r2: 1, dia: 50}).warn, a({cat: 2, r2: 4, dia: 20}).warn], ['fixed150', 'fixed150', '', '']);
+  check('unstable liquid at 200 m3 (50 ft table value): venting up to 2.5 psi protected 50/25, exposures 125/50, none 250/100; above 2.5 psi protected 100/50, exposures 200/100, none 400/150', [0, 1, 2, 3, 4, 5].map(i => a({cat: 3, r3: i}).pFt).concat([0, 1, 2, 3, 4, 5].map(i => a({cat: 3, r3: i}).bFt)), [50, 125, 250, 100, 200, 400, 25, 50, 100, 50, 100, 150]);
+  check('unstable liquid in a small tank still keeps the minimum distances: 5 m3 (15 ft) none up to 2.5 psi needs 100 ft; protected needs 25 ft', [a({cat: 3, r3: 2, cap: 5}).pFt, a({cat: 3, r3: 0, cap: 5}).pFt, a({cat: 3, r3: 5, cap: 5}).pFt], [100, 25, 150]);
+  check('Class IIIB: 40 m3 5/5 ft; 200 m3 15/10; 150 m3 10/10; 500 m3 15/15', [a({cat: 4, cap: 40}).pFt, a({cat: 4, cap: 40}).bFt, a({cat: 4, cap: 200}).pFt, a({cat: 4, cap: 200}).bFt, a({cat: 4, cap: 150}).pFt, a({cat: 4, cap: 150}).bFt, a({cat: 4, cap: 500}).pFt, a({cat: 4, cap: 500}).bFt], [5, 5, 15, 10, 10, 10, 15, 15]);
+  const s = o => calc(Object.assign({mode: 1, ss: 1, d1: 8, d2: 8, imp: 1, dike: 0}, o));
+  check('shell spacing: a sixth of the sum of the diameters (8 m + 8 m gives 2.67 m) but at least 3 ft (0.91 m) for small tanks', [near(s({}).sM, 2.667), near(s({d1: 2, d2: 2}).sM, 0.914, 0.001), s({d1: 2, d2: 2}).sFt, s({ss: 0}).sFt === s({}).sFt], [true, true, 3, true]);
+  check('tanks over 45 m: floating roof 1/6 remote impounding or 1/4 diking; Class I or II 1/4 or 1/3; Class IIIA 1/6 or 1/4', [near(s({ss: 0, d1: 60, d2: 60, imp: 0}).sM, 20, 0.05), near(s({ss: 0, d1: 60, d2: 60, imp: 1}).sM, 30, 0.05), near(s({d1: 60, d2: 60, imp: 0}).sM, 30, 0.05), near(s({d1: 60, d2: 60, imp: 1}).sM, 40, 0.05), near(s({ss: 2, d1: 60, d2: 60, imp: 0}).sM, 20, 0.05), near(s({ss: 2, d1: 60, d2: 60, imp: 1}).sM, 30, 0.05)], [true, true, true, true, true, true]);
+  check('Class IIIB tanks need at most 3 ft (0.9 m) unless they stand in a Class I or II dike, where the Class IIIA rule applies; unstable liquid needs half the sum of the diameters', [s({ss: 3, d1: 30, d2: 30}).sFt, near(s({ss: 3, d1: 30, d2: 30, dike: 1}).sM, 60 / 6), near(s({ss: 4}).sM, 8)], [3, true, true]);
+  const d = o => calc(Object.assign({mode: 2, v1: 500, vo: 100, a: 900, h: 1.2, cls1: 1, wk: 0, vg: 1200}, o));
+  check('dike 900 m2 x 1.2 m less 100 m3 of other tanks holds 980 m3, enough for a 500 m3 tank; the height needed is 0.667 m', [near(d({}).net, 980, 1e-6), d({}).okCap, near(d({}).hNeed, 0.667, 0.001), d({h: 0.5}).okCap], [true, true, true, false]);
+  check('over 1.8 m the dike needs access; over 3.6 m with Class I liquid it needs remote valve operation; earthen walls from 0.9 m have a 0.6 m top', [d({}).access, d({h: 2}).access, d({h: 4}).valve, d({h: 4, cls1: 0}).valve, d({h: 0.8}).earth, d({}).earth], [false, true, true, false, false, true]);
+  check('subdivision: a tank over 380 m3 (100,000 gal) needs one, over 1590 m3 for weak seam or floating roof; groups of at most 570 m3 or 2385 m3', [d({}).subTank, d({wk: 1}).subTank, d({}).groups, d({wk: 1}).groups, d({vg: 570}).groups, d({vg: 571}).groups, d({wk: 1, vg: 2386}).groups], [true, false, 3, 1, 1, 2, 2]);
+}
+let tt;
+w.renderCalc('nfpa30t'); w.calcResult('nfpa30t');
+tt = txt(w, 'xv_results');
+check('the default page shows 15.2 m to the property line, 4.6 m to the building, the 15 ft table value and the 🔴 note', [tt.includes('15.2 m'), tt.includes('4.6 m'), tt.includes('50 ft / 15 ft'), tt.includes('🔴')], [true, true, true, true]);
+set('xv_c', '1'); w.calcResult('nfpa30t'); tt = txt(w, 'xv_results');
+check('pressure above 2.5 psi shows 150 ft (3 times the table value) for the unprotected row and switches the selector', [tt.includes('150 ft'), tt.includes('25 ft'), doc.getElementById('xv_s1').style.display === '', doc.getElementById('xv_s0').style.display === 'none'], [true, true, true, true]);
+set('xv_m', '1'); w.calcResult('nfpa30t'); tt = txt(w, 'xv_results');
+check('the spacing mode shows 2.67 m, the 6 m LPG separation and switches the groups', [tt.includes('2.67 m'), tt.includes('6.0 m'), doc.getElementById('xv_g1').style.display === '', doc.getElementById('xv_g0').style.display === 'none'], [true, true, true, true]);
+set('xv_m', '2'); w.calcResult('nfpa30t'); tt = txt(w, 'xv_results');
+check('the dike mode shows 980 m3, 3 groups and the subdivision need', [tt.includes('980 m³'), tt.includes('يلزم تقسيم للخزان'), tt.includes('✔')], [true, true, true]);
+check('other reference codes open nfpa30t too', others('nfpa30t', 'xv_results'), [true, true, true]);
+}
+// ---------- part 234: NFPA 30-2015 liquids in buildings (`nfpa30m`: maximum allowable quantities per control area, floor percentages, liquid storage rooms and warehouses) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xyCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({mode: 0, cl: 1, occ: 0, spr: 1, cab: 0, p16: 0, hc: 0, fl: 5, q: 300}, o));
+  check('Table 9.6.1 base quantities in litres: IA 115, IB and IC 460, IA/IB/IC combined 460, II 460, IIIA 1265, IIIB 50600', [0, 1, 2, 3, 4, 5].map(i => a({cl: i, spr: 0, p16: 0}).base), [115, 460, 460, 460, 1265, 50600]);
+  check('the increases: sprinklers double, cabinets or safety cans double, both together multiply to four (460 L -> 920 L -> 1840 L)', [a({spr: 0}).maq, a({}).maq, a({spr: 0, cab: 1}).maq, a({cab: 1}).maq, a({cab: 1}).mult], [460, 920, 920, 1840, 4]);
+  check('Class IIIB has no limit in a fully sprinklered building protected per 66.16; unsprinklered it is 50600 L', [a({cl: 5, p16: 1}).unlimited, a({cl: 5, p16: 0}).unlimited, a({cl: 5, spr: 0, p16: 1}).unlimited, a({cl: 5, spr: 0}).maq], [true, false, false, 50600]);
+  check('Table 9.7.2: first floor 100 % and 4 control areas with 1 h barriers; third floor 50 % and 2 areas; fourth to sixth 12.5 % and 2 areas with 2 h; over the ninth 5 % and 1 area', [5, 3, 2, 0].map(i => a({fl: i}).pct).concat([5, 3, 2, 0].map(i => a({fl: i}).areas), [5, 3, 2, 0].map(i => a({fl: i}).barrier)), [100, 50, 12.5, 5, 4, 2, 2, 1, 1, 1, 2, 2]);
+  check('below grade: the first level 75 % in 3 areas, the second 50 % in 2 areas, lower is not permitted', [a({fl: 6}).pct, a({fl: 6}).areas, a({fl: 7}).pct, a({fl: 7}).areas, a({fl: 8}).np, a({fl: 8}).ok], [75, 3, 50, 2, true, false]);
+  check('IB and IC at 300 L on the first floor: allowed 920 L and compliant; on the fourth floor 12.5 % of 920 is 115 L so 300 L exceeds by 185 L', [a({}).maqFloor, a({}).ok, a({fl: 2}).maqFloor, a({fl: 2}).ok, a({fl: 2}).over, a({}).total], [920, true, 115, false, 185, 3680]);
+  check('special occupancies: 38 L for Class I and II, 227 L for IIIA, 454 L for IIIB; IIIB doubles in a sprinklered health care or educational building', [a({occ: 1, cl: 1}).lim, a({occ: 1, cl: 3}).lim, a({occ: 1, cl: 4}).lim, a({occ: 1, cl: 5}).lim, a({occ: 1, cl: 5, hc: 1}).lim, a({occ: 1, cl: 5, hc: 1, spr: 0}).lim], [38, 38, 227, 454, 908, 454]);
+  check('special occupancy: 300 L is over the 38 L limit but allowed in storage cabinets up to 680 L; 700 L is not; 30 L needs no cabinet', [a({occ: 1, q: 300}).ok, a({occ: 1, q: 300, cab: 1}).ok, a({occ: 1, q: 300, cab: 1}).cabOk, a({occ: 1, q: 700, cab: 1}).ok, a({occ: 1, q: 30}).ok, a({occ: 1, q: 30, cab: 1}).cabOk], [false, true, true, false, true, false]);
+  const s = o => calc(Object.assign({mode: 1, rt: 1, ex: 5, only3b: 0, prot: 0, att: 0, da: 50, cont: 0.2}, o));
+  check('Table 9.9.1: rooms up to 150 ft2 have 1 h walls with 3/4 h doors; 150 to 500 ft2 have 2 h walls with 1.5 h doors; warehouses have 4 h fire walls with 3 h doors', [s({rt: 0}).wall, s({rt: 0}).door, s({}).wall, s({}).door, s({rt: 2}).wall, s({rt: 2}).door], [1, 0.75, 2, 1.5, 4, 3]);
+  check('warehouse exterior walls: 4 h within 3 m, 2 h from 3 to 15 m, none beyond; IIIB-only or protected warehouses may drop to 2 h walls and 1.5 h doors; an attached one needs a door on each side', [s({rt: 2, ex: 2}).ext, s({rt: 2, ex: 5}).ext, s({rt: 2, ex: 20}).ext, s({rt: 2, only3b: 1}).wallRed, s({rt: 2, prot: 1}).doorRed, s({rt: 2}).reduce, s({rt: 2, att: 1}).attached, s({rt: 1, att: 1}).attached], [4, 2, 0, 2, 1.5, false, true, false]);
+  check('dispensing: a storage area over 93 m2 needs a separated dispensing area; a container over 38 L needs spill control', [s({da: 93}).dispOk, s({da: 94}).dispOk, s({cont: 0.2}).curb, s({cont: 0.03}).curb], [true, false, true, false]);
+}
+let tt;
+w.renderCalc('nfpa30m'); w.calcResult('nfpa30m');
+tt = txt(w, 'xy_results');
+check('the default page shows 920 L, the 100 % first floor, 4 control areas and the 🔴 note', [tt.includes('920 L'), tt.includes('100.0 %'), tt.includes('3680 L'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xy_fl', '0'); w.calcResult('nfpa30m'); tt = txt(w, 'xy_results');
+check('a floor above the ninth gives 46 L and the over-quantity message', [tt.includes('46 L'), tt.includes('إشغال المستوى 2 أو 3'), tt.includes('✘')], [true, true, true]);
+set('xy_oc', '1'); w.calcResult('nfpa30m'); tt = txt(w, 'xy_results');
+check('the special occupancy shows the 38 L limit', [tt.includes('38 L'), tt.includes('الجدول 9.6.2.1')], [true, true]);
+set('xy_m', '1'); w.calcResult('nfpa30m'); tt = txt(w, 'xy_results');
+check('the storage mode shows the 2 h wall, the 1.5 h door and switches the groups', [tt.includes('2 h'), tt.includes('1.5 h'), tt.includes('40:B'), doc.getElementById('xy_g1').style.display === '', doc.getElementById('xy_g0').style.display === 'none'], [true, true, true, true, true]);
+check('other reference codes open nfpa30m too', others('nfpa30m', 'xy_results'), [true, true, true]);
+}
+// ---------- part 235: NFPA 45-2015 laboratories using chemicals (`nfpa45`: laboratory unit class, fire separation, stories and area (Table 5.1.1), second means of access, maximum liquid quantities (Table 9.1.1)) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xlbCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({mode: 0, cl: 1, st: 2, below: 0, area: 120, edu: 0, wa: 60}, o));
+  check('Class A units: 2 h separation, stories 1 to 3, not below grade, not over 929 m2', [a({cl: 0}).sepTable, a({cl: 0, st: 3}).okStory, a({cl: 0, st: 4}).okStory, a({cl: 0, below: 1}).okStory, a({cl: 0, area: 929}).okArea, a({cl: 0, area: 930}).okArea, a({cl: 0, area: 930}).ok], [2, true, false, false, true, false, false]);
+  check('Class B: 1 h in stories 1 to 3 and one below grade, 2 h in stories 4 to 6, nothing above the sixth; not over 929 m2', [a({st: 3}).sepTable, a({st: 4}).sepTable, a({st: 6}).okStory, a({st: 7}).okStory, a({below: 1, st: 1}).sepTable, a({below: 1, st: 1}).okStory, a({below: 1, st: 2}).okStory, a({area: 1000}).ok], [1, 2, true, false, 1, true, false, false]);
+  check('Class C: no separation in stories 1 to 3 and two below grade, 1 h in stories 4 to 6, 2 h above the sixth, any area', [a({cl: 2, st: 3}).sepTable, a({cl: 2, st: 5}).sepTable, a({cl: 2, st: 8}).sepTable, a({cl: 2, below: 1, st: 2}).okStory, a({cl: 2, below: 1, st: 3}).okStory, a({cl: 2, below: 1, st: 2}).sepTable, a({cl: 2, area: 5000}).okArea], [0, 1, 2, true, false, 0, true]);
+  check('Class D: no separation and no limit; an educational laboratory needs at least 1 h whatever the table says', [a({cl: 3, st: 12}).sepTable, a({cl: 3, st: 12}).ok, a({cl: 3, edu: 1}).sep, a({cl: 0, edu: 1}).sep, a({cl: 2, st: 5, edu: 1}).sep, a({cl: 3}).maxArea], [0, true, 1, 2, 1, null]);
+  check('a second means of access is needed beyond 46.5 m2 in Class A and 93 m2 in Classes B, C and D', [a({cl: 0, wa: 46.5}).second, a({cl: 0, wa: 47}).second, a({wa: 93}).second, a({wa: 94}).second, a({cl: 3, wa: 100}).second], [false, true, false, true, true]);
+  const q = o => calc(Object.assign({mode: 1, cl: 0, g: 0, st: 1, below: 0, area: 93, open: 0, use: 100, stock: 100}, o));
+  check('Class A Class I liquids in 93 m2 (10 x 9.3): 380 L in use and 760 L in use and storage; the unit caps are 1820 L; 930 m2 reaches the caps', [Math.round(q({}).useMax), Math.round(q({}).storeMax), q({area: 930}).useMax, q({area: 930}).storeMax], [380, 760, 1820, 1820]);
+  check('Class A combined Class I, II and IIIA: 76 L and 150 L per 9.3 m2 with caps of 3028 L and 6060 L', [Math.round(q({g: 1}).useMax), Math.round(q({g: 1}).storeMax), q({g: 1, area: 930}).useMax, q({g: 1, area: 930}).storeMax], [760, 1500, 3028, 6060]);
+  check('Classes B, C and D Class I: 20, 7.5 and 4 L in use and 38, 15 and 7.5 L in use and storage per 9.3 m2 (caps 1136, 570, 284 and 1820, 1136, 570)', [1, 2, 3].map(c => q({cl: c, area: 9.3}).useMax).concat([1, 2, 3].map(c => q({cl: c, area: 9.3}).storeMax), [1, 2, 3].map(c => q({cl: c, area: 9300}).useMax), [1, 2, 3].map(c => q({cl: c, area: 9300}).storeMax)), [20, 7.5, 4, 38, 15, 7.5, 1136, 570, 284, 1820, 1136, 570]);
+  check('floor reductions: B above the third floor 50 %; C and D 25 % on floors 4 to 6 and 50 % above the sixth; none below grade or for A', [q({cl: 1, st: 3, area: 9.3}).f, q({cl: 1, st: 4, area: 9.3}).f, q({cl: 2, st: 3}).f, q({cl: 2, st: 4}).f, q({cl: 3, st: 6}).f, q({cl: 3, st: 7}).f, q({cl: 2, st: 8, below: 1}).f, q({cl: 0, st: 9}).f], [1, 0.5, 1, 0.75, 0.75, 0.5, 1, 1]);
+  check('open systems limit the quantity in use to 10 % of the allowance; the totals are compared with the allowances', [Math.round(q({open: 1}).useLim), Math.round(q({}).useLim), q({open: 1, use: 38}).okUse, q({open: 1, use: 39}).okUse, q({use: 380, stock: 380}).okStore, q({use: 380, stock: 381}).okStore], [38, 380, true, false, true, false]);
+}
+let tt;
+w.renderCalc('nfpa45'); w.calcResult('nfpa45');
+tt = txt(w, 'xlb_results');
+check('the default page (Class B, second floor, 120 m2) shows 1 h, the permitted result and the 🔴 note', [tt.includes('1 h'), tt.includes('مسموح'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true]);
+set('xlb_c', '0'); set('xlb_bl', '1'); w.calcResult('nfpa45'); tt = txt(w, 'xlb_results');
+check('a Class A unit below grade is refused', [tt.includes('غير مسموح'), tt.includes('✘')], [true, true]);
+set('xlb_m', '1'); set('xlb_bl', '0'); set('xlb_c', '1'); w.calcResult('nfpa45'); tt = txt(w, 'xlb_results');
+check('the quantity mode shows 258 L in use and 490 L in use and storage and switches the groups', [tt.includes('258 L'), tt.includes('490 L'), doc.getElementById('xlb_g1').style.display === '', doc.getElementById('xlb_g0').style.display === 'none'], [true, true, true, true]);
+check('other reference codes open nfpa45 too', others('nfpa45', 'xlb_results'), [true, true, true]);
+}
+// ---------- part 236: NFPA 409-2016 aircraft hangars (`nfpa409`: hangar group, construction, clear space, foam-water and sprinkler protection flows and quantities) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xafCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({mode: 0, door: 7, tail: 6, area: 1800, t: 1, mem: 0, floors: 1, red: 0, glass: 20}, o));
+  check('group III for a door of 8.5 m or less and an area within the Type II (222) limit of 1858 m2; over it, group II up to 3716 m2', [a({}).group, a({area: 1858}).group, a({area: 1859}).group, a({area: 3716}).group, a({area: 3717}).group], [3, 3, 2, 2, 1]);
+  check('group I for a door over 8.5 m, a tail over 8.5 m or an area over 3716 m2; a membrane hangar is group IV; more than one story makes group II', [a({door: 9}).group, a({door: 8.5}).group, a({tail: 9}).group, a({area: 4000}).group, a({mem: 1, door: 9}).group, a({floors: 2}).group], [1, 3, 1, 1, 4, 2]);
+  check('Table 4.1.3 maxima in m2: I 2787, II (222) 1858, II (111) and III (211) and IV 1394, II (000) and III (200) 1115, V (111) 743, V (000) 465', [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => a({t: i}).max3), [2787, 1858, 1394, 1394, 1394, 1115, 1115, 743, 465]);
+  check('the area limit follows the type: Type V (000) 466 m2 is group II, 465 m2 is group III; Type I 2787 m2 is group III, 2788 m2 group II', [a({t: 8, area: 465}).group, a({t: 8, area: 466}).group, a({t: 0, area: 2787}).group, a({t: 0, area: 2788}).group], [3, 2, 3, 2]);
+  check('group I hangars must be Type I or Type II; types III, IV and V are refused; other groups are not constrained', [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => a({door: 9, t: i}).constrOk), [true, true, true, false, false, true, false, false, false]);
+  check('clear space: 15 m (50 ft) for Types I to IV and 23 m (75 ft) for Type V', [a({t: 0}).clear, a({t: 6}).clear, a({t: 7}).clear, a({t: 8}).clear], [15, 15, 23, 23]);
+  check('reductions: 3 h walls need no distance; a 2 h wall allows 7.5 m (25 ft); the full 2 h package with glass up to 25 % allows 7.5 m but 30 % glass keeps the full distance', [a({red: 1}).clear, a({red: 2}).clear, a({red: 3}).clear, a({red: 3, glass: 30}).clear, a({red: 3, glass: 30}).glassBad, a({red: 3, glass: 25}).glassBad, a({red: 3, glass: 30, t: 7}).clear], [0, 7.5, 7.5, 15, true, false, 23]);
+  const f = o => calc(Object.assign({mode: 1, grp: 1, sys: 0, area: 1200, foam: 0, pct: 3, asp: 1, supp: 0, wing: 150, ext: 0}, o));
+  check('group I deluge: 8.1 L/min/m2 with air aspirating devices (9720 L/min for 1200 m2), 6.5 L/min/m2 with AFFF non-aspirating (7800 L/min)', [Math.round(f({}).waterQ), f({}).foamRate, Math.round(f({asp: 0}).waterQ), f({asp: 0}).foamRate], [9720, 8.1, 7800, 6.5]);
+  check('deluge water supply lasts 60 min, 45 min with supplementary protection; one deluge system per 1394 m2 (3000 m2 needs 3)', [f({}).waterDur, f({supp: 1}).waterDur, f({}).nDeluge, f({area: 3000}).nDeluge, f({area: 1394}).nDeluge, f({area: 1395}).nDeluge], [60, 45, 1, 3, 1, 2]);
+  check('foam concentrate for 10 min: 9720 L/min x 10 x 3 % = 2916 L, with an equal reserve; the water volume for 60 min is 583 m3', [Math.round(f({}).conc), Math.round(f({}).concReserve), Math.round(f({}).waterVol), Math.round(f({pct: 6}).conc)], [2916, 2916, 583, 5832]);
+  check('supplementary protection is required for a wing area over 279 m2 only', [f({wing: 280}).suppReq, f({wing: 279}).suppReq, f({wing: 150}).suppReq], [true, false, false]);
+  check('group I closed-head sprinklers with low-level foam: 6.9 L/min/m2 over 1394 m2 for 45 min plus AFFF 4.1 or protein 6.5 L/min/m2 over the whole floor', [Math.round(f({sys: 1}).sprQ), f({sys: 1}).sprDur, Math.round(f({sys: 1}).foamQ), f({sys: 1, foam: 1}).foamQ, Math.round(f({sys: 1}).waterQ), f({sys: 1}).waterDur], [9619, 45, 4920, 7800, 14539, 45]);
+  check('group I high-expansion foam needs 0.9 m3/min/m2 (1080 m3/min for 1200 m2) and 12 min of concentrate; the maximum sprinkler system is 4831 m2', [Math.round(f({sys: 2}).hxQ), f({sys: 2}).foamQ, f({sys: 2}).foamDur, f({sys: 1, area: 5000}).sysTooBig, f({sys: 0, area: 5000}).sysTooBig, f({sys: 1, area: 4831}).sysTooBig], [1080, 0, 12, true, false, false]);
+  const g = o => calc(Object.assign({mode: 1, grp: 2, sys: 0, area: 1200, foam: 0, pct: 3, asp: 1, supp: 0, wing: 150, ext: 0}, o));
+  check('group II: deluge with air-aspirating devices reduces to 6.5 L/min/m2; closed-head sprinklers 6.9 L/min/m2 over 464.5 m2 for 30 min with foam solution water for 20 min', [g({}).foamRate, Math.round(g({}).waterQ), Math.round(g({sys: 1}).sprQ), g({sys: 1}).sprDur, g({sys: 1}).foamWaterDur, Math.round(g({sys: 1}).waterQ)], [6.5, 7800, 3205, 30, 20, 8125]);
+  check('group II high-expansion foam: water for 24 min; closed-head foam-water (AFFF) 6.5 L/min/m2 for 30 min in zones of 1393 m2', [g({sys: 2}).hxWaterDur, Math.round(g({sys: 2}).hxQ), g({sys: 3}).foamQ, g({sys: 3}).waterDur, g({sys: 3}).nZones, g({sys: 3, area: 3000}).nZones], [24, 1080, 7800, 30, 1, 3]);
+  check('hand hose: two lines at 227 L/min for 20 min need 454 L/min and 272 L of 3 % concentrate; the exterior hose allowance 1893 L/min is added when the supply is shared', [f({}).hoseQ, Math.round(f({}).hoseConc), Math.round(f({}).totalQ), Math.round(f({ext: 1}).totalQ), Math.round(f({}).ext)], [454, 272, 10174, 12067, 0]);
+}
+let tt;
+w.renderCalc('nfpa409'); w.calcResult('nfpa409');
+tt = txt(w, 'xaf_results');
+check('the default page shows group II (2000 m2 over the 1858 m2 Type II limit), 15.0 m clear space and the 🔴 note', [tt.includes('المجموعة II'), tt.includes('15.0 m'), tt.includes('2 h / 1 h'), tt.includes('🔴')], [true, true, true, true]);
+set('xaf_d', '9'); w.calcResult('nfpa409'); tt = txt(w, 'xaf_results');
+check('a 9 m door makes group I and Type II (222) is accepted', [tt.includes('ارتفاع باب الطائرات أكثر من 8.5 m'), tt.includes('مقبول')], [true, true]);
+set('xaf_t', '7'); w.calcResult('nfpa409'); tt = txt(w, 'xaf_results');
+check('Type V under group I is refused and the distance becomes 23.0 m', [tt.includes('غير مقبول'), tt.includes('23.0 m')], [true, true]);
+set('xaf_m', '1'); w.calcResult('nfpa409'); tt = txt(w, 'xaf_results');
+check('the protection mode shows 9720 L/min, the 2916 L of concentrate and switches the groups', [tt.includes('9720 L/min'), tt.includes('2916 L'), doc.getElementById('xaf_g1').style.display === '', doc.getElementById('xaf_g0').style.display === 'none'], [true, true, true, true]);
+set('xaf_gr', '1'); w.calcResult('nfpa409'); tt = txt(w, 'xaf_results');
+check('group II shows the 6.5 L/min/m2 reduced rate and its selector', [tt.includes('6.5 L/min/m²'), doc.getElementById('xaf_s2').style.display === '', doc.getElementById('xaf_s1').style.display === 'none'], [true, true, true]);
+check('other reference codes open nfpa409 too', others('nfpa409', 'xaf_results'), [true, true, true]);
+}
+// ---------- part 237: NFPA 502-2014 road tunnels (`nfpa502`: tunnel category and provisions by length, critical velocity by iteration with the design fire sizes) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xtnCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 1e-6);
+{
+  check('tunnel categories: X below 90 m, A from 90 m, B from 240 m only when the farthest point from safety exceeds 120 m, C from 300 m, D from 1000 m', [[89, 0], [90, 0], [239, 200], [240, 100], [240, 130], [299, 130], [300, 0], [999, 0], [1000, 0]].map(p => J('xtnCat(' + p[0] + ',' + p[1] + ')')), [0, 1, 1, 1, 2, 2, 3, 3, 4]);
+  const a = o => calc(Object.assign({mode: 0, L: 600, dmax: 300, sup24: 1}, o));
+  check('a 600 m tunnel is category C: standpipe, alarm boxes every 90 m (7), extinguishers (7), hose connections every 85 m (8), one intermediate exit for 300 m spacing, 24 direction signs, 40 detection zones', [a({}).cat, a({}).standpipe, a({}).nBox, a({}).nExt, a({}).nHose, a({}).nExit, a({}).nSign, a({}).nZone], [3, true, 7, 7, 8, 1, 24, 40]);
+  check('category C and D make fixed water-based systems conditionally mandatory; below 1000 m emergency ventilation is optional, at 1000 m and over it is required', [a({}).fixed, a({L: 200, dmax: 100}).fixed, a({L: 999}).vent, a({L: 1000}).vent, a({L: 1000}).cat, a({L: 999}).ventOpt], [true, false, false, true, 4, true]);
+  check('detection is required in a category B, C or D tunnel without 24-hour supervision; a category A tunnel needs a standpipe but no alarm boxes or exits', [a({sup24: 0}).detect, a({sup24: 1}).detect, a({L: 150, dmax: 70, sup24: 0}).detect, a({L: 150, dmax: 70}).standpipe, a({L: 150, dmax: 70}).alarmBox, a({L: 150, dmax: 70}).nExit, a({L: 50, dmax: 25}).standpipe], [true, false, false, true, false, 0, false]);
+  check('traffic is stopped by full controls beyond 240 m; the exit spacing is 300 m and the sign spacing 25 m', [a({L: 241}).trafficFull, a({L: 240, dmax: 130}).trafficFull, a({}).exitSpace, a({L: 200, dmax: 130}).exitSpace], [true, false, 300, 200]);
+  const v = o => calc(Object.assign({mode: 1, f: 3, q: 20, h: 5, a: 60, t: 20, kg: 1}, o));
+  const ref = (Q, H, A, T, Kg) => { const TK = T + 273.15, rho = 353 / TK; let Vc = 3; for (let i = 0; i < 500; i++) { const Tf = Q * 1000 / (rho * 1.005 * A * Vc) + TK; Vc = 0.5 * Vc + 0.5 * 0.606 * Kg * Math.pow(9.81 * H * Q * 1000 / (rho * 1.005 * A * Tf), 1 / 3); } return Vc; };
+  check('the design fires: car 5 MW, several cars 15, bus 30, heavy goods vehicle 150, flammable tanker 300; a typed value is used for the last option', [0, 1, 2, 3, 4].map(i => v({f: i}).q), [5, 15, 30, 150, 300]);
+  check('the heavy goods vehicle (150 MW, 5 m, 60 m2, 20 C) gives about 2.9 m/s and matches the independent iteration', [near(v({}).vc, ref(150, 5, 60, 20, 1), 1e-4), v({}).vc > 2.7 && v({}).vc < 3.1], [true, true]);
+  check('both equations hold at the solution: Tf = Q/(rho Cp A Vc) + T and Vc = K1 Kg (g H Q / (rho Cp A Tf))^(1/3)', [near(v({}).check1, v({}).tf, 1e-6), near(v({}).check2, v({}).vc, 1e-6), near(v({f: 5, q: 30}).vc, ref(30, 5, 60, 20, 1), 1e-4), v({f: 5, q: 30}).name], [true, true, true, 'معدل إطلاق حرارة مدخل']);
+  check('the critical velocity rises with the fire, with the tunnel height, with the grade factor, and falls with a larger area', [v({f: 0}).vc < v({f: 1}).vc, v({f: 1}).vc < v({f: 3}).vc, v({h: 6}).vc > v({}).vc, v({kg: 1.2}).vc >= v({}).vc * 1.2 - 1e-9 && v({kg: 1.2}).vc < v({}).vc * 1.3, v({a: 90}).vc < v({}).vc], [true, true, true, true, true]);
+  check('airflow is velocity times the area and the density follows 353 / T', [near(v({}).flow, v({}).vc * 60, 1e-9), near(v({t: 20}).rho, 353 / 293.15, 1e-9), near(v({t: 40}).rho, 353 / 313.15, 1e-9)], [true, true, true]);
+}
+let tt;
+w.renderCalc('nfpa502'); w.calcResult('nfpa502');
+tt = txt(w, 'xtn_results');
+check('the default page shows category C, 7 alarm boxes, 8 hose connections, the 300 m exit spacing and the 🔴 note', [tt.includes('C (300 m فأكثر)'), tt.includes('≥ 7'), tt.includes('8 توصيلة'), tt.includes('300 m'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xtn_l', '1200'); w.calcResult('nfpa502'); tt = txt(w, 'xtn_results');
+check('1200 m is category D with required emergency ventilation and 3 intermediate exits', [tt.includes('D (1000 m فأكثر)'), tt.includes('مطلوبة'), tt.includes('3 مخرج وسيط')], [true, true, true]);
+set('xtn_m', '1'); w.calcResult('nfpa502'); tt = txt(w, 'xtn_results');
+check('the critical velocity mode shows the m/s value, the fire gas temperature and switches the groups', [/\d\.\d\d m\/s/.test(tt), tt.includes('°C'), tt.includes('150 MW'), doc.getElementById('xtn_g1').style.display === '', doc.getElementById('xtn_g0').style.display === 'none'], [true, true, true, true, true]);
+check('other reference codes open nfpa502 too', others('nfpa502', 'xtn_results'), [true, true, true]);
+}
+// ---------- part 238: NFPA 1-2015 chapter 18 (`nfpa1ff`: required fire flow and duration by construction type and area, sprinkler and separation reductions, hydrant count and spacing, fire apparatus access roads) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xfrCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.5);
+{
+  const fl = (t, a) => J('xfrFlow(' + t + ',' + a + ')');
+  check('Table 18.4.5.2.1, Type I (443)/(332)/II (222): up to 22,700 ft2 gives 1500 gpm; 22,701 gives 1750; 295,900 gives 5750; over gives 6000', [fl(0, 22700), fl(0, 22701), fl(0, 30200), fl(0, 295900), fl(0, 295901)], [1500, 1750, 1750, 5750, 6000]);
+  check('Type II (111)/III (211): 12,700 ft2 is 1500 gpm, 166,500 is 5750, over is 6000; Type IV (2HH)/V (111): 8,200 is 1500, 12,901 is 2250, 191,400 is 7750, over is 8000', [fl(1, 12700), fl(1, 12701), fl(1, 166500), fl(1, 166501), fl(2, 8200), fl(2, 12901), fl(2, 191400), fl(2, 191401)], [1500, 1750, 5750, 6000, 1500, 2250, 7750, 8000]);
+  check('Type II (000)/III (200): 5,900 ft2 is 1500 gpm, 5,901 is 1750, 138,300 is 7750; Type V (000): 3,600 is 1500, 3,601 is 1750, 85,100 is 7750, over is 8000', [fl(3, 5900), fl(3, 5901), fl(3, 138300), fl(3, 138301), fl(4, 3600), fl(4, 3601), fl(4, 85100), fl(4, 85101)], [1500, 1750, 7750, 8000, 1500, 1750, 7750, 8000]);
+  check('the duration is 2 h below 3000 gpm, 3 h from 3000 to 3999 and 4 h from 4000', [1500, 2750, 3000, 3750, 4000, 8000].map(q => J('xfrDur(' + q + ')')), [2, 2, 3, 3, 4, 4]);
+  check('the hydrant credit is 1500 gpm within 250 ft, 1000 gpm within 500 ft, 750 gpm within 1000 ft and none beyond', [250, 250.1, 500, 501, 1000, 1001].map(d => J('xfrCap(' + d + ')')), [1500, 1000, 1000, 750, 750, 0]);
+  const a = o => calc(Object.assign({mode: 0, t: 3, area: 3000, dw: 0, spr: 0, qr: 0, sep: 0, park: 0}, o));
+  check('3000 m2 (32,292 ft2) of Type II (000) needs 3750 gpm (14,195 L/min) for 3 h; the fire-flow area note differs for Type I', [Math.round(a({}).ft2), a({}).tbl, a({}).q, Math.round(a({}).lpm), a({}).dur, a({t: 0}).areaNote !== a({}).areaNote], [32292, 3750, 3750, 14195, 3, true]);
+  check('a building sprinklered throughout takes 75 % off but not under 1000 gpm (600 gpm with quick-response sprinklers), not over 2000 gpm, for 2 h', [a({spr: 1}).q, a({spr: 1}).dur, a({spr: 1, qr: 1}).q, a({t: 4, area: 20000}).q, a({t: 4, area: 20000, spr: 1}).q, a({spr: 1, area: 100000}).q], [1000, 2, 937.5, 8000, 2000, 2000]);
+  check('an open parking structure of Type I or II with a Class I standpipe takes 75 % off down to 1000 gpm', [a({park: 1}).q, a({park: 1, t: 4, area: 20000}).q, a({park: 1, spr: 1}).q], [1000, 2000, 1000]);
+  check('a dwelling up to 5000 ft2 needs 1000 gpm for 1 h; sprinklers take 75 % off down to 500 gpm; separation takes 25 % or 40 %; the floor is 500 gpm', [a({dw: 1, area: 300}).q, a({dw: 1, area: 300}).dur, a({dw: 1, area: 300, spr: 1}).q, a({dw: 1, area: 300, sep: 1}).q, a({dw: 1, area: 300, sep: 2}).q, a({dw: 1, area: 300, spr: 1, sep: 2}).q], [1000, 1, 500, 750, 600, 500]);
+  check('a dwelling over 5000 ft2 follows the table (600 m2 of Type II (000) is 1750 gpm for 2 h); sprinklers cut it to 500 gpm for 1 h; a 2000 m2 Type V (000) house needs 4000 gpm, 1000 gpm sprinklered, 2400 gpm with 40 % separation', [a({dw: 1, area: 600}).q, a({dw: 1, area: 600}).dur, a({dw: 1, area: 600, spr: 1}).q, a({dw: 1, area: 600, spr: 1}).dur, a({dw: 1, t: 4, area: 2000}).q, a({dw: 1, t: 4, area: 2000, spr: 1}).q, a({dw: 1, t: 4, area: 2000, sep: 2}).q], [1750, 2, 500, 1, 4000, 1000, 2400]);
+  check('the water volume is flow times duration: 3750 gpm for 3 h is 2555 m3', [Math.round(a({}).volume), near(a({}).incr, 7500, 0.001)], [2555, true]);
+  const h = o => calc(Object.assign({mode: 1, q: 3000, dh: 100, sp: 120, dwl: 0, hr: 2, w: 6.5, cl: 4.5, de: 30, dd: 10, wd: 40, spr: 0, spr13: 0}, o));
+  check('3000 gpm with hydrants at 100 m (328 ft) needs 3 hydrants; at 70 m 2; at 200 m 4; beyond 305 m they do not count', [h({}).n, h({dh: 70}).n, h({dh: 200}).n, h({dh: 400}).n, h({dh: 400}).cap], [3, 2, 4, 0, 0]);
+  check('hydrant distances: 400 ft (122 m) to the building and 500 ft (152 m) between hydrants; houses 600 ft (183 m) and 800 ft (244 m)', [h({}).okDist, h({dh: 125}).okDist, h({dh: 125, dwl: 1}).okDist, h({}).okSp, h({sp: 160}).okSp, h({sp: 160, dwl: 1}).okSp], [true, false, true, true, false, true]);
+  check('access road: 6.1 m wide, 4.1 m clear, hydrant within 3.7 m of the road, dead end over 46 m needs a turnaround', [h({}).okWidth, h({w: 6}).okWidth, h({}).okClear, h({cl: 4}).okClear, h({hr: 3.7}).okRoad, h({hr: 4}).okRoad, h({de: 46}).deadEnd, h({de: 47}).deadEnd], [true, false, true, false, true, false, false, true]);
+  check('the road reaches within 15 m of an exterior door (46 m for sprinklered dwellings) and within 46 m of the first-floor wall (137 m sprinklered)', [h({}).okDoor, h({dd: 16}).okDoor, h({dd: 40, spr13: 1}).okDoor, h({}).okWall, h({wd: 50}).okWall, h({wd: 130, spr: 1}).okWall, h({wd: 140, spr: 1}).okWall], [true, false, true, true, false, true, false]);
+  check('hydrants are not required where the network gives 500 gpm or less', [h({q: 500}).rural, h({q: 501}).rural], [true, false]);
+}
+let tt;
+w.renderCalc('nfpa1ff'); w.calcResult('nfpa1ff');
+tt = txt(w, 'xfr_results');
+check('the default page shows 3750 gpm, 14195 L/min, 3 h and the 🔴 note', [tt.includes('3750 gpm'), tt.includes('14195 L/min'), tt.includes('3 h'), tt.includes('🔴')], [true, true, true, true]);
+set('xfr_sp', '1'); w.calcResult('nfpa1ff'); tt = txt(w, 'xfr_results');
+check('sprinklers throughout give 1000 gpm for 2 h and the larger-demand note', [tt.includes('1000 gpm'), tt.includes('2 h'), tt.includes('الأكبر من الطلبين')], [true, true, true]);
+set('xfr_m', '1'); w.calcResult('nfpa1ff'); tt = txt(w, 'xfr_results');
+check('the hydrant mode shows 3 hydrants and switches the groups', [tt.includes('≥ 3'), tt.includes('6.1 m'), doc.getElementById('xfr_g1').style.display === '', doc.getElementById('xfr_g0').style.display === 'none'], [true, true, true, true]);
+check('other reference codes open nfpa1ff too', others('nfpa1ff', 'xfr_results'), [true, true, true]);
+}
+// ---------- part 239: NFPA 211-2016 chimneys (`nfpa211`: chimney class by flue gas temperature, connector clearance with clearance-reduction systems, masonry chimney construction) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xchCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({mode: 0, t: 300, res: 1}, o));
+  check('flue gas up to 538 C: column I for residential appliances and column II otherwise; up to 760 C column III; up to 982 C column IV; above column V', [a({}).k, a({res: 0}).k, a({t: 538}).k, a({t: 539}).k, a({t: 760}).k, a({t: 761}).k, a({t: 982}).k, a({t: 983}).k], [0, 1, 0, 2, 2, 3, 3, 4]);
+  check('the chimney types: column I two, column II three; higher columns also serve lower ones', [a({}).types.length, a({res: 0}).types.length, a({t: 900}).types.length, a({}).higher.length, a({t: 983}).higher.length, a({t: 983}).label.startsWith('العمود V')], [2, 3, 3, 4, 0, true]);
+  check('the temperature is shown in Fahrenheit: 538 C is 1000 F', [Math.round(a({t: 538}).tF), Math.round(a({t: 760}).tF)], [1000, 1400]);
+  const c = o => calc(Object.assign({mode: 1, c: 0, p: 5, ceil: 0}, o));
+  check('Table 9.5.1.1 clearances in inches: gas without draft hood 18, unlisted gas with draft hood 9, listed gas with draft hood 6, low-heat unit heater with draft hood 6, medium-heat 36', [0, 3, 6, 11, 13].map(i => c({c: i}).cunIn), [18, 9, 6, 6, 36]);
+  check('a 24-gauge sheet metal shield with ventilated air space cuts 18 in. to 6.12 in. (155 mm) on a wall and to 9 in. (229 mm) on a ceiling', [near(c({}).cpr, 6.12), Math.round(c({}).cprMm), c({}).R, c({ceil: 1}).cpr, Math.round(c({ceil: 1}).cprMm), c({ceil: 1}).R], [true, 155, 66, 9, 229, 50]);
+  check('Cpr = Cun (1 - R/100): 9 in. with 66 % is 3.06 in.; 36 in. is 12.24 in.; unprotected stays 18 in.; insulation board without air space 50 %: 9 in.', [near(c({c: 3}).cpr, 3.06), near(c({c: 13}).cpr, 12.24), c({p: 0}).cpr, c({p: 2}).cpr, near(c({p: 2, ceil: 1}).cpr, 12.06), near(c({p: 2, ceil: 1}).cprMm, 306.3, 0.1)], [true, true, 18, 9, true, true]);
+  check('3.5 in. masonry without air space gives 33 % on a wall (12.06 in.) and cannot be used as a ceiling protector; with ventilated air space 66 % on a wall only', [c({p: 1}).R, near(c({p: 1}).cpr, 12.06), c({p: 1, ceil: 1}).na, c({p: 4}).R, c({p: 4, ceil: 1}).na, c({p: 5, ceil: 1}).na], [33, true, true, 66, true, false]);
+  check('the table minimums for 18 in. are 12, 9 and 6 in. on walls and 12 and 9 in. on ceilings; ventilation is required except for the first three protections', [c({p: 1}).min, c({p: 2}).min, c({p: 5}).min, c({p: 2, ceil: 1}).min, c({p: 5, ceil: 1}).min, c({p: 1}).ventilated, c({p: 5}).ventilated, c({p: 0}).hasR], [12, 9, 6, 12, 9, false, true, false]);
+  const m = o => calc(Object.assign({mode: 2, m: 0, h: 1, hn: 0.8, wt: 200, stone: 0}, o));
+  check('Table 7.2 wall thickness: residential 102 mm, low-heat 203, medium-heat 203; rubble stone 305 mm; liner 16 mm of fireclay for the first two and 114 mm of fireclay brick above', [0, 1, 2, 3].map(i => m({m: i}).brick), [102, 203, 203, 203]);
+  check('liners: 16 mm fireclay for residential and low-heat, 114 mm fireclay brick for medium and high-heat; mortar medium duty up to medium-heat and high duty for high-heat', [0, 1, 2, 3].map(i => m({m: i}).linerT).concat([0, 3].map(i => m({m: i}).mortar)), [16, 16, 114, 114, 'متوسط التحمل', 'عالي التحمل']);
+  check('termination: 0.91 m above the roof and 0.61 m above structures within 3.05 m for residential and low-heat; 3.05 m within 7.6 m for medium-heat; 6.1 m within 15.2 m for high-heat', [0, 1, 2, 3].map(i => m({m: i}).term).concat([0, 2, 3].map(i => m({m: i}).nearD)), [0.91, 0.91, 3.05, 6.1, 3.05, 7.6, 15.2]);
+  check('air space: 51 mm inside and 25 mm outside for residential; 51 / 51 for low-heat; 102 / 102 for medium-heat; high-heat takes the double wall rule', [0, 1, 2].map(i => m({m: i}).airIn).concat([0, 1, 2].map(i => m({m: i}).airOut), [m({m: 3}).double, m({m: 0}).double]), [51, 51, 102, 25, 51, 102, true, false]);
+  check('compliance: a 0.91 m termination, a 0.61 m clearance over nearby structures and a 102 mm wall pass for residential; shorter or thinner do not', [m({wt: 102}).okTop, m({h: 0.9}).okTop, m({hn: 0.6}).okNear, m({hn: 0.61}).okNear, m({wt: 101}).okWall, m({wt: 102}).okWall, m({stone: 1, wt: 200}).okWall, m({stone: 1, wt: 305}).okWall], [true, false, false, true, false, true, false, true]);
+}
+let tt;
+w.renderCalc('nfpa211'); w.calcResult('nfpa211');
+tt = txt(w, 'xch_results');
+check('the default page (300 C, residential) shows column I, the two chimney types and the 🔴 note', [tt.includes('العمود I'), tt.includes('572 °F') || tt.includes('°F'), tt.includes('مدخنة بناء من النوع السكني'), tt.includes('🔴')], [true, true, true, true]);
+set('xch_m', '1'); w.calcResult('nfpa211'); tt = txt(w, 'xch_results');
+check('the connector mode shows 6.1 in. for the 24-gauge shield, 66 %, and switches the groups', [tt.includes('6.1 in.'), tt.includes('66 %'), tt.includes('Cpr') || tt.includes('(1 − 66 / 100)'), doc.getElementById('xch_g1').style.display === '', doc.getElementById('xch_g0').style.display === 'none'], [true, true, true, true, true]);
+set('xch_m', '2'); w.calcResult('nfpa211'); tt = txt(w, 'xch_results');
+check('the masonry mode shows the 102 mm wall, 16 mm liner, 0.91 m termination and passes the default checks', [tt.includes('102 mm'), tt.includes('16 mm'), tt.includes('0.91 m'), tt.includes('✔'), doc.getElementById('xch_g2').style.display === ''], [true, true, true, true, true]);
+check('other reference codes open nfpa211 too', others('nfpa211', 'xch_results'), [true, true, true]);
+}
+// ---------- part 240: NFPA 31-2016 fuel oil tanks (`nfpa31`: vent opening size, tank location and maximum capacity, clearances to flames and property lines, tank room door rating) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xoiCalc(' + JSON.stringify(o) + ')');
+{
+  const vg = g => J('xoiVent(' + g + ')');
+  check('Table 7.2.5.1: up to 660 gal 1.25 in.; 661 to 3000 gal 1.5 in.; to 10,000 gal 2 in.; to 20,000 gal 2.5 in.; to 35,000 gal 3 in.; beyond the table nothing', [660, 661, 3000, 3001, 10000, 10001, 20000, 20001, 35000, 35001].map(vg), [1.25, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3, 0]);
+  const a = o => calc(Object.assign({cap: 2000, loc: 4, eng: 0, low: 1, dp: 2, df: 2, bar: 0}, o));
+  check('the vent size follows the capacity in litres: 2000 L (528 gal) 1.25 in.; 3000 L (792 gal) 1.5 in.; 12,000 L (3170 gal) 2 in.; and the metric size is the inches times 25.4', [a({}).vent, a({cap: 3000}).vent, a({cap: 12000}).vent, Math.round(a({}).ventMm), Math.round(a({cap: 12000}).gal)], [1.25, 1.5, 2, 32, 3170]);
+  check('an outside tank up to 1040 L needs 1.5 m from the property line, up to 2500 L 3 m, and a larger one falls under NFPA 30', [a({loc: 0, cap: 1000, dp: 1.5}).pass, a({loc: 0, cap: 1000, dp: 1.4}).pass, a({loc: 0, cap: 2000, dp: 3}).pass, a({loc: 0, cap: 2000, dp: 2.9}).pass, a({loc: 0, cap: 3000, dp: 50}).pass, a({loc: 0, cap: 1000}).reqDist, a({loc: 0, cap: 2000}).reqDist], [true, false, true, false, false, 1.5, 3]);
+  check('an underground tank must be 0.3 m from a basement wall, pit or property line', [a({loc: 5, dp: 0.3}).pass, a({loc: 5, dp: 0.2}).pass], [true, false]);
+  check('inside without a dedicated room: up to 5000 L (non-engineered) or 5200 L (engineered); above that fails', [a({cap: 5000}).pass, a({cap: 5100}).pass, a({cap: 5100, eng: 1}).pass, a({cap: 5300, eng: 1}).pass, a({cap: 5000}).over, a({cap: 5100}).over, a({cap: 5100, eng: 1}).lim], [true, false, true, false, false, true, 5200]);
+  check('a dedicated room of 1 or 2 hours has the same limit; a 3-hour room may exceed it', [a({loc: 1, cap: 5100}).pass, a({loc: 2, cap: 5100}).pass, a({loc: 3, cap: 9000}).pass, a({loc: 1, cap: 4000}).pass], [false, false, true, true]);
+  check('on an upper floor a tank is limited to 2500 L (660 gal)', [a({low: 0, cap: 2500}).pass, a({low: 0, cap: 3000}).pass, a({low: 1, cap: 3000}).pass], [true, false, true]);
+  check('a tank of 38 to 5000 L needs 1.5 m from an open flame or burner unless a 1-hour barrier is provided; a smaller one 0.6 m from an ignition source', [a({df: 1.5}).pass, a({df: 1}).pass, a({df: 1, bar: 1}).pass, a({cap: 30, df: 0.5}).pass, a({cap: 30, df: 0.6}).pass, a({cap: 30}).small, a({cap: 38}).medium, a({cap: 5000}).medium, a({cap: 5001}).medium], [true, false, true, false, true, true, true, true, false]);
+  check('the tank room door: 1.5 h for a 2-hour room, 3 h for a 3-hour room, and a listed self-closing door for a 1-hour room; only rooms have doors', [a({loc: 2}).door, a({loc: 3}).door, a({loc: 1}).door, a({loc: 1}).room, a({loc: 4}).room, a({loc: 0}).room, a({loc: 5}).room], [1.5, 3, 0, true, false, false, false]);
+}
+let tt;
+w.renderCalc('nfpa31'); w.calcResult('nfpa31');
+tt = txt(w, 'xoi_results');
+check('the default page (2000 L inside, not in a dedicated room) shows the 1.25 in. vent, the compliant result and the 🔴 note', [tt.includes('1.25 in.'), tt.includes('متوافق'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true]);
+set('xoi_c', '6000'); w.calcResult('nfpa31'); tt = txt(w, 'xoi_results');
+check('6000 L inside without a room exceeds the limit', [tt.includes('غير متوافق'), tt.includes('✘')], [true, true]);
+set('xoi_l', '2'); w.calcResult('nfpa31'); tt = txt(w, 'xoi_results');
+check('a 2-hour room shows the 1.5 h door and the 150 mm sill', [tt.includes('1.5 h'), tt.includes('150 mm')], [true, true]);
+set('xoi_l', '0'); w.calcResult('nfpa31'); tt = txt(w, 'xoi_results');
+check('an outside tank larger than 2500 L refers to NFPA 30 chapter 22 and the distance field is shown', [tt.includes('الفصل 22 من NFPA 30'), doc.getElementById('xoi_dpf').style.display === '', doc.getElementById('xoi_dff').style.display === 'none'], [true, true, true]);
+check('other reference codes open nfpa31 too', others('nfpa31', 'xoi_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
