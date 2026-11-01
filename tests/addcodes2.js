@@ -2759,6 +2759,70 @@ set('xsj_m', '2'); w.calcResult('syrserv'); tt = txt(w, 'xsj_results');
 check('the exemption mode shows 0.909 % and 1.071 %', [tt.includes('0.909 %'), tt.includes('1.071 %')], [true, true]);
 check('other reference codes open syrserv too', others('syrserv', 'xsj_results'), [true, true, true]);
 }
+// ---------- part 277: Syrian Arab Code for reinforced concrete (4th ed.) clauses 9-2-3 and 9-2-4 (`syrax`: short columns in simple compression with ties or spirals, minimum eccentricity and slenderness, simple tension) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsxCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({shape: 0, b: 400, h: 400, dd: 400, fc: 25, fy: 420, as: 2400, sp: 0, Pu: 1800, dk: 340, asl: 78.5, pitch: 60, fyp: 420, hdir: 400, L0: 3500, ir: 115, NT: 300, asT: 1000}, o));
+  check('tied short column 400 x 400, 8.9 % ... 1.5 % steel: Nu = 0.8 x 0.65 x (0.85 x 25 x 160 000 + 420 x 2400) / 1000 = 0.52 x 4408 = 2292.2 kN; a circular 400 mm section has 125 664 mm2', [a({}).gross, near(a({}).rho, 0.015, 1e-9), near(a({}).NuTied, 2292.16, 0.01), near(a({shape: 1}).gross, 125663.7, 0.1), a({}).om], [160000, true, true, true, 0.65]);
+  check('spiral column: A\'k = pi x 340^2 / 4 = 90 792 mm2; Asp = pi dk as / s = 1397.6 mm2; Nu = 0.85 x 0.65 x (0.85 x 25 x A\'k + fy A\'s + 2.5 fyp Asp) = 2433.6 kN, below 1.5 x 2292 so no cap', [near(a({}).Ak, 90792.0, 1), near(a({}).Asp, 1397.6, 0.5), near(a({}).NuSpiral, 2433.6, 0.5), a({}).capApplied, near(a({sp: 1}).Nu, a({}).NuSpiral), near(a({}).NuSpiralCap, a({}).NuSpiral, 1e-9)], [true, true, true, false, true, true]);
+  check('the spiral capacity is limited to 1.5 times the tied one: a very closely spaced spiral (pitch 5 mm) is capped at 1.5 x 2292.16 = 3438.2 kN', [a({pitch: 5}).capApplied, near(a({pitch: 5}).NuSpiralCap, 3438.24, 0.02), near(a({pitch: 5, sp: 1}).Nu, 3438.24, 0.02)], [true, true, true]);
+  check('load check: Pu 1800 against 2292 passes (ratio 0.785), 2400 fails; steel needed for Pu 1800 is (1 800 000 / 0.52 - 3 400 000) / 420 = 146.5 mm2 (zero when the concrete alone is enough), limits 0.01 and 0.025 (0.035 from 30 MPa) of the gross area', [a({}).okN, near(a({}).ratio, 0.78535, 1e-4), a({Pu: 2400}).okN, near(a({}).AsReq, 146.5, 0.1), a({Pu: 1000}).AsReq, a({}).AsMin, a({}).AsMax, near(a({fc: 30}).AsMax, 5600), a({}).okRho, a({as: 1000}).okRho, a({as: 4500}).okRho], [true, true, false, true, 0, 1600, 4000, true, true, false, false]);
+  check('spiral steel needed: for Pu 3000 the spiral column needs less longitudinal steel than the tied column and never a negative area', [a({sp: 1, Pu: 3000}).AsReq >= 0, a({sp: 1, Pu: 3000}).AsReq < a({Pu: 3000}).AsReq], [true, true]);
+  check('minimum eccentricity: the larger of 25 mm and 0.08 x 400 = 32 mm; 25 mm for a 300 mm section (24 mm); 0.08 x 500 = 40 mm; Mu,min = 1800 x 32 / 1000 = 57.6 kN.m; a circular column uses its diameter', [a({}).eMin, a({hdir: 300}).eMin, a({hdir: 500}).eMin, near(a({}).MuMin, 57.6, 1e-9), a({shape: 1, dd: 500}).eMin], [32, 25, 40, true, 40]);
+  check('slenderness: lambda = 3500 / 115 = 30.4 is short; 40 is the limit (4600 / 115 = 40 short, 4700 / 115 = 40.9 long)', [near(a({}).lam, 30.4348, 1e-3), a({}).short, a({L0: 4600}).short, a({L0: 4700}).short], [true, true, true, false]);
+  check('simple tension: As = 300 000 / (0.9 x 420) = 793.7 mm2; 1000 mm2 resists 0.9 x 1000 x 420 = 378 kN: passes, 400 kN fails', [a({}).omT, near(a({}).AsT, 793.65, 0.01), near(a({}).NT, 378, 1e-9), a({}).okT, a({NT: 400}).okT], [0.9, true, true, true, false]);
+}
+let tt;
+w.renderCalc('syrax'); w.calcResult('syrax');
+tt = txt(w, 'xsx_results');
+check('the default page shows 160000 mm², 1.50 %, 2292.2 kN, 1800.0 kN and the 🔴 note', [tt.includes('160000 mm²'), tt.includes('1.50 %'), tt.includes('2292.2 kN'), tt.includes('1800.0 kN'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xsx_sp', '1'); w.calcResult('syrax'); tt = txt(w, 'xsx_results');
+check('the spiral option shows 1397 mm² and 2433.6 kN', [tt.includes('1397 mm²'), tt.includes('2433.6 kN')], [true, true]);
+set('xsx_m', '1'); w.calcResult('syrax'); tt = txt(w, 'xsx_results');
+check('the eccentricity mode shows 32.0 mm, 57.60 kN·m and 30.4 and hides the compression group', [tt.includes('32.0 mm'), tt.includes('57.60 kN·m'), tt.includes('30.4'), doc.getElementById('xsx_g0').style.display === 'none'], [true, true, true, true]);
+set('xsx_m', '2'); w.calcResult('syrax'); tt = txt(w, 'xsx_results');
+check('the tension mode shows 794 mm² and 378.0 kN', [tt.includes('794 mm²'), tt.includes('378.0 kN')], [true, true]);
+check('other reference codes open syrax too', others('syrax', 'xsx_results'), [true, true, true]);
+}
+// ---------- part 278: Syrian Arab Code for reinforced concrete (4th ed.) chapter 8 clauses 8-3 and 8-4 (`syrstruct`: load transfer from slabs to beams Table 8-1, approximate coefficients for continuous beams Fig. 8-6, equivalent factor ke Table 8-2, two-way slab load distribution Tables 8-7 / 8-9 / 8-10) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsoCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({lx: 4, ly: 6, w: 10, spans: 1, nspan: 2, l1: 5, l2: 5, wu: 30, wd: 15, wl: 10, fl: 0, pos: 0, solid: 0, c1: 0, c2: 0, L1: 6, L2: 4.5, kind: 0, wt: 12, lv: 3, adj: 1, Lc: 4.5}, o));
+  check('Table 8-1: ly / lx = 1.0 gives alpha 0.667 and beta 0.50; 1.5 gives 0.851 and 0.667; 2.0 gives 0.917 and 0.75; 1.25 interpolates to 0.7845 and 0.599; 1.5 for the default 4 x 6', [near(a({ly: 4}).alpha, 0.667), near(a({ly: 4}).beta, 0.5), near(a({}).alpha, 0.851), near(a({}).beta, 0.667), near(a({ly: 8}).alpha, 0.917), near(a({ly: 8}).beta, 0.75), near(a({ly: 5}).alpha, 0.7845, 1e-4), near(a({ly: 5}).beta, 0.599, 1e-4)], [true, true, true, true, true, true, true, true]);
+  check('equivalent loads: we1 = alpha w lx / 2 = 0.851 x 10 x 4 / 2 = 17.02 kN/m and we2 = 0.667 x 20 = 13.34 kN/m; a ratio above 2 is a one-way slab with w lx / 2 = 20 kN/m on both', [near(a({}).we1, 17.02, 1e-3), near(a({}).we2, 13.34, 1e-3), a({}).twoWay, a({ly: 9}).twoWay, a({ly: 9}).we1, a({ly: 9}).we2], [true, true, true, false, 20, 20]);
+  check('one-way slab reactions: w l / 2 = 20; 1.1 x 20 = 22 for three or more spans; 1.15 x 20 = 23 for two spans', [a({}).oneRea, a({}).oneReaCont, a({}).oneReaCont2, a({spans: 2}).wSup, a({spans: 3}).wSup, a({spans: 1}).wSup], [20, 22, 23, 1.15, 1.1, 1]);
+  check('continuous beam of two spans (Fig. 8-6 a): negative moments wL2/24, wL2/9, wL2/24 = 31.25, 83.33, 31.25 kN.m for wu 30 and 5 m; positive wL2/11 = 68.18; shear 0.9 and 1.2 w l / 2 = 67.5 and 90; reactions 0.45, 1.15 and 0.45 w L = 67.5, 172.5, 67.5', [a({}).mNeg.map(x => +x.toFixed(2)), a({}).mPos.map(x => +x.toFixed(2)), a({}).V, a({}).R, a({}).three], [[31.25, 83.33, 31.25], [68.18, 68.18], [67.5, 90, 90, 67.5], [67.5, 172.5, 67.5], false]);
+  check('three or more spans (Fig. 8-6 b): negative wL2/24, /10, /10, /12 = 31.25, 75, 75, 62.5; positive /10, /14, /14 = 75, 53.57, 53.57; shear wl/2 = 75, 1.15 wl/2 = 86.25, 75, 75; reactions 75, 165, 150', [a({nspan: 3}).mNeg.map(x => +x.toFixed(2)), a({nspan: 3}).mPos.map(x => +x.toFixed(2)), a({nspan: 3}).V.map(x => +x.toFixed(2)), a({nspan: 3}).R, a({nspan: 3}).three], [[31.25, 75, 75, 62.5], [75, 53.57, 53.57], [75, 86.25, 75, 75], [75, 165, 150], true]);
+  check('conditions: live load not above twice the dead (10 against 30 passes, 40 fails); spans differing by at most 25 % (5 and 4 passes, 5 and 3.5 fails)', [a({}).condLive, a({wl: 40}).condLive, a({l2: 4}).condDiff, a({l2: 3.5}).condDiff, a({}).condOk, a({wl: 40}).condOk, a({l2: 3.5}).condOk], [true, false, true, false, true, false, false]);
+  check('Table 8-2 (a): last storey 1.3, 1.6, 2.0; storey below the last 1.1, 1.4, 1.7; other storeys 1.0, 1.15, 1.30; Table 8-2 (b): 1.3, 1.5, 1.6 / 1.1, 1.3, 1.4 / 1.0, 1.1, 1.2; the reduced table applies to solid or ribbed slabs', [a({}).keA, a({pos: 1}).keA, a({pos: 2}).keA, a({fl: 1, pos: 2}).keA, a({fl: 2, pos: 1}).keA, a({fl: 2, pos: 2}).keA, a({}).keB, a({pos: 1}).keB, a({pos: 2}).keB, a({fl: 2, pos: 2}).keB, a({solid: 1, pos: 2}).ke, a({solid: 0, pos: 2}).ke], [1.3, 1.6, 2, 1.7, 1.15, 1.3, 1.3, 1.5, 1.6, 1.2, 1.6, 2]);
+  check('continuity factors m: 1 with no continuity, 0.87 with one side, 0.76 with both; r = m1 L1 / (m2 L2): 1 x 6 / (1 x 4.5) = 1.333; interior panel 0.76 x 6 / (0.76 x 4.5) = 1.333; a corner panel 0.87 / 0.87', [a({}).m1, a({c1: 1}).m1, a({c1: 2}).m1, near(a({}).r, 1.3333, 1e-4), near(a({c1: 2, c2: 2}).r, 1.3333, 1e-4), near(a({c1: 2}).r, 1.0133 / 1, 1e-3)], [1, 0.87, 0.76, true, true, true]);
+  check('Table 8-7 (solid): r = 1.00 gives alpha1 = alpha2 = 0.33; 1.20 gives 0.23 and 0.45; 2.0 gives 0.06 and 0.89; 1.3333 interpolates to 0.18 and 0.53; r below 0.76 is outside', [near(a({L1: 4.5}).a1, 0.33), near(a({L1: 4.5}).a2, 0.33), near(a({L1: 5.4}).a1, 0.23), near(a({L1: 5.4}).a2, 0.45), near(a({L1: 9}).a1, 0.06), near(a({L1: 9}).a2, 0.89), near(a({}).a1, 0.18, 1e-3), near(a({}).a2, 0.53, 1e-3), a({L1: 3}).rOk, a({L1: 4.5}).rOk, a({L1: 9.5}).rOk], [true, true, true, true, true, true, true, true, false, true, false]);
+  check('Table 8-9 (ribbed, dropped beams): r = 1 gives 0.396 and 0.396; 1.5 gives 0.140 and 0.706; Table 8-10 (hidden beams): 1 gives 0.5 and 0.5; 1.5 gives 0.166 and 0.834; the sum is close to 1 only for Table 8-10', [near(a({L1: 4.5, kind: 1}).a1, 0.396), near(a({L1: 4.5, kind: 1}).a2, 0.396), near(a({L1: 6.75, kind: 1}).a1, 0.140), near(a({L1: 6.75, kind: 1}).a2, 0.706), near(a({L1: 4.5, kind: 2}).a1, 0.5), near(a({L1: 4.5, kind: 2}).a2, 0.5), near(a({L1: 6.75, kind: 2}).a1, 0.166), near(a({L1: 6.75, kind: 2}).a2, 0.834)], [true, true, true, true, true, true, true, true]);
+  check('strip loads: w1 = alpha1 w = 0.18 x 12 = 2.16 and w2 = 0.53 x 12 = 6.36 kN/m2; simple moments w1 L1^2 / 8 = 9.72 and w2 L2^2 / 8 = 16.10 kN.m/m; negative moment over a one-way neighbour w L2 / 35 = 12 x 20.25 / 35 = 6.94', [near(a({}).w1, 2.16, 0.005), near(a({}).w2, 6.36, 0.005), near(a({}).M1, 9.72, 0.02), near(a({}).M2, 16.10, 0.02), near(a({}).mNegOne, 6.943, 0.002)], [true, true, true, true, true]);
+  check('slab conditions: live load up to 5 kN/m2 and adjacent span between 2/3 and 1.5 of the span', [a({}).condSl, a({lv: 6}).condSl, a({adj: 0.6}).condSl, a({adj: 1.6}).condSl, a({adj: 0.67}).condSl], [true, false, false, false, true]);
+}
+let tt;
+w.renderCalc('syrstruct'); w.calcResult('syrstruct');
+tt = txt(w, 'xso_results');
+check('the default page shows 1.50, 0.851 and 0.667, 17.02 kN/m, 13.34 kN/m and the 🔴 note', [tt.includes('1.50'), tt.includes('0.851 و 0.667'), tt.includes('17.02 kN/m'), tt.includes('13.34 kN/m'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xso_m', '1'); w.calcResult('syrstruct'); tt = txt(w, 'xso_results');
+check('the continuous beam mode shows 31.25 kN·m, 83.33 kN·m and 172.50 kN and hides the load transfer group', [tt.includes('31.25 kN·m'), tt.includes('83.33 kN·m'), tt.includes('172.50 kN'), doc.getElementById('xso_g0').style.display === 'none'], [true, true, true, true]);
+set('xso_m', '2'); w.calcResult('syrstruct'); tt = txt(w, 'xso_results');
+check('the ke mode shows 1.30 and 1.30 for the last storey central column', [tt.includes('1.30')], [true]);
+set('xso_m', '3'); w.calcResult('syrstruct'); tt = txt(w, 'xso_results');
+check('the two-way mode shows r 1.33, alpha 0.180 and 0.530 and 6.94 kN·m/m', [tt.includes('1.33'), tt.includes('0.180'), tt.includes('0.530'), tt.includes('6.94 kN·m/m')], [true, true, true, true]);
+check('other reference codes open syrstruct too', others('syrstruct', 'xso_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
