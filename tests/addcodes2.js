@@ -2531,6 +2531,141 @@ set('xsz_m', '2'); w.calcResult('syrslab'); tt = txt(w, 'xsz_results');
 check('the opening mode shows 0.17 and 0.20, 225 mm² and 450 mm²', [tt.includes('0.17'), tt.includes('0.20'), tt.includes('225 mm²'), tt.includes('450 mm²')], [true, true, true, true]);
 check('other reference codes open syrslab too', others('syrslab', 'xsz_results'), [true, true, true]);
 }
+// ---------- part 270: Syrian Arab Code for reinforced concrete (4th ed.) clauses 7-4, 7-5-2, 7-1-4-2 and 7-1-5 (`syrwallc`: wall thickness and shear wall length, wall reinforcement, concentrated loads and openings, column effective length and slenderness, spiral steel) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsgCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({br: 0, alpha: 1, hs: 3000, lh: 6000, z: 3, nst: 5, kind: 0, lsup: 3000, t: 200, hb: 20, lw: 6, st: 1, rn: 0.4, asv: 700, ash: 700, meshes: 2, ext: 0, outer: 0.5, hum: 0, dv: 10, dh: 8, sv: 200, sh: 150, cnt: 1, cc: 2000, b1: 300, hh: 1000, fc: 25, a1: 90000, a2: 270000, cen: 1, cut: 400, dop: 12, sw: 0, end: 0, lc: 3500, pa: 1, pb: 1, sh2: 0, hc: 300, dd: 400, ir: 100, ag: 125664, ak: 78540, fyp: 420, fy: 420, as: 3000, dsp: 10, pitch: 60}, o));
+  check('effective buckling length: the smaller of 3000 and 6000 = 3000; 6000 / 3000 gives 3000; an unbraced wall with alpha 1.5 gives 4500; L0 / 25 = 120 and 180; slenderness 15', [a({}).L0, a({hs: 6000, lh: 3000}).L0, a({br: 1, alpha: 1.5}).L0, a({}).tL0, a({br: 1, alpha: 1.5}).tL0, a({}).slender], [3000, 3000, 4500, 120, 180, 15]);
+  check('minimum thickness by height: 150 mm for the top 5 m (z 3 and 5), 200 mm to 25 m (5.5 and 25), 250 mm to 45 m (26 and 45), 300 mm beyond; two storeys 150 mm on the full height', [a({}).tHeight, a({z: 5}).tHeight, a({z: 5.5}).tHeight, a({z: 25}).tHeight, a({z: 26}).tHeight, a({z: 45}).tHeight, a({z: 46}).tHeight, a({z: 30, nst: 2}).tBase], [150, 150, 200, 200, 250, 250, 300, 150]);
+  check('thickness limits: basement, foundation and fire walls 250 mm; precast panels 100 mm and 1/30 of the bearing distance (200 mm at 6000, 300 mm at 9000); the greatest governs; 200 mm passes the default and fails a basement wall', [a({}).tMin, a({kind: 1}).tMin, a({kind: 2}).tMin, a({kind: 2, lsup: 6000}).tMin, a({kind: 2, lsup: 9000}).tMin, a({}).okT, a({kind: 1}).okT, a({kind: 2, lsup: 9000}).okT, a({z: 10}).okT, a({z: 30}).okT], [150, 250, 150, 200, 300, true, false, false, true, false]);
+  check('shear wall length: H / 4 up to 10 m (2.5 m), H / 5.5 at 20 m (3.64 m), H / 7 at 30 m, H / 8.5 at 50 m, H / 10 above 50 m; 6 m passes at 60 m but not at 61 m', [a({hb: 10}).lwMin, near(a({}).lwMin, 3.63636, 0.001), near(a({hb: 30}).lwMin, 4.2857, 0.001), near(a({hb: 50}).lwMin, 5.88235, 0.001), a({hb: 60}).lwMin, a({hb: 60}).okLw, a({hb: 61}).okLw, a({hb: 10.1}).lwDiv, a({lw: 3}).okLw], [2.5, true, true, true, 6, true, false, 5.5, false]);
+  check('minimum steel in each direction: 0.0025 A\'c = 500 mm2/m for high strength steel and meshes, 0.003 = 600 for plain steel; A\'c = 200 000 mm2 per metre; 700 passes, 400 fails', [a({}).ac, a({}).asHMin, a({st: 0}).asHMin, a({}).okH, a({ash: 400}).okH, a({}).okV, a({asv: 400}).okV], [200000, 500, 600, true, false, true, false]);
+  check('vertical steel increases linearly from the base value at half the capacity to 0.006 A\'c at the full capacity: ratio 0.4 and 0.5 give 500, 0.75 gives 850, 1.0 and 1.2 give 1200 (high strength); plain steel 600 / 900 / 1200; 700 fails at 0.75', [a({rn: 0.5}).asVMin, near(a({rn: 0.75}).asVMin, 850), a({rn: 1}).asVMin, a({rn: 1.2}).asVMin, a({st: 0, rn: 0.4}).asVMin, near(a({st: 0, rn: 0.75}).asVMin, 900), a({rn: 0.75}).okV, a({}).asMax, a({asv: 5100}).okVmax, a({asv: 5000}).okVmax], [500, true, 1200, 1200, 600, true, false, 5000, false, true]);
+  check('two meshes for walls 200 mm or thicker (not basement walls): required and given; one mesh fails at 200 mm and passes at 150 mm; the outer mesh share 0.5 to 2/3 for exterior walls (0.7 fails)', [a({}).twoMesh, a({}).okMesh, a({meshes: 1}).okMesh, a({t: 150, meshes: 1}).twoMesh, a({t: 150, meshes: 1}).okMesh, a({kind: 1}).twoMesh, a({ext: 1, outer: 0.5}).okOuter, a({ext: 1, outer: 2 / 3}).okOuter, a({ext: 1, outer: 0.7}).okOuter, a({ext: 1, outer: 0.45}).okOuter, a({ext: 0, outer: 0.9}).okOuter], [true, true, false, false, true, false, true, true, false, false, true]);
+  check('bar sizes and spacing: vertical 10 mm minimum, horizontal 6 mm (8 mm in humid areas); vertical spacing at most 2 t = 400 capped to 250 (t 100 gives 200); horizontal at most 250 and 15 x 10 = 150 when the vertical steel carries compression', [a({dv: 8}).okDv, a({dh: 6}).okDh, a({dh: 6, hum: 1}).okDh, a({dh: 8, hum: 1}).okDh, a({}).svMax, a({t: 100}).svMax, a({}).okSv, a({sv: 260}).okSv, a({}).shMax, a({cnt: 0}).shMax, a({dv: 20}).shMax, a({sh: 200}).okSh, a({sh: 200, cnt: 0}).okSh], [false, true, false, true, 250, 200, true, false, 150, 250, 250, false, true]);
+  check('cross ties: 6 mm for bars below 25 mm and 8 mm from 25 mm; they tie the vertical bars when the force ratio exceeds 0.5', [a({}).tieD, a({dv: 25}).tieD, a({}).tieNeeded, a({rn: 0.6}).tieNeeded], [6, 8, false, true]);
+  check('concentrated loads: effective width = the smaller of the load spacing 2000 and 300 + 2 x 1000 = 2300; 5000 spacing gives 2300; no depth gives 300; bearing f\'cl = 25 x cube root of 3 = 36.06 MPa; A2 / A1 above 3 is capped; eccentric A1 is capped at 1.2 f\'c = 30 MPa; equal areas give 25', [a({}).wEff, a({cc: 5000}).wEff, a({hh: 0}).wEff, near(a({}).fclCap, 36.0562, 0.001), near(a({a2: 900000}).fclCap, 36.0562, 0.001), a({a2: 900000}).ratio, a({cen: 0}).fclCap, near(a({a2: 90000}).fclCap, 25), near(a({a2: 90000, cen: 0}).fclCap, 25)], [2000, 2300, 300, true, true, 10, 30, true, true]);
+  check('openings: extra steel is half the cut steel (200 mm2) in two bars of 12 mm (226 mm2 each pair covers 200), five bars for 1000 mm2 (500); extension 50 diameters = 600 mm; without diagonals 1.5 x 400 = 600 mm2', [a({}).opS, a({}).opN, a({cut: 1000}).opS, a({cut: 1000}).opN, a({}).opExt, a({}).opNoDiag, a({cut: 10}).opN], [200, 2, 500, 5, 600, 600, 2]);
+  check('column effective length (braced): hinged both ends 1.0 (3500 mm), hinged and fixed 0.85 (2975 mm), fixed both 0.70 (2450 mm)', [a({}).alpha, a({end: 1}).alpha, a({end: 2}).alpha, a({}).Lc0, near(a({end: 1}).Lc0, 2975), near(a({end: 2}).Lc0, 2450)], [1, 0.85, 0.7, 3500, true, true]);
+  check('column effective length (unbraced) from the alignment chart equation: (0, 0) gives 1.00, (1, 1) 1.32, (0.5, 0.5) 1.16, (2, 2) 1.59, (5, 5) 2.23, (10, 10) 3.01, (0, 10) 1.67, (infinity, 0) 2.00; symmetric', [near(w.eval('xsgAlpha(0, 0)'), 1, 0.001), near(w.eval('xsgAlpha(1, 1)'), 1.317, 0.002), near(w.eval('xsgAlpha(0.5, 0.5)'), 1.164, 0.002), near(w.eval('xsgAlpha(2, 2)'), 1.589, 0.002), near(w.eval('xsgAlpha(5, 5)'), 2.228, 0.002), near(w.eval('xsgAlpha(10, 10)'), 3.010, 0.002), near(w.eval('xsgAlpha(0, 10)'), 1.671, 0.002), near(w.eval('xsgAlpha(1e4, 0)'), 2, 0.002), near(w.eval('xsgAlpha(1, 10)'), w.eval('xsgAlpha(10, 1)'), 1e-9)], [true, true, true, true, true, true, true, true, true]);
+  check('unbraced column with psi 1 and 1: L0 = 1.317 x 3500 = 4610 mm; slenderness limits 12 (rectangular, 3500 / 300 = 11.7 short, 250 mm gives 14 long), 10 (circular, 400 mm gives 8.75 short, 300 mm gives 11.7 long) and 40 (L0 / i: 35 short, i 80 gives 43.75 long)', [near(a({sw: 1}).alpha, 1.317, 0.002), near(a({sw: 1}).Lc0, 4610, 8), near(a({}).val, 11.6667, 0.001), a({}).long, a({hc: 250}).long, a({sh2: 1}).lim, a({sh2: 1}).long, a({sh2: 1, dd: 300}).long, a({sh2: 2}).lim, a({sh2: 2}).long, a({sh2: 2, ir: 80}).long, near(a({sh2: 2, ir: 80}).val, 43.75)], [true, true, true, false, true, 10, false, true, 40, false, true, true]);
+  check('spiral steel: core diameter 316.2 mm; Asp min = 0.45 x (1.6 - 1) x 25 / 420 x 78 540 = 1262.25 mm2; Asp max = 2495 mm2; a 10 mm spiral at a 60 mm pitch gives pi x 316.2 x 78.54 / 60 = 1300.4 mm2 and passes both', [near(a({}).dcore, 316.23, 0.01), near(a({}).aspMin, 1262.25, 0.05), near(a({}).aspMax, 2495.2, 0.5), near(a({}).aspP, 1300.4, 0.1), a({}).okAspMin, a({}).okAspMax, a({pitch: 70}).okAspMin, a({pitch: 25}).okAspMax, a({as: 0}).okAspMax], [true, true, true, true, true, true, false, false, true]);
+  check('spiral limits: diameter at least 8 mm; pitch at most 80 mm or a fifth of the core diameter (63.2 mm) and at least 40 mm: 60 passes, 70 and 30 fail', [a({dsp: 8}).okDsp, a({dsp: 6}).okDsp, near(a({}).pMax, 63.246, 0.01), a({ak: 400000}).pMax, a({}).okPmax, a({pitch: 70}).okPmax, a({pitch: 30}).okPmin, a({pitch: 40}).okPmin], [true, false, true, 80, true, false, false, true]);
+}
+let tt;
+w.renderCalc('syrwallc'); w.calcResult('syrwallc');
+tt = txt(w, 'xsg_results');
+check('the default page shows 3000 mm, 150 mm, the check mark and the 🔴 note', [tt.includes('3000 mm'), tt.includes('150 mm'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true]);
+set('xsg_m', '1'); w.calcResult('syrwallc'); tt = txt(w, 'xsg_results');
+check('the wall steel mode shows 200000 mm², 500 mm²/m and 5000 mm²/m and hides the thickness group', [tt.includes('200000 mm²'), tt.includes('500 mm²/m'), tt.includes('5000 mm²/m'), doc.getElementById('xsg_g0').style.display === 'none'], [true, true, true, true]);
+set('xsg_m', '2'); w.calcResult('syrwallc'); tt = txt(w, 'xsg_results');
+check('the concentrated load mode shows 2000 mm, 36.1 MPa and 600 mm', [tt.includes('2000 mm'), tt.includes('36.1 MPa'), tt.includes('600 mm')], [true, true, true]);
+set('xsg_m', '3'); set('xsg_sw', '1'); w.calcResult('syrwallc'); tt = txt(w, 'xsg_results');
+check('the unbraced column mode shows alpha 1.32 and 4610 mm', [tt.includes('1.32'), tt.includes('4610 mm')], [true, true]);
+set('xsg_m', '4'); w.calcResult('syrwallc'); tt = txt(w, 'xsg_results');
+check('the spiral mode shows 1262 mm², 2495 mm² and 63 mm', [tt.includes('1262 mm²'), tt.includes('2495 mm²'), tt.includes('63 mm')], [true, true, true]);
+check('other reference codes open syrwallc too', others('syrwallc', 'xsg_results'), [true, true, true]);
+}
+// ---------- part 271: Syrian Arab Code for reinforced concrete (4th ed.) clause 7-10 (`syrftg`: footing and tie beam dimensions, minimum and maximum steel, bar sizes, spacing and dowels) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xfgCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({kind: 0, soil: 0, plain: 0, h: 600, b: 1500, proj: 500, rise: 200, run: 600, tedge: 300, tb: 300, th: 400, span: 2000, dd: 500, cont: 0, way: 1, b2: 1000, st: 1, asr: 900, as: 1000, fc: 25, fy: 420, dia: 14, sp: 150, aCol: 1200, aDow: 1500, nDow: 4, dDow: 18, dCol: 16, ldev: 600}, o));
+  check('edge depth at least 250 mm (400 mm for a pile cap): 600 passes; 200 fails; a pile cap of 300 fails and of 400 passes', [a({}).hEdge, a({kind: 3}).hEdge, a({}).okEdge, a({h: 200}).okEdge, a({kind: 3, h: 300}).okEdge, a({kind: 3, h: 400}).okEdge], [250, 400, true, false, false, true]);
+  check('smallest footing dimension 1000 mm (strong soil) or 1200 mm (weak soil < 0.3 MPa); strip footing width 600 mm or 900 mm; 1500 passes, 900 fails a column footing, 800 fails a strip footing in weak soil, 900 passes it', [a({}).bMinCol, a({soil: 1}).bMinCol, a({kind: 1}).bMinStrip, a({kind: 1, soil: 1}).bMinStrip, a({}).okB, a({b: 900}).okB, a({kind: 1, soil: 1, b: 800}).okB, a({kind: 1, soil: 1, b: 900}).okB, a({kind: 1, b: 600}).okB], [1000, 1200, 600, 900, true, false, false, true, true]);
+  check('depth from the projection: a half of 500 = 250 mm for reinforced and 1.5 x 500 = 750 mm for plain concrete; 600 mm passes the first and fails the second', [a({}).hProj, a({plain: 1}).hProj, a({}).okProj, a({plain: 1}).okProj, a({plain: 1, h: 800}).okProj], [250, 750, true, false, true]);
+  check('top slope: at most 2 / 2.5 = 0.8 for reinforced and 1 / 1.4 = 0.714 for plain concrete; 200 / 600 passes; 500 / 600 and (plain) 450 / 600 fail; edge thickness at least half of 600 = 300', [a({}).slopeMax, near(a({plain: 1}).slopeMax, 0.714286), near(a({}).slope, 0.33333), a({}).okSlope, a({rise: 500}).okSlope, a({plain: 1, rise: 450}).okSlope, a({plain: 1, rise: 400}).okSlope, a({}).tEdgeMin, a({}).okTEdge, a({tedge: 250}).okTEdge], [0.8, true, true, true, false, false, true, 300, true, false]);
+  check('column base: depth 250 mm and smallest dimension 600 mm; tie beam sections at least 200 mm in both directions', [a({}).okColBase, a({h: 200}).okColBase, a({b: 500}).okColBase, a({}).okTie, a({tb: 150}).okTie, a({th: 190}).okTie], [true, false, false, true, false, false]);
+  check('raft beams span / depth at most 4 (simple) or 5 (continuous): 2000 / 500 = 4 passes, 2600 / 500 = 5.2 fails the continuous one; raft slabs at most 8 (one-way) and 10 (two-way): 6000 / 600 = 10', [a({}).lD, a({}).okLD, a({span: 2100}).okLD, a({cont: 1, span: 2500}).okLD, a({cont: 1, span: 2600}).okLD, a({span: 6000}).lT, a({span: 6000}).okLT, a({span: 6000, way: 0}).okLT, a({span: 4800, way: 0}).okLT], [4, true, false, true, false, 10, true, false, true]);
+  check('minimum steel: 0.0012 A\'c (0.001 for high strength) = 600 mm2 for 1000 x 600, or 1.33 x the required area if smaller: 1197 mm2 for 900 (so 600 governs), 399 for 300; plain steel 720', [a({}).ac, a({}).asMinA, near(a({}).asMinB, 1197), a({}).asMin, near(a({st: 0}).asMin, 720), near(a({asr: 300}).asMin, 399), a({}).okAs, a({as: 500}).okAs, a({asr: 300, as: 390}).okAs], [600000, 600, true, 600, true, true, true, false, false]);
+  check('maximum steel 0.5 Asb = 6448.4 mm2 (Asb = 455 / 1050 x 25 / 420 x 1000 x 500); 7000 fails', [near(a({}).asb, 12896.83, 0.05), near(a({}).asMax, 6448.41, 0.05), a({}).okMax, a({as: 7000}).okMax], [true, true, true, false]);
+  check('bar sizes and spacing: 12 mm minimum for plain steel and 10 mm for medium or high strength; 14 passes both, 10 fails plain; spacing at most 200 mm', [a({}).dMin, a({st: 0}).dMin, a({}).okD, a({dia: 10}).okD, a({dia: 10, st: 0}).okD, a({dia: 8}).okD, a({}).okS, a({sp: 200}).okS, a({sp: 250}).okS], [10, 12, true, true, false, false, true, true, false]);
+  check('dowels: area not below the transferred column steel (1500 against 1200 passes, 1000 fails), at least 4 bars (3 fail), diameter at most the column bar plus 3 mm (19: 18 passes, 20 fails)', [a({}).okDowel, a({aDow: 1000}).okDowel, a({nDow: 3}).okDowel, a({dDow: 19}).okDowel, a({dDow: 20}).okDowel, a({}).dowelExt], [true, false, false, true, false, 600]);
+}
+let tt;
+w.renderCalc('syrftg'); w.calcResult('syrftg');
+tt = txt(w, 'xfg_results');
+check('the default page shows 1500 mm, 250 mm, the check mark and the 🔴 note', [tt.includes('1500 mm'), tt.includes('250 mm'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true]);
+set('xfg_kd', '1'); set('xfg_so', '1'); w.calcResult('syrftg'); tt = txt(w, 'xfg_results');
+check('a strip footing in weak soil shows 900 mm', [tt.includes('900 mm')], [true]);
+set('xfg_m', '1'); w.calcResult('syrftg'); tt = txt(w, 'xfg_results');
+check('the steel mode shows 600000 mm², 600 mm² and 6448 mm² and hides the dimension group', [tt.includes('600000 mm²'), tt.includes('600 mm²'), tt.includes('6448 mm²'), doc.getElementById('xfg_g0').style.display === 'none'], [true, true, true, true]);
+set('xfg_m', '2'); w.calcResult('syrftg'); tt = txt(w, 'xfg_results');
+check('the arrangement mode shows 200 mm and 19 mm', [tt.includes('200 mm'), tt.includes('19 mm')], [true, true]);
+check('other reference codes open syrftg too', others('syrftg', 'xfg_results'), [true, true, true]);
+}
+// ---------- part 272: Syrian Arab Code for reinforced concrete (4th ed.) clauses 7-6 and 7-7 (`syrdeep`: deep beams: definition, thickness, minimum steel and arrangement; short cantilevers and corbels) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xdpCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({cont: 0, lcc: 4000, ln: 3600, h: 3000, t: 250, w: 200, fc: 25, st: 0, ash: 900, asv: 1000, lmax: 4000, tau: 0.5, lc: 300, hf: 500, he: 250, bc: 300, af: 800, avv: 400}, o));
+  check('effective span: the smaller of the axes distance 4000 and 1.05 x 3600 = 3780; 3500 between axes governs when smaller; ratio L / h = 1.26 is a deep beam (limit 2 for one span, 2.5 continuous), 2.2 is deep only when continuous, 4 is a shear-only deep beam and 6 is not deep', [a({}).Leff, a({lcc: 3500}).Leff, near(a({}).ratio, 1.26), a({}).deep, a({h: 1700}).deep, a({h: 1700, cont: 1}).deep, a({h: 950}).shearOnly, a({h: 600}).shearOnly, a({h: 600}).deep], [3780, 3500, true, true, false, true, true, false, false]);
+  check('effective height: d = 0.9 h = 2700 mm; a depth above the span counts as h = L (3780 gives d = 3402)', [a({}).hEff, near(a({}).d, 2700), a({h: 5000}).hEff, near(a({h: 5000}).d, 3402)], [3000, true, 3780, true]);
+  check('w / (0.3 f\'c h) = 200 / (0.3 x 25 x 3000) = 0.00889 is below 1/52 = 0.01923: thickness from the buckling rule 0.5 L cube root (k / 100) = 84.4 mm; the other rule 1.5 k L = 50.4 mm; 250 passes', [near(a({}).k, 0.0088889, 1e-6), near(a({}).t1, 84.38, 0.05), near(a({}).t2, 50.4, 0.05), a({}).governs, near(a({}).tMin, 84.38, 0.05), a({}).okT, a({t: 80}).okT], [true, true, true, 1, true, true, false]);
+  check('heavy load w = 800: k = 0.03556 above 1/52, the compression rule 1.5 k L = 201.6 mm governs; 200 fails and 250 passes', [near(a({w: 800}).k, 0.035556, 1e-5), a({w: 800}).governs, near(a({w: 800}).tMin, 201.6, 0.05), a({w: 800, t: 200}).okT, a({w: 800}).okT], [true, 2, true, false, true]);
+  check('the two rules meet at the limit 1/52: 0.5 L cube root (1 / 5200) = 0.02885 L and 1.5 L / 52 = 0.02885 L', [near(0.5 * Math.cbrt(1 / 5200), 1.5 / 52, 1e-4)], [true]);
+  check('minimum wall steel: horizontal 0.0025 A\'c = 1 875 mm2 and vertical 0.0015 A\'c = 1 125 mm2 for 250 x 3000 plain steel; high strength and meshes 0.0020 = 1 500 and 0.0012 = 900', [a({}).ac, near(a({}).hMin, 1875), near(a({}).vMin, 1125), near(a({st: 1}).hMin, 1500), near(a({st: 1}).vMin, 900)], [750000, true, true, true, true]);
+  check('steel given: 900 mm2 horizontal fails 1875 and 1000 mm2 vertical fails 1125; with high strength steel 1500 and 900 pass', [a({}).okHor, a({}).okVer, a({st: 1, ash: 1500}).okHor, a({st: 1, asv: 900}).okVer, a({st: 1, ash: 1400}).okHor], [false, false, true, true, false]);
+  check('arrangement of the main steel: 0.15 h to 0.20 h = 450 to 600 mm (simple), 0.15 h = 450 mm (continuous), top steel half around 0.8 h = 2400 mm over 0.2 h = 600, support extension 0.3 L = 1200 mm up to 0.4 h = 1200 mm, hanger steel over 0.7 h = 2100 mm', [a({}).bandSimple, a({}).bandCont, a({}).topPos, a({}).topBand, a({}).supExt, a({}).supHigh, a({}).hang], [[450, 600], 450, 2400, 600, 1200, 1200, 2100]);
+  check('coupling beam shear: 0.65 sqrt(25) = 3.25 MPa; 0.5 is below and 3.5 reaches it', [a({}).tauMax, a({}).tauLimit, a({tau: 3.5}).tauLimit, a({tau: 3.25}).tauLimit], [3.25, false, true, true]);
+  check('short cantilever: L 600 against 1.25 h = 625 is short, 700 is not; a bracket is L below 2 h / 3 = 333: 300 is a bracket, 400 is not', [a({lc: 600}).short, a({lc: 700}).short, a({lc: 600}).bracket, a({}).short, a({}).bracket, a({lc: 400}).bracket], [true, false, false, true, true, false]);
+  check('free end depth at least half of 500 = 250 (short cantilever); for a bracket with h above 1.5 L it is enough to take 3/4 L = 225 mm but not under 200 mm: 225 passes, 220 fails, 180 L 200 gives 200', [a({lc: 600}).hEnd, a({lc: 600, he: 250}).okEnd, a({lc: 600, he: 240}).okEnd, a({}).hEndBr, a({he: 225}).okEnd, a({he: 220}).okEnd, a({lc: 150, hf: 500}).hEndBr, a({lc: 700, he: 10}).okEnd], [250, true, false, 225, true, false, 200, true]);
+  check('corbel steel: A\'c = 300 x 500 = 150 000 mm2; flexure between 0.004 = 600 and 0.012 = 1800 mm2 (800 passes, 500 and 2000 fail); sum with shear steel between 0.006 = 900 and 0.02 = 3000 mm2 (1200 passes, 800 and 3100 fail)', [a({}).acc, a({}).fMin, a({}).fMax, a({}).okF, a({af: 500}).okF, a({af: 2000}).okF, a({}).sMin, a({}).sMax, a({}).okSum, a({af: 500, avv: 300}).okSum, a({af: 1800, avv: 1300}).okSum], [150000, 600, 1800, true, false, false, 900, 3000, true, false, false]);
+  check('a bracket is treated as a cantilever of two thirds of the depth: 2 x 500 / 3 = 333 mm', [near(a({}).ldEff, 333.333), a({lc: 600}).ldEff], [true, 600]);
+}
+let tt;
+w.renderCalc('syrdeep'); w.calcResult('syrdeep');
+tt = txt(w, 'xdp_results');
+check('the default page shows 3780 mm, 1.26, 84 mm, the check mark and the 🔴 note', [tt.includes('3780 mm'), tt.includes('1.26'), tt.includes('84 mm'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xdp_w', '800'); w.calcResult('syrdeep'); tt = txt(w, 'xdp_results');
+check('a heavy load shows 202 mm and the fail mark for 250 vs 250 passes with 202', [tt.includes('202 mm')], [true]);
+set('xdp_m', '1'); w.calcResult('syrdeep'); tt = txt(w, 'xdp_results');
+check('the corbel mode shows 150000 mm², 600 mm², 1800 mm² and 333 mm and hides the deep beam group', [tt.includes('150000 mm²'), tt.includes('600 mm²'), tt.includes('1800 mm²'), tt.includes('333 mm'), doc.getElementById('xdp_g0').style.display === 'none'], [true, true, true, true, true]);
+check('other reference codes open syrdeep too', others('syrdeep', 'xdp_results'), [true, true, true]);
+}
+// ---------- part 273: Syrian Arab Code for reinforced concrete (4th ed.) clause 7-11 (`syrseisd`: materials in seismic zones, exemption from seismic analysis, precautions for beams and columns of frames) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xszdCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({fc: 25, kind: 0, fy: 400, fsu: 520, zone: 1, walls: 0, spans: 5, ecc: 0.05, bw: 20, H: 8, Hb: 1.5, supM: 120, mpos: 60, negS: 1200, posS: 500, anyS: 300, asB: 1500, asC: 0, asb: 3500, kindB: 0, d: 450, h: 500, dl: 18, dst: 8, sEnd: 120, sMid: 200, bc: 400, hc: 400, ast: 3200, coupler: 0, Lfree: 3000, sCol: 120, sOut: 200}, o));
+  check('materials: f\'c at least 18 MPa; ribbed steel at most 400 MPa (a higher tested value needs fsu of 1.25 fy: 520 for 416 fails 520 < 520? no, 1.25 x 416 = 520 passes; 430 needs 537.5); smooth steel from 240 MPa', [a({}).fcOk, a({fc: 17}).fcOk, a({}).fyOk, a({fy: 410}).fyOk, a({fy: 416}).fyOk2, a({fy: 430}).fyOk2, near(a({fy: 430}).fsuMin, 537.5), a({kind: 1, fy: 240}).fyOk, a({kind: 1, fy: 220}).fyOk, a({fy: 400, fsu: 400}).fyOk2], [true, false, true, false, true, false, true, true, false, true]);
+  check('exemption from the seismic analysis: zone 0 or 1, spans up to 6 m, eccentricity at most 0.1 x the dimension (2 m of 20 m), height 8.5 m without shear walls or 15 m with them, H / b up to 2.5; the default building is exempt', [a({}).zoneOk, a({zone: 2}).zoneOk, a({}).regular, a({spans: 6.5}).regular, a({ecc: 2}).regular, a({ecc: 2.1}).regular, a({}).hLimit, a({walls: 1}).hLimit, a({}).hOk, a({H: 9}).hOk, a({H: 15, walls: 1}).hOk, a({H: 16, walls: 1}).hOk, a({}).ratioOk, a({Hb: 2.6}).ratioOk, a({}).exempt, a({zone: 2}).exempt, a({H: 9}).exempt, a({H: 12, walls: 1}).exempt], [true, false, true, false, true, false, 8.5, 15, true, false, true, false, true, false, true, false, false, true]);
+  check('beams: positive steel at the support at least a third of the negative: 400 of 1200 passes, 500 passes, 300 fails; any section at least a sixth of the larger (200): 300 passes, 150 fails; As - A\'s up to half the balanced area 1750', [a({}).okPosSup, a({posS: 400}).okPosSup, a({posS: 300}).okPosSup, a({}).anySec, a({}).okAny, a({anyS: 150}).okAny, a({}).asNet, a({}).okNet, a({asB: 1800}).okNet, a({asB: 2300, asC: 500}).okNet], [true, true, false, 200, true, false, 1500, true, false, false]);
+  check('beam stirrups: first one within 50 mm; middle spacing at most d / 2 = 225 (3 d / 4 = 337.5 for hidden beams): 200 passes, 230 fails, 300 passes hidden; end zone 2 h = 1000 mm with the least of h / 3 = 166.7, 10 x 18 = 180, 25 x 8 = 200 and 250: 166.7, so 120 passes and 170 fails', [a({}).firstS, a({}).sMax, a({kindB: 1}).sMax, a({}).okSMid, a({sMid: 230}).okSMid, a({kindB: 1, sMid: 300}).okSMid, a({}).lEnd, near(a({}).sEnd, 166.667), a({}).okSEnd, a({sEnd: 170}).okSEnd, a({dl: 12}).sEnd], [50, 225, 337.5, true, false, true, 1000, true, true, false, 120]);
+  check('column steel limit: 0.025 A\'c = 4000 mm2 below 30 MPa; 0.035 A\'c = 5600 from 30 MPa; 0.04 A\'c = 6400 with mechanical couplers (30 MPa and more): 3200 passes, 4100 fails at 25, passes at 30', [a({}).ac, a({}).asMax, near(a({fc: 30}).asMax, 5600), near(a({fc: 30, coupler: 1}).asMax, 6400), a({coupler: 1}).asMax, a({}).okAsMax, a({ast: 4100}).okAsMax, a({ast: 4100, fc: 30}).okAsMax], [160000, 4000, true, true, 4000, true, false, true]);
+  check('column ties: dense zone L0 the largest of 3000 / 6 = 500, 400 and 450 = 500 mm; spacing the least of two thirds of 400 = 266.7, 10 x 18 = 180, 25 x 8 = 200 and 200 = 180: 120 passes, 190 fails; the first tie at S0 / 2 = 90; outside at most 2 S0 and 200 mm', [a({}).L0, a({Lfree: 2400}).L0, a({Lfree: 2400, bc: 300, hc: 300}).L0, a({}).sCol, a({}).okSCol, a({sCol: 190}).okSCol, a({}).firstCol, a({}).sOut, a({}).okSOut, a({sOut: 210}).okSOut, a({dl: 12, bc: 250, hc: 250}).sCol], [500, 450, 450, 180, true, false, 90, 200, true, false, 120]);
+}
+let tt;
+w.renderCalc('syrseisd'); w.calcResult('syrseisd');
+tt = txt(w, 'xszd_results');
+check('the default page shows 25.0 MPa, 400 MPa, the check mark and the 🔴 note', [tt.includes('25.0 MPa'), tt.includes('400 MPa'), tt.includes('✔'), tt.includes('🔴')], [true, true, true, true]);
+set('xszd_m', '1'); w.calcResult('syrseisd'); tt = txt(w, 'xszd_results');
+check('the exemption mode shows 8.5 m and "يمكن الاستغناء" and hides the materials group', [tt.includes('8.5 m'), tt.includes('يمكن الاستغناء'), doc.getElementById('xszd_g0').style.display === 'none'], [true, true, true]);
+set('xszd_zn', '2'); w.calcResult('syrseisd'); tt = txt(w, 'xszd_results');
+check('zone 2 requires the analysis', [tt.includes('يلزم الحساب الزلزالي')], [true]);
+set('xszd_m', '2'); w.calcResult('syrseisd'); tt = txt(w, 'xszd_results');
+check('the beam mode shows 400 mm², 1000 mm and 225 mm', [tt.includes('400 mm²'), tt.includes('1000 mm'), tt.includes('225 mm')], [true, true, true]);
+set('xszd_m', '3'); w.calcResult('syrseisd'); tt = txt(w, 'xszd_results');
+check('the column mode shows 4000 mm², 500 mm and 180 mm', [tt.includes('4000 mm²'), tt.includes('500 mm'), tt.includes('180 mm')], [true, true, true]);
+check('other reference codes open syrseisd too', others('syrseisd', 'xszd_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
