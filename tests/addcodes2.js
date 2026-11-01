@@ -2666,6 +2666,99 @@ set('xszd_m', '3'); w.calcResult('syrseisd'); tt = txt(w, 'xszd_results');
 check('the column mode shows 4000 mm², 500 mm and 180 mm', [tt.includes('4000 mm²'), tt.includes('500 mm'), tt.includes('180 mm')], [true, true, true]);
 check('other reference codes open syrseisd too', others('syrseisd', 'xszd_results'), [true, true, true]);
 }
+// ---------- part 274: Syrian Arab Code for reinforced concrete (4th ed.) clause 7-9 stairs (`syrstair`: stair dead and live loads, effective span, thickness, moment, main steel, supporting beam load) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xstCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({hs: 175, tr: 275, t: 180, cover: 200, rail: 50, B: 1.2, P: 400, sup: 0, lax: 4000, lcl: 3700, b1: 300, b2: 300, ct: 0, cont: 0, cv: 20, db: 12, fy: 420, fc: 25, st: 1, wl: 8, l1: 3, l2: 2}, o));
+  check('stair geometry: riser 175 and tread 275 give alpha = atan(175 / 275) = 32.47 degrees, cos 0.8437', [near(a({}).alpha * 180 / Math.PI, 32.4712, 0.001), near(a({}).cos, 0.84366, 0.0001), near(a({}).sin, 0.53688, 0.0001)], [true, true, true]);
+  check('loads per horizontal m2: g1 = 2500 x 0.175 / 2 = 218.75; g2 = 2500 x 0.18 / 0.8437 = 533.4; g3 = 200; g4 = 50 / 1.2 = 41.67; w = G + P', [near(a({}).g1, 218.75), near(a({}).g2, 533.39, 0.05), a({}).g3, near(a({}).g4, 41.667, 0.001), near(a({}).G, 993.81, 0.05), near(a({}).w, 1393.81, 0.05)], [true, true, 200, true, true, true]);
+  check('loads on the inclined slab: ws = w cos a = 1175.9; wn = ws cos a = 992.1; wt = ws sin a = 631.3 kgf/m2', [near(a({}).ws, 1175.9, 0.1), near(a({}).wn, 992.06, 0.1), near(a({}).wt, 631.31, 0.1)], [true, true, true]);
+  check('factored load 1.4 G + 1.7 P = 2071.3 kgf/m2 = 20.31 kN/m2 and w = 13.67 kN/m2', [near(a({}).wu, 2071.33, 0.1), near(a({}).wukN, 20.313, 0.01), near(a({}).wkN, 13.67, 0.01)], [true, true, true]);
+  check('effective span: axes distance 4000; clear span 3700 plus half the two support widths 300 = 4000; the addition is capped at 900 mm (supports of 2000 mm give 3700 + 900 = 4600)', [a({}).L, a({sup: 1}).L, a({sup: 1, b1: 2000, b2: 2000}).L, a({sup: 1, b1: 2000, b2: 2000}).add, a({sup: 1, b1: 100, b2: 100}).L], [4000, 4000, 4600, 900, 3800]);
+  check('thickness: L/25 = 160 mm (simple), L/27 = 148.1 and L/30 = 133.3 lifted to the 80 mm floor only when smaller, cantilever L/10; 180 passes and 150 fails the simple case', [a({}).tmin, near(a({ct: 1}).tmin, 148.148, 0.01), near(a({ct: 2}).tmin, 133.333, 0.01), a({ct: 3}).tmin, a({}).okT, a({t: 150}).okT, a({lax: 1500, ct: 2}).tmin], [160, true, true, 400, true, false, 80]);
+  check('moments: simple span M = w L2 / 8 = 13.67 x 16 / 8 = 27.34 kN.m/m; continuous w L2 / 10 = 21.87; factored Mu = 20.313 x 2 = 40.63 and 32.50', [near(a({}).Mser, 27.34, 0.02), near(a({cont: 1}).Mser, 21.87, 0.02), near(a({}).Mu, 40.63, 0.03), near(a({cont: 1}).Mu, 32.51, 0.03), a({}).div, a({cont: 1}).div], [true, true, true, true, 8, 10]);
+  check('main steel: d = 180 - 20 - 6 = 154 mm; Mu 40.63 gives As = 732 mm2/m with the block; minimum 0.0012 x 1000 x 180 = 216 (0.0015 = 270 for plain steel); the design area is the larger; 6.5 bars of 12 per metre at 154 mm, secondary 0.25 As = 183 mm2', [a({}).d, near(a({}).As, 732.3, 1), near(a({}).AsMin, 216), near(a({st: 0}).AsMin, 270), near(a({}).AsDesign, 732.3, 1), near(a({}).n, 6.475, 0.02), near(a({}).sBar, 154.4, 0.5), near(a({}).AsSec, 183.1, 0.3)], [154, true, true, true, true, true, true, true]);
+  check('a very large moment exceeds the section (As not finite, serialised as null); small loads fall back on the minimum steel (216)', [near(a({P: 0, lax: 1000, ct: 2}).AsDesign, 216), a({lax: 12000}).As === null], [true, true]);
+  check('load on the supporting beam: w\' = 1.1 x 8 x (3 + 2) / 2 = 22 kN/m', [near(a({}).wb, 22)], [true]);
+}
+let tt;
+w.renderCalc('syrstair'); w.calcResult('syrstair');
+tt = txt(w, 'xst_results');
+check('the default page shows 32.5°, 218.8 kgf/m², 1393.8 kgf/m² and the 🔴 note', [tt.includes('32.5°'), tt.includes('218.8 kgf/m²'), tt.includes('1393.8 kgf/m²'), tt.includes('🔴')], [true, true, true, true]);
+set('xst_m', '1'); w.calcResult('syrstair'); tt = txt(w, 'xst_results');
+check('the span mode shows 4000 mm, 160 mm, 27.34 kN·m/m and hides the load group', [tt.includes('4000 mm'), tt.includes('160 mm'), tt.includes('27.34 kN·m/m'), doc.getElementById('xst_g0').style.display === 'none'], [true, true, true, true]);
+set('xst_m', '2'); w.calcResult('syrstair'); tt = txt(w, 'xst_results');
+check('the beam load mode shows 22.0 kN/m and 7.20 kN·m/m', [tt.includes('22.0 kN/m'), tt.includes('7.20 kN·m/m')], [true, true]);
+check('other reference codes open syrstair too', others('syrstair', 'xst_results'), [true, true, true]);
+}
+// ---------- part 275: Syrian Arab Code for reinforced concrete (4th ed.) chapter 9, clauses 9-2-8 to 9-2-10 (`syrshear`: shear, torsion, combined shear and torsion, deep beam shear) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xshCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({fc: 25, fy: 420, fyt: 420, bw: 300, h: 600, d: 550, Vu: 200, Mu: 250, As: 1500, a: 0, ax: 0, Nu: 0, Ac: 180000, tou: 1, incl: 0, s: 150, av: 157, Tu: 20, x1: 240, y1: 540, tension: 0, tou2: 0, x: 300, at: 50, a1: 600, L: 4000, Ln: 3600, Vd: 600, avd: 100, sd: 200, a1d: 100, s2: 200}, o));
+  check('shear stress tau_u = Vu / (0.85 bw d) = 200 000 / (0.85 x 300 x 550) = 1.426 MPa; a point load 500 mm from the support (below 2d = 1100) reduces Vu to 200 x 500 / 1100 = 90.9 kN and tau_u to 0.648', [near(a({}).tauU, 1.42602, 0.0001), a({}).red, near(a({a: 500}).Veff, 90.909, 0.01), near(a({a: 500}).tauU, 0.64819, 0.0005), a({a: 1200}).red, near(a({a: 1200}).tauU, 1.42602, 0.0001)], [true, false, true, true, false, true]);
+  check('concrete shear stress: tau_cu = 0.16 sqrt(fc) + 18 mu Vu d / Mu = 0.8 + 18 x 0.00909 x 0.44 = 0.872 MPa; with Mu small the ratio Vu d / Mu is capped at 1: 0.964; capped at 0.31 sqrt(fc) = 1.55; simplified 0.23 sqrt(fc) = 1.15', [near(a({}).mu, 0.0090909, 1e-6), a({}).vm, near(a({}).tauCu, 0.872, 1e-6), near(a({Mu: 50}).tauCu, 0.96364, 1e-4), near(a({As: 30000, Mu: 100}).tauCu, 1.55, 1e-6), near(a({}).tauSimple, 1.15, 1e-6)], [true, 0.44, true, true, true, true]);
+  check('axial force: compression 900 kN on 180 000 mm2 (5 MPa): (1 + 0.07 x 5) x 0.8 = 1.08; tension 300 kN (1.667 MPa): (1 - 0.5) x 0.8 = 0.4; tension 900 kN gives zero', [near(a({ax: 1, Nu: 900}).tauCu, 1.08, 1e-6), near(a({ax: 2, Nu: 300}).tauCu, 0.4, 1e-6), a({ax: 2, Nu: 900}).tauCu], [true, true, 0]);
+  check('assumed concrete resistance tau_ou: 0, 0.35 tau_cu = 0.3052 or 0.7 tau_cu = 0.6104; maximum stress 0.65 sqrt(fc) = 3.25 (vertical stirrups) or 0.8 sqrt(fc) = 4.0 (inclined); Vu 700 kN gives 4.99 above 3.25', [a({tou: 0}).tauOu, near(a({tou: 1}).tauOu, 0.3052, 1e-6), near(a({tou: 2}).tauOu, 0.6104, 1e-6), a({}).tauMax, a({incl: 1}).tauMax, a({}).okMax, a({Vu: 700}).okMax, a({Vu: 700, incl: 1}).okMax], [0, true, true, 3.25, 4, true, false, false]);
+  check('stirrups: needed when tau_u exceeds tau_cu; Ast = (1.426 - 0.3052) x 300 x 150 / 420 = 120.1 mm2 (vertical) and 84.9 mm2 (inclined at 45 degrees); minimum 0.35 bw s / fy = 37.5; Vu 100 needs only the minimum; 157 passes and 100 fails', [a({}).needs, near(a({}).AstReq, 120.09, 0.05), near(a({incl: 1}).AstReq, 84.92, 0.05), a({}).AstMin, a({Vu: 100}).needs, a({Vu: 100}).AstReq, a({Vu: 100}).AstDes, a({}).okAv, a({av: 100}).okAv], [true, true, true, 37.5, false, 0, 37.5, true, false]);
+  check('torsion stress tau_tu = 3 Tu / (x2 y) = 3 x 20e6 / (300 x 300 x 600) = 1.111 MPa; Tu below 13 kN.m gives 0.65 and is neglected; the threshold is 0.13 sqrt(fc) = 0.65 MPa', [near(a({}).Sx2y, 54e6), near(a({}).tauT, 1.11111, 1e-5), a({}).torsion, a({Tu: 10}).torsion, near(a({Tu: 13}).tauT, 0.7222, 1e-4), near(a({}).tTh, 0.65, 1e-9), a({Tu: 0}).torsion], [true, true, true, false, true, true, false]);
+  check('combined limits: tau_tu max = 0.8 sqrt(fc) / sqrt(1 + (1.2 tau_u / tau_tu)^2) = 2.178; tau_tcu = 0.16 sqrt(fc) / sqrt(1 + (1.2 tau_u / tau_tu)^2) = 0.4357; tau_cu with torsion = 0.16 sqrt(fc) / sqrt(1 + (tau_tu / 1.2 tau_u)^2) = 0.671', [near(a({}).tauTmax, 2.17832, 1e-4), near(a({}).tauTcuComb, 0.43566, 1e-4), near(a({}).tauCuComb, 0.67097, 1e-4), a({}).okTmax, a({Tu: 80}).okTmax], [true, true, true, true, false]);
+  check('tau_tou = 0.35 tau_tcu = 0.1525 (0.7 gives 0.305, a large tension force gives 0); alpha_t = 0.66 + 0.33 x 540 / 240 = 1.4025 capped at 1.5 (y1 / x1 = 3 gives 1.5)', [near(a({}).tauTou, 0.15248, 1e-4), near(a({tou2: 1}).tauTou, 0.30497, 1e-4), a({tension: 1}).tauTou, near(a({}).alphaT, 1.4025, 1e-6), a({y1: 900}).alphaT], [true, true, 0, true, 1.5]);
+  check('torsion stirrup leg: Ast = (tau_tu - tau_tou) s x2y / (3 alpha_t x1 y1 fy) = 33.9 mm2; minimum 0.35 bw s / (2 fy) = 18.75; longitudinal steel A1 = the larger of 2 Ast (x1 + y1) / s = 352.6 and (2.8 x s / fy x tau_tu / (tau_tu + tau_u) - 2 Ast)(x1 + y1) / s = 330.6', [near(a({}).AstT, 33.904, 0.01), a({}).AstTmin, near(a({}).A1a, 352.61, 0.05), near(a({}).A1b, 330.58, 0.05), near(a({}).A1, 352.61, 0.05), a({}).okAt, a({at: 20}).okAt, a({}).okA1, a({a1: 300}).okA1, a({Tu: 5}).A1, a({Tu: 5}).AstTdes], [true, 18.75, true, true, true, true, false, true, false, 0, 0]);
+  check('combined stirrup area: shear with tau_cu of the combined formula (1.426 - 0.35 x 0.671) x 300 x 150 / 420 = 127.6 plus two torsion legs 67.8 = 195.4 mm2', [near(a({}).AstShC, 127.63, 0.1), near(a({}).AvTotal, 195.4, 0.2)], [true, true]);
+  check('deep beam shear: L / h = 4000 / 3000 = 1.33 is deep (6.67 is not); tau_u = 600 000 / (0.85 x 250 x 2700) = 1.046; tau_cu = 0.8; limit 0.65 sqrt(fc) = 3.25 for L / h up to 2, 0.054 (10 + L / h) sqrt(fc) = 3.51 at 3', [near(a({L: 4000, h: 3000, d: 2700, bw: 250}).ratioLh, 1.3333, 1e-3), a({L: 4000, h: 3000, d: 2700, bw: 250}).deep, a({}).deep, near(a({L: 4000, h: 3000, d: 2700, bw: 250}).tauDeepU, 1.04575, 1e-4), a({}).tauDeepCu, a({L: 4000, h: 3000, d: 2700, bw: 250}).tauDeepMax, near(a({L: 9000, h: 3000, d: 2700, bw: 250}).tauDeepMax, 3.51, 1e-9), a({L: 4000, h: 3000, d: 2700, bw: 250, Vd: 3000}).okDeepMax], [true, true, false, true, 0.8, 3.25, true, false]);
+  check('deep beam stirrups: critical section 0.15 Ln = 540 mm (0.5 a = 500 for a = 1000, capped at 0.5 d); resistance (100 / 200)(1 + 1.333) / 12 x 420 = 40.8 plus (100 / 200)(11 - 1.333) / 12 x 420 = 169.2 against the demand (1.046 - 0.8) x 250 = 61.4 N/mm', [a({L: 4000, h: 3000, d: 2700, bw: 250}).critX, a({L: 4000, h: 3000, d: 2700, bw: 250, a: 1000}).critX, near(a({L: 4000, h: 3000, d: 2700, bw: 250}).resV, 40.833, 0.01), near(a({L: 4000, h: 3000, d: 2700, bw: 250}).resH, 169.17, 0.02), near(a({L: 4000, h: 3000, d: 2700, bw: 250}).demand, 61.44, 0.05), a({L: 4000, h: 3000, d: 2700, bw: 250}).okDeep, a({L: 4000, h: 3000, d: 2700, bw: 250, avd: 10, a1d: 10}).okDeep], [540, 500, true, true, true, true, false]);
+}
+let tt;
+w.renderCalc('syrshear'); w.calcResult('syrshear');
+tt = txt(w, 'xsh_results');
+check('the default page shows tau_u 1.43 MPa, tau_cu 0.87 MPa, 120.1 mm² and the 🔴 note', [tt.includes('1.43 MPa'), tt.includes('0.87 MPa'), tt.includes('120.1 mm²'), tt.includes('🔴')], [true, true, true, true]);
+set('xsh_m', '1'); w.calcResult('syrshear'); tt = txt(w, 'xsh_results');
+check('the torsion mode shows 1.11 MPa, 33.9 mm² and 352.6 mm² and hides the shear group', [tt.includes('1.11 MPa'), tt.includes('33.9 mm²'), tt.includes('352.6 mm²'), doc.getElementById('xsh_g0').style.display === 'none', doc.getElementById('xsh_gs').style.display !== 'none'], [true, true, true, true, true]);
+set('xsh_m', '2'); w.calcResult('syrshear'); tt = txt(w, 'xsh_results');
+check('the deep beam mode shows 1.33, 3.25 MPa and 210.0 N/mm and hides the shared section group', [tt.includes('1.33'), tt.includes('3.25 MPa'), tt.includes('210.00 N/mm'), doc.getElementById('xsh_gs').style.display === 'none'], [true, true, true, true]);
+check('other reference codes open syrshear too', others('syrshear', 'xsh_results'), [true, true, true]);
+}
+// ---------- part 276: Syrian Arab Code for reinforced concrete (4th ed.) chapter 10, clauses 10-4 and 10-5 (`syrserv`: cracking limit state (psi_s, maximum bar diameter, crack width) and deformation (Mcr, Ie, creep factor, Table 10-5 limits)) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xsjCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({wi: 3, kind: 0, fy: 420, fc: 25, As: 1500, Ato: 30000, phi: 16, C: 30, sig0: 200, vib: 0, b: 300, h: 600, d: 550, Asc: 0, dc: 50, Ec: 25000, Mt: 180, Md: 110, L: 6000, sch: 0, dur: 0, cat: 1}, o));
+  check('Table 10-4: psi_s for 0.1, 0.15, 0.2 and 0.3 mm: ribbed 1.8, 2.7, 3.6, 5.4; plain round 1.0, 1.5, 2.0, 3.0', [a({wi: 0}).psi, a({wi: 1}).psi, a({wi: 2}).psi, a({wi: 3}).psi, a({wi: 0, kind: 1}).psi, a({wi: 1, kind: 1}).psi, a({wi: 2, kind: 1}).psi, a({wi: 3, kind: 1}).psi, a({wi: 0}).w, a({wi: 3}).w], [1.8, 2.7, 3.6, 5.4, 1, 1.5, 2, 3, 0.1, 0.3]);
+  check('maximum bar diameter: psi_s (800 / fy)^2 = 5.4 x 3.628 = 19.59 mm and psi_s x 75000 / fy x mu / (1 + 10 mu) with mu = 0.05 = 32.14 mm; the larger governs; 16 mm passes, 33 mm fails; 0.1 mm gives 1.8 x 3.628 = 6.53 and 10.7', [near(a({}).mut, 0.05, 1e-9), near(a({}).phi1, 19.5918, 1e-3), near(a({}).phi2, 32.1429, 1e-3), near(a({}).phiMax, 32.1429, 1e-3), a({}).okPhi, a({phi: 33}).okPhi, near(a({wi: 0}).phi1, 6.5306, 1e-3), near(a({wi: 0}).phi2, 10.714, 1e-3), near(a({wi: 0}).phiMax, 10.714, 1e-3), a({wi: 0, phi: 12}).okPhi], [true, true, true, true, true, false, true, true, true, false]);
+  check('crack width: [0.15 C + 0.016 phi / mu] (10 sigma_s - 10 / mu) x 1e-5 = 9.62 x 1800e-5 = 0.1732 mm; vibrating loads 9.62 x 200e-4 = 0.1924; plain steel multiplies sigma_s by 1.6 (0.2886 mm for static loads); limit 0.3 passes, 0.15 limit fails', [near(a({}).wStatic, 0.17316, 1e-5), near(a({}).wDyn, 0.1924, 1e-5), near(a({vib: 1}).wCalc, 0.1924, 1e-5), a({}).okW, near(a({kind: 1}).wStatic, 0.2886, 1e-4), a({kind: 1}).sig, a({wi: 1}).okW, a({wi: 1, kind: 1}).okW], [true, true, true, true, true, 320, false, false]);
+  check('cracking moment: fcb = 0.7 sqrt(25) = 3.5 MPa; Ig = 300 x 600^3 / 12 = 5.4e9; Mcr = 3.5 x 5.4e9 / 300 = 63 kN.m', [a({}).fcb, a({}).Ig, a({}).yt, near(a({}).Mcr, 63, 1e-6)], [3.5, 5.4e9, 300, true]);
+  check('cracked section: n = 200000 / 25000 = 8; x = 173.5 mm; Icr = 2.223e9 mm4; with compression steel 1000 mm2 the axis moves up and Icr rises', [a({}).n, near(a({}).x, 173.54, 0.05), near(a({}).Icr / 1e9, 2.2233, 0.002), a({Asc: 1000}).x < a({}).x, a({Asc: 1000}).Icr > a({}).Icr], [8, true, true, true, true]);
+  check('effective inertia: Ma 180 > Mcr 63: Ie = (63 / 180)^3 x 5.4e9 + (1 - 0.0429) x 2.2233e9 = 2.3595e9; for Ma 110 it is 2.8201e9; below Mcr it equals Ig; never above Ig', [near(a({}).IeT / 1e9, 2.3595, 0.002), near(a({}).IeD / 1e9, 2.8201, 0.002), a({Mt: 50, Md: 40}).IeT, a({Mt: 50, Md: 40}).IeD, a({Mt: 63}).IeT, a({Mt: 70}).IeT < a({Mt: 63}).IeT], [true, true, 5.4e9, 5.4e9, 5.4e9, true]);
+  check('deflections: k = 5/48 (simple, distributed), 1/4 (cantilever), 1/12 (centre point), 1/32 (fixed): 5/48 x 180e6 x 6000^2 / (25000 x 2.3595e9) = 11.44 mm; dead 5.85 mm; live 5.59 mm', [near(a({}).k, 0.104167, 1e-5), a({sch: 1}).k, near(a({sch: 2}).k, 1 / 12, 1e-9), near(a({sch: 3}).k, 1 / 32, 1e-9), near(a({}).dT, 11.443, 0.01), near(a({}).dD, 5.851, 0.01), near(a({}).dL, 5.592, 0.01)], [true, 0.25, true, true, true, true, true]);
+  check('creep factor alpha = zeta / (1 + 50 A\'s / (b d)): zeta 2.0 (3 years or more), 1.4 (1 year), 1.2 (half a year), 1.0 (one month); 1000 mm2 of compression steel gives 1.535; floor 0.8 (alpha 0.4 at 5000 mm2)', [a({}).alpha, a({dur: 1}).alpha, a({dur: 2}).alpha, a({dur: 3}).alpha, near(a({Asc: 1000}).alpha, 1.5355, 0.001), a({Asc: 5000}).alpha], [2, 1.4, 1.2, 1, true, 0.8]);
+  check('totals: creep deflection 2 x 5.851 = 11.70; total 11.44 + 11.70 = 23.14 mm; total minus self weight 17.29 mm', [near(a({}).dCreep, 11.7018, 0.01), near(a({}).dTot, 23.1449, 0.02), near(a({}).dNet, 17.294, 0.02)], [true, true, true]);
+  check('Table 10-5: L/180, L/360, L/240, L/480, L/180 and L/600 for a 6000 mm span = 33.3, 16.7, 25, 12.5, 33.3 and 10 mm; the live-load rows compare 5.59 mm (pass), the net long-term rows 17.29 (L/240 passes, L/480 fails), the total 23.14 passes L/180', [a({cat: 0}).limDiv, a({cat: 1}).limDiv, a({cat: 2}).limDiv, a({cat: 3}).limDiv, a({cat: 4}).limDiv, a({cat: 5}).limDiv, near(a({cat: 1}).limit, 16.667, 0.001), a({cat: 0}).okDefl, a({cat: 1}).okDefl, a({cat: 2}).okDefl, a({cat: 3}).okDefl, a({cat: 4}).okDefl, a({cat: 5}).okDefl], [180, 360, 240, 480, 180, 600, true, true, true, true, false, true, false]);
+  check('exemption: rho = 1500 / (300 x 550) = 0.909 % is below 0.18 f\'c / fy = 1.071 %; 2000 mm2 gives 1.21 % and fails', [near(a({}).rho, 0.0090909, 1e-6), near(a({}).rhoMax, 0.0107143, 1e-6), a({}).okExempt, a({As: 2000}).okExempt], [true, true, true, false]);
+}
+let tt;
+w.renderCalc('syrserv'); w.calcResult('syrserv');
+tt = txt(w, 'xsj_results');
+check('the default page shows 0.30 mm, 5.4, 32.1 mm, 0.173 mm and the 🔴 note', [tt.includes('0.30 mm'), tt.includes('5.4'), tt.includes('32.1 mm'), tt.includes('0.173 mm'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xsj_m', '1'); w.calcResult('syrserv'); tt = txt(w, 'xsj_results');
+check('the deflection mode shows 63.0 kN·m, 11.4 mm, 2.00 and 16.7 mm and shows the section group while hiding the crack group', [tt.includes('63.0 kN·m'), tt.includes('11.4 mm'), tt.includes('2.00'), tt.includes('16.7 mm'), doc.getElementById('xsj_g0').style.display === 'none', doc.getElementById('xsj_gd').style.display !== 'none'], [true, true, true, true, true, true]);
+set('xsj_m', '2'); w.calcResult('syrserv'); tt = txt(w, 'xsj_results');
+check('the exemption mode shows 0.909 % and 1.071 %', [tt.includes('0.909 %'), tt.includes('1.071 %')], [true, true]);
+check('other reference codes open syrserv too', others('syrserv', 'xsj_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
