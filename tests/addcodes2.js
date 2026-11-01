@@ -2823,6 +2823,265 @@ set('xso_m', '3'); w.calcResult('syrstruct'); tt = txt(w, 'xso_results');
 check('the two-way mode shows r 1.33, alpha 0.180 and 0.530 and 6.94 kN·m/m', [tt.includes('1.33'), tt.includes('0.180'), tt.includes('0.530'), tt.includes('6.94 kN·m/m')], [true, true, true, true]);
 check('other reference codes open syrstruct too', others('syrstruct', 'xso_results'), [true, true, true]);
 }
+// ---------- part 279: ANSI/MSS SP-69-2003 (`mss69`: maximum horizontal pipe hanger spacing Table 3 and minimum rod diameter Table 4) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xmhCalc(' + JSON.stringify(o) + ')');
+{
+  const a = o => calc(Object.assign({mat: 0, sz: 11, dbl: 0, L: 0, rd: 0}, o));
+  check('Table 3 steel water: 1/2 in 7 ft (2.1 m), 2 in 10 ft (3.0 m), 4 in 14 ft (4.3 m), 12 in 23 ft (7.0 m), 30 in 33 ft (10.1 m); 1/4 in has no value', [a({sz: 2}).span, a({sz: 7}).span, a({}).span, a({sz: 16}).span, a({sz: 22}).span, a({sz: 0}).span], [[7, 2.1], [10, 3], [14, 4.3], [23, 7], [33, 10.1], null]);
+  check('Table 3 steel vapor: 3/8 in 8 ft, 1 1/2 in 12 ft (3.7 m), 4 in 17 ft (5.2 m), 8 in 24 ft (7.3 m), 30 in 44 ft (13.4 m)', [a({mat: 1, sz: 1}).span, a({mat: 1, sz: 6}).span, a({mat: 1}).span, a({mat: 1, sz: 14}).span, a({mat: 1, sz: 22}).span], [[8, 2.4], [12, 3.7], [17, 5.2], [24, 7.3], [44, 13.4]]);
+  check('Table 3 copper: water 1/4 in 5 ft (1.5 m), 1 in 6 ft (1.8 m), 4 in 12 ft (3.7 m), 12 in 19 ft (5.8 m); vapor 4 in 16 ft (4.9 m), 6 in 20 ft (6.1 m), 12 in 28 ft (8.5 m); sizes above 12 in have no value', [a({mat: 2, sz: 0}).span, a({mat: 2, sz: 4}).span, a({mat: 2}).span, a({mat: 2, sz: 16}).span, a({mat: 3}).span, a({mat: 3, sz: 13}).span, a({mat: 3, sz: 16}).span, a({mat: 2, sz: 17}).span, a({mat: 3, sz: 22}).span], [[5, 1.5], [6, 1.8], [12, 3.7], [19, 5.8], [16, 4.9], [20, 6.1], [28, 8.5], null, null]);
+  check('ductile iron 20 ft (6.1 m), cast iron soil 10 ft (3.0 m), glass 8 ft (2.4 m), plastic and fibreglass follow the manufacturer', [a({mat: 4}).span, a({mat: 5}).span, a({mat: 6}).span, a({mat: 7}).span, a({mat: 7}).spanOk], [[20, 6.1], [10, 3], [8, 2.4], null, false]);
+  check('Table 4 column 1,2,6,7: 2 in 3/8 (M10), 2 1/2 in 1/2 (M12), 4 in 5/8 (M16), 6 in 3/4 (M20), 10 in 7/8 (M20), 14 in 1 (M24), 20 in 1 1/4 (M30), 30 in 1 1/4; 1/4 in none', [a({sz: 7}).rodSingle.slice(0, 2), a({sz: 8}).rodSingle.slice(0, 2), a({}).rodSingle.slice(0, 2), a({sz: 13}).rodSingle.slice(0, 2), a({sz: 15}).rodSingle.slice(0, 2), a({sz: 17}).rodSingle.slice(0, 2), a({sz: 20}).rodSingle.slice(0, 2), a({sz: 22}).rodSingle.slice(0, 2), a({sz: 0}).rodSingle], [['3/8', 'M10'], ['1/2', 'M12'], ['5/8', 'M16'], ['3/4', 'M20'], ['7/8', 'M20'], ['1', 'M24'], ['1 1/4', 'M30'], ['1 1/4', 'M30'], null]);
+  check('Table 4 column 3,4,8,9,10 (copper, glass, plastic): 1/4 in 3/8, 2 in 3/8, 4 in 1/2 (M12), 5 in 1/2, 6 in 5/8 (M16), 8 in 3/4 (M20), 12 in 3/4, 14 in none', [a({mat: 2, sz: 0}).rodSingle.slice(0, 2), a({mat: 2, sz: 7}).rodSingle.slice(0, 2), a({mat: 2}).rodSingle.slice(0, 2), a({mat: 3, sz: 12}).rodSingle.slice(0, 2), a({mat: 6, sz: 13}).rodSingle.slice(0, 2), a({mat: 7, sz: 14}).rodSingle.slice(0, 2), a({mat: 2, sz: 16}).rodSingle.slice(0, 2), a({mat: 2, sz: 17}).rodSingle], [['3/8', 'M10'], ['3/8', 'M10'], ['1/2', 'M12'], ['1/2', 'M12'], ['5/8', 'M16'], ['3/4', 'M20'], ['3/4', 'M20'], null]);
+  check('double rod hangers use one size smaller (4 in steel: 1/2 in; 6 in: 5/8 in; 30 in: 1 in) and never below 3/8 in', [a({dbl: 1}).rod.slice(0, 2), a({dbl: 1, sz: 13}).rod.slice(0, 2), a({dbl: 1, sz: 22}).rod.slice(0, 2), a({dbl: 1, sz: 7}).rod.slice(0, 2)], [['1/2', 'M12'], ['5/8', 'M16'], ['1', 'M24'], ['3/8', 'M10']]);
+  check('checks: 4.0 m passes 4.3 m, 4.5 m fails; a 12 mm rod fails 15.9 mm (5/8) but 16 mm passes; 0 skips the check', [a({L: 4}).okSpan, a({L: 4.5}).okSpan, a({rd: 12}).okRod, a({rd: 16}).okRod, a({}).okSpan, a({}).okRod], [true, false, false, true, null, null]);
+}
+let tt;
+w.renderCalc('mss69'); w.calcResult('mss69');
+tt = txt(w, 'xmh_results');
+check('the default page shows 4.3 m, 14 ft and 5/8 in (M16) and the 🔴 note', [tt.includes('4.3 m'), tt.includes('14 ft'), tt.includes('5/8 in (M16)'), tt.includes('🔴')], [true, true, true, true]);
+set('xmh_m', '4'); w.calcResult('mss69'); tt = txt(w, 'xmh_results');
+check('ductile iron shows 6.1 m and the hanger-per-section rule', [tt.includes('6.1 m'), tt.includes('لكل وصلة')], [true, true]);
+set('xmh_m', '7'); w.calcResult('mss69'); tt = txt(w, 'xmh_results');
+check('plastic pipe shows the manufacturer instruction', [tt.includes('مصنع الأنبوب')], [true]);
+check('other reference codes open mss69 too', others('mss69', 'xmh_results'), [true, true, true]);
+}
+// ---------- part 280: ANSI/ASHRAE 62.2-2019 (`a622`: dwelling total ventilation rate, infiltration credit, local exhaust) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xrvCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.01);
+{
+  const a = o => calc(Object.assign({area: 150, nbr: 3, q50: 0, wsf: 0.5, h: 5, det: 0, aext: 1, bal: 0, enc: 1, vk: 30, nb: 2}, o));
+  check('Eq 4-1b: 0.15 x 150 + 3.5 x (3 + 1) = 36.5 L/s; bedrooms below 1 count as 1 (0.15 x 100 + 3.5 x 2 = 22)', [a({}).qtot, a({area: 100, nbr: 0}).qtot, a({nbr: 0, area: 100}).nbr], [36.5, 22, 1]);
+  check('Table 4-1b bands: <47 m2 1 bedroom 14, 47-93 m2 5 bedrooms 35, 140-186 m2 3 bedrooms 42, 419-465 m2 5 bedrooms 91, 150 m2 falls in band 4', [Math.round(a({area: 40, nbr: 1}).qtab), Math.round(a({area: 80, nbr: 5}).qtab), Math.round(a({}).qtab), Math.round(a({area: 450, nbr: 5}).qtab), a({}).k], [14, 35, 42, 91, 4]);
+  check('table rows: 2 bedrooms in the 233-279 m2 row 52 and 4 bedrooms in the 94-139 m2 row 38 and 1 bedroom in the 373-418 m2 row 70', [Math.round(a({area: 250, nbr: 2}).qtab), Math.round(a({area: 120, nbr: 4}).qtab), Math.round(a({area: 400, nbr: 1}).qtab)], [52, 38, 70]);
+  check('Eq 4-3: 0.052 x 400 x 0.5 x (5 / 2.5)^0.4 = 13.72 L/s; no blower door test gives 0', [near(a({q50: 400}).qinf, 13.7217, 0.01), a({}).qinf], [true, 0]);
+  check('Eq 4-2 unbalanced: phi = Qinf / Qtot = 0.3759, credit 5.158, Qfan = 31.34 L/s; balanced: Qfan = 36.5 - 13.72 = 22.78 L/s', [near(a({q50: 400}).phi, 0.37594, 1e-4), near(a({q50: 400}).qfan, 31.342, 0.01), near(a({q50: 400, bal: 1}).qfan, 22.778, 0.01)], [true, true, true]);
+  check('attached units: Aext 0.8 reduces the credit to 0.8 x 13.72 (balanced Qfan = 36.5 - 10.98 = 25.52 L/s)', [near(a({q50: 400, bal: 1, det: 1, aext: 0.8}).qfan, 25.522, 0.01), a({q50: 400, det: 0, aext: 0.5}).aext], [true, 1]);
+  check('exception 4.1.2: unbalanced Qfan not above 7 L/s needs no system; a tight small unit: area 40, 1 bedroom (13.97) with Q50 2000 gives credit and Qfan = 7.8 > 7 so required', [a({area: 20, nbr: 1, q50: 4000, wsf: 0.9, h: 2.5}).none, a({q50: 400}).none, a({}).none], [true, false, false]);
+  check('local exhaust: demand hood 50 L/s, other fans 150 L/s, bathrooms 25 L/s each (50 for two); continuous kitchen 5 ach on 30 m3 = 41.67 L/s, bathrooms 10 L/s each (20)', [a({}).kitDemandHood, a({}).kitDemandOther, a({}).bathDemand, near(a({}).kitAch, 41.667, 0.01), a({}).bathCont, a({enc: 0}).contKitOk], [50, 150, 50, true, 20, false]);
+}
+let tt;
+w.renderCalc('a622'); w.calcResult('a622');
+tt = txt(w, 'xrv_results');
+check('the default page shows 36.5 L/s, 42 L/s, 41.7 L/s and the 🔴 note', [tt.includes('36.5 L/s'), tt.includes('42.0 L/s'), tt.includes('41.7 L/s'), tt.includes('🔴')], [true, true, true, true]);
+set('xrv_q', '400'); w.calcResult('a622'); tt = txt(w, 'xrv_results');
+check('with a blower door test the page shows Qinf 13.72 L/s and Qfan 31.3 L/s', [tt.includes('13.72 L/s'), tt.includes('31.3 L/s')], [true, true]);
+check('other reference codes open a622 too', others('a622', 'xrv_results'), [true, true, true]);
+}
+// ---------- part 281: ANSI/ASHRAE 62.1-2022 multiple-zone systems (`a621z`: Vbz, Voz, Vou, Ev simplified and Appendix A, Vot) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xvzCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const Z = [{rp: 2.5, pz: 20, ra: 0.3, az: 100, ez: 1, vpz: 400, vdz: 0, er: 0.75}, {rp: 2.5, pz: 10, ra: 0.3, az: 60, ez: 1, vpz: 200, vdz: 0, er: 0.75}, {rp: 3.8, pz: 15, ra: 0.3, az: 80, ez: 0.8, vpz: 300, vdz: 0, er: 0.75}];
+  const a = o => calc(Object.assign({sys: 0, ps: 36, vps: 0, zones: Z}, o));
+  check('Eq 6-1 and 6-2: zone 1 Vbz 2.5x20+0.3x100 = 80, zone 2 43, zone 3 81 and Voz 81/0.8 = 101.25 L/s', [a({}).zones.map(z => +z.vbz.toFixed(2)), a({}).zones.map(z => +z.voz.toFixed(2))], [[80, 43, 81], [80, 43, 101.25]]);
+  check('Zpz = Voz / Vpz: 0.2, 0.215, 0.3375; minimum primary airflow 1.5 Voz = 120, 64.5, 151.88', [a({}).zones.map(z => +z.zpz.toFixed(4)), a({}).zones.map(z => +z.vmin.toFixed(2))], [[0.2, 0.215, 0.3375], [120, 64.5, 151.88]]);
+  check('Eq 6-5 and 6-6: D = 36 / 45 = 0.8; Vou = 0.8 x (50 + 25 + 57) + (30 + 18 + 24) = 177.6 L/s', [near(a({}).D, 0.8), near(a({}).vou, 177.6)], [true, true]);
+  check('simplified procedure: D 0.8 gives Ev 0.75 and Vot = 177.6 / 0.75 = 236.8; D 0.5 gives Ev = 0.88 x 0.5 + 0.22 = 0.66; D 0.6 gives 0.75', [near(a({}).ev, 0.75), near(a({}).vot, 236.8), near(a({ps: 22.5}).ev, 0.66), near(a({ps: 27}).ev, 0.75)], [true, true, true, true]);
+  check('Appendix A (A-1 to A-9): Vps = 900, Xs = 0.19733; Evz = 1 + Xs - Zpz = 0.99733, 0.98233, 0.85983; Ev = 0.85983; Vot = 177.6 / 0.85983 = 206.56', [near(a({sys: 1}).xs, 0.197333, 1e-5), a({sys: 1}).zones.map(z => +z.evz.toFixed(5)), near(a({sys: 1}).ev, 0.85983, 1e-5), near(a({sys: 1}).vot, 206.56, 0.02), a({sys: 1}).crit], [true, [0.99733, 0.98233, 0.85983], true, true, 2]);
+  check('a stated Vps changes Xs (Vps 600 gives 0.296) and the critical zone efficiency', [near(a({sys: 1, vps: 600}).xs, 0.296), near(a({sys: 1, vps: 600}).evAlt, 1 + 0.296 - 0.3375, 1e-5)], [true, true]);
+  check('A-4 secondary recirculation: one zone Vou = 80, Vps 900, Xs 0.08889, Zpz 0.2, Vdz 500, Vpz 400, Er 0.75, Ez 1 gives Ep 0.8, Fa 0.95, Fb 0.8, Fc 1 and Evz = 0.86111 / 0.95 = 0.90643', [near(calc({sys: 2, ps: 20, vps: 900, zones: [{rp: 2.5, pz: 20, ra: 0.3, az: 100, ez: 1, vpz: 400, vdz: 500, er: 0.75}]}).zones[0].evz, 0.906433, 1e-5), near(calc({sys: 2, ps: 20, vps: 900, zones: [{rp: 2.5, pz: 20, ra: 0.3, az: 100, ez: 1, vpz: 400, vdz: 0, er: 0.75}]}).zones[0].evz, 1 + 80 / 900 - 0.2, 1e-5)], [true, true]);
+  check('single-zone Vot = Voz (101.25 for zone 3 alone) and 100 % OA Vot = the sum of Voz = 224.25', [near(calc({sys: 3, ps: 15, vps: 0, zones: [Z[2]]}).vot, 101.25), near(a({sys: 4}).vot, 224.25)], [true, true]);
+  check('parser: lines with six numbers are zones, short or text lines are ignored, optional Vdz and Er are read', [w.eval('xvzParse("2.5, 20, 0.3, 100, 1, 400\\nabc\\n1,2,3\\n3.8 15 0.3 80 0.8 300 500 0.5")').length, w.eval('xvzParse("3.8 15 0.3 80 0.8 300 500 0.5")[0].er'), w.eval('xvzParse("3.8 15 0.3 80 0.8 300 500 0.5")[0].vdz'), w.eval('xvzParse("2.5, 20, 0.3, 100, 0, 400")[0].ez')], [2, 0.5, 500, 1]);
+}
+let tt;
+w.renderCalc('a621z'); w.calcResult('a621z');
+tt = txt(w, 'xvz_results');
+check('the default page shows Voz 101.3 L/s, D 0.800, Vou 177.6 L/s, Ev 0.750, Vot 236.8 L/s and the 🔴 note', [tt.includes('101.3 L/s'), tt.includes('0.800'), tt.includes('177.6 L/s'), tt.includes('0.750'), tt.includes('236.8 L/s'), tt.includes('🔴')], [true, true, true, true, true, true]);
+set('xvz_s', '1'); w.calcResult('a621z'); tt = txt(w, 'xvz_results');
+check('the alternative procedure shows Ev 0.860 and Vot 206.6 L/s', [tt.includes('0.860'), tt.includes('206.6 L/s')], [true, true]);
+set('xvz_z', ''); w.calcResult('a621z'); tt = txt(w, 'xvz_results');
+check('an empty zone list asks for a zone', [tt.includes('أدخل منطقة')], [true]);
+check('other reference codes open a621z too', others('a621z', 'xvz_results'), [true, true, true]);
+}
+// ---------- part 282: EN 1992-1-1:2004 shear (6.2) and punching (6.4) (`ec2shear`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xe2Calc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({fck: 30, fyk: 500, gc: 1.5, gs: 1.15, bw: 300, h: 500, d: 450, asl: 1500, N: 0, ved: 150, cot: 2.5, asw: 100.5, s: 200, pd: 200, c1: 400, c2: 400, rly: 0.01, rlz: 0.01, pv: 600, pm: 0, pcp: 0, ct: 0, bm: 0, sr: 150, al: 90, aswp: 0}, o));
+  check('beam without links: k = 1 + sqrt(200 / 450) = 1.6667, rho = 1500 / (300 x 450) = 1.111 %, CRd,c = 0.12, VRd,c = 0.12 x 1.6667 x 33.33^(1/3) x 135000 = 86.89 kN, vmin = 0.4125 MPa (55.7 kN)', [near(a({}).k, 1.66667, 1e-4), near(a({}).rho, 0.0111111, 1e-6), a({}).crd, near(a({}).vrdc, 86.89, 0.05), near(a({}).vmin, 0.41248, 1e-4), a({}).minGov], [true, true, 0.12, true, true, false]);
+  check('minimum governs for a lightly reinforced beam: rho 0.2 % gives (0.035 k^1.5 sqrt(fck)) x bw d = 55.68 kN against 0.12 x 1.6667 x (6)^(1/3) x 135000 = 49.0 kN', [near(a({asl: 270}).vrdc, 55.68, 0.05), a({asl: 270}).minGov], [true, true]);
+  check('axial compression 300 kN on 150 000 mm2: sigma_cp 2 MPa adds 0.15 x 2 = 0.3 MPa: VRd,c = (0.64366 + 0.3) x 135 = 127.4 kN; sigma above 0.2 fcd = 4 MPa is flagged', [near(a({N: 300}).sigcp, 2), near(a({N: 300}).vrdc, 127.4, 0.1), a({N: 300}).sigOk, a({N: 700}).sigOk], [true, true, true, false]);
+  check('rho is capped at 2 % and k at 2.0: d 150 gives k 2; Asl 5000 gives rho 0.02', [a({d: 150}).k, a({asl: 5000}).rho], [2, 0.02]);
+  check('compression strut: nu1 = 0.6 (1 - 30/250) = 0.528, fcd 20 MPa, z 405: VRd,max at cot 2.5 = 442.4 kN and at cot 1 = 641.5 kN', [near(a({}).nu, 0.528), near(a({}).fcd, 20), a({}).z, near(a({}).vrdmax, 442.43, 0.05), near(a({cot: 1}).vrdmax, 641.52, 0.05)], [true, true, 405, true, true]);
+  check('links: VEd 150 kN needs Asw / s = 150000 / (405 x 434.78 x 2.5) = 0.3408 mm2/mm (minimum 0.08 sqrt(30) / 500 x 300 = 0.2629); the optimal cot theta is the 2.5 limit; 100.5 / 200 = 0.5025 gives VRd,s = 221.2 kN', [near(a({}).aswsReq, 0.34072, 1e-4), near(a({}).aswsMin, 0.26294, 1e-4), a({}).cotOpt, near(a({}).aswsProv, 0.5025), near(a({}).vrds, 221.2, 0.3), a({}).okProv, a({s: 400}).okProv], [true, true, 2.5, true, true, true, false]);
+  check('a heavy shear VEd 900 kN: x = 2 VEd / (bw z nu fcd) = 1.403 > 1 so the section fails; VEd 600 kN gives x 0.935 and cot theta = 1 / tan(0.5 asin x) = 1.448', [a({ved: 900}).sectionOk, near(a({ved: 600}).sec2, 0.9353, 1e-3), a({ved: 600}).sectionOk, near(a({ved: 600}).cotOpt, 1.4478, 2e-3), a({ved: 50}).needLinks, a({}).needLinks], [false, true, true, true, false, true]);
+  check('maximum link spacing 0.75 d = 337.5 mm: 200 passes, 350 fails', [a({}).smax, a({}).okS, a({s: 350}).okS], [337.5, true, false]);
+  check('punching interior 400 x 400, d 200: u1 = 2 x 800 + 4 pi 200 = 4113.3 mm, u0 = 1600, beta 1.15, vEd = 1.15 x 600000 / (4113.3 x 200) = 0.8387 MPa', [near(a({}).u1, 4113.27, 0.01), a({}).u0, a({}).beta, near(a({}).vEd, 0.83873, 1e-4), near(a({}).vEd0, 2.15625, 1e-4)], [true, 1600, 1.15, true, true]);
+  check('vRd,c = 0.12 x 2 x (100 x 0.01 x 30)^(1/3) = 0.7457 MPa (k1 0.1 for punching), vmin = 0.5422; with sigma_cp 1 MPa: 0.8457; vRd,max = 0.4 x 0.528 x 20 = 4.224 MPa', [near(a({}).pvrdc, 0.74573, 1e-4), near(a({}).pvmin, 0.54222, 1e-4), near(a({pcp: 1}).pvrdc, 0.84573, 1e-4), near(a({}).vrdmaxP, 4.224, 1e-4), a({}).okMax], [true, true, true, true, true]);
+  check('reinforcement: vEd 0.8387 > 0.7457 so required; fywd,ef = 250 + 0.25 x 200 = 300; Asw = (0.8387 - 0.5593) x 150 x 4113.3 / (1.5 x 300) = 383.1 mm2 per perimeter; uout,ef = 1.15 x 600000 / (0.7457 x 200) = 4626 mm', [a({}).needReinf, a({}).fywdef, near(a({}).aswReq, 383.1, 0.5), near(a({}).uout, 4626.4, 1), a({pv: 300}).needReinf, a({pv: 300}).aswReq], [true, 300, true, true, false, 0]);
+  check('provided reinforcement: 383 mm2 gives vRd,cs close to vEd, 300 mm2 fails, 500 mm2 passes', [a({aswp: 384}).okReinf, a({aswp: 300}).okReinf, a({aswp: 500}).okReinf, near(a({aswp: 383.1}).vrdcs, 0.83873, 2e-3)], [true, false, true, true]);
+  check('beta from an unbalanced moment (6.39 to 6.41): MEd 50 kN.m gives k 0.60, W1 = 1 702 655 mm2 and beta = 1 + 0.6 x 50e6 x 4113.3 / (600000 x 1702655) = 1.1208; circular D 450 with e = 83.33: beta = 1 + 0.6 pi e / (D + 4 d) = 1.1257', [near(a({bm: 1, pm: 50}).kk, 0.6), near(a({bm: 1, pm: 50}).W1, 1702654.8, 1), near(a({bm: 1, pm: 50}).beta, 1.12079, 1e-4), near(a({bm: 1, pm: 50, ct: 1, c1: 450}).beta, 1.12566, 2e-4)], [true, true, true, true]);
+  check('Table 6.1 k: c1 / c2 0.5 gives 0.45, 1.0 gives 0.60, 2.0 gives 0.70, 3.0 gives 0.80; rectangular 600 x 300 gives 0.70', [a({c1: 200}).kk, a({}).kk, near(a({c1: 600, c2: 300}).kk, 0.7), a({c1: 1200}).kk], [0.45, 0.6, true, 0.8]);
+  check('edge and corner columns: u1 = c2 + 2 c1 + 2 pi d = 2456.6 and 3 d = 600 for u0 = min(c2 + 3d, c2 + 2c1) = 1000 (edge), corner u1 = 800 + pi 200 = 1428.3 with u0 = min(600, 800) = 600; beta 1.4 and 1.5', [near(a({ct: 2}).u1, 2456.64, 0.05), a({ct: 2}).u0, near(a({ct: 3}).u1, 1428.32, 0.05), a({ct: 3}).u0, a({ct: 2}).beta, a({ct: 3}).beta], [true, 1000, true, 600, 1.4, 1.5]);
+}
+let tt;
+w.renderCalc('ec2shear'); w.calcResult('ec2shear');
+tt = txt(w, 'xe2_results');
+check('the default page shows VRd,c 86.9 kN, VRd,max 442.4 kN, 0.341 mm²/mm and the 🔴 note', [tt.includes('86.9 kN'), tt.includes('442.4 kN'), tt.includes('0.341 mm²/mm'), tt.includes('🔴')], [true, true, true, true]);
+set('xe2_m', '1'); w.calcResult('ec2shear'); tt = txt(w, 'xe2_results');
+check('the punching page shows u1 4113 mm, vEd 0.839 MPa, 0.746 MPa and Asw 383 mm² and hides the beam group', [tt.includes('4113 mm'), tt.includes('0.839 MPa'), tt.includes('0.746 MPa'), tt.includes('383 mm²'), doc.getElementById('xe2_g0').style.display === 'none'], [true, true, true, true, true]);
+check('other reference codes open ec2shear too', others('ec2shear', 'xe2_results'), [true, true, true]);
+}
+// ---------- part 283: EN 1992-1-1:2004 anchorage (8.4) and lap length (8.7.3) (`ec2bond`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xbdCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({mode: 0, cl: 4, fyk: 500, gc: 1.5, gs: 1.15, ph: 20, bc: 0, ratio: 1, ten: 0, sh: 0, a: 100, c1: 40, c: 40, ast: 0, k: 0, el: 0, p: 0, w: 0, rho1: 50}, o));
+  check('bond strength C30/37 (fctk,0.05 2.0): fctd = 2.0 / 1.5 = 1.3333, fbd = 2.25 x 1 x 1 x 1.3333 = 3.0 MPa; lb,rqd = (20 / 4) (434.78 / 3.0) = 724.64 mm = 36.2 phi', [near(a({}).fctd, 1.33333, 1e-4), near(a({}).fbd, 3.0, 1e-4), near(a({}).fyd, 434.783, 1e-3), near(a({}).lbrqd, 724.638, 0.01)], [true, true, true, true]);
+  check('poor bond conditions (eta1 0.7): fbd = 2.1 MPa and lb,rqd = 1035.2 mm; phi 40 mm: eta2 = (132 - 40) / 100 = 0.92, fbd = 2.76, lb,rqd = 10 x 434.78 / 2.76 = 1575.3 mm', [near(a({bc: 1}).fbd, 2.1, 1e-4), near(a({bc: 1}).lbrqd, 1035.197, 0.01), a({ph: 40}).eta2, near(a({ph: 40}).fbd, 2.76, 1e-4), near(a({ph: 40}).lbrqd, 1575.3, 0.05)], [true, true, 0.92, true, true]);
+  check('concrete strength is limited to the C60/75 value: C60 and C90 both give fctk,0.05 3.1 and fbd = 2.25 x 3.1 / 1.5 = 4.65 MPa (capped flag only above C60)', [a({cl: 10}).fctk, a({cl: 13}).fctk, near(a({cl: 13}).fbd, 4.65, 1e-4), a({cl: 13}).capped, a({cl: 10}).capped, a({cl: 4}).capped], [3.1, 3.1, true, true, false, false]);
+  check('straight bar, a 100, c1 40, c 40: cd = min(50, 40, 40) = 40, alpha2 = 1 - 0.15 (40 - 20) / 20 = 0.85, lbd = 0.85 x 724.64 = 615.9 mm; lb,min = max(217.4, 200, 100) = 217.4', [a({}).cd, near(a({}).a2, 0.85), near(a({}).lbd, 615.94, 0.01), near(a({}).lbmin, 217.39, 0.01), a({}).minGov], [40, true, true, true, false]);
+  check('bent bar, a 200, c1 70: cd = min(100, 70) = 70 > 3 phi (60) so alpha1 = 0.7, alpha2 = 1 - 0.15 (70 - 60) / 20 = 0.925, lbd = 0.7 x 0.925 x 724.64 = 469.2 mm and lb,eq = 0.7 x 724.64 = 507.2 mm; cd 40 gives alpha1 1.0 and alpha2 1.0', [a({sh: 1, a: 200, c1: 70, c: 70}).cd, a({sh: 1, a: 200, c1: 70, c: 70}).a1, near(a({sh: 1, a: 200, c1: 70, c: 70}).a2, 0.925), near(a({sh: 1, a: 200, c1: 70, c: 70}).lbd, 469.2, 0.05), near(a({sh: 1, a: 200, c1: 70, c: 70}).lbeq, 507.25, 0.05), a({sh: 1}).a1, a({sh: 1}).a2, a({}).lbeq], [70, 0.7, true, true, true, 1, 1, null]);
+  check('transverse bars: 2 legs of 78.54 mm2 on a beam: lambda = (157.08 - 0.25 x 314.16) / 314.16 = 0.25, K 0.1 gives alpha3 = 0.975 and lbd = 0.85 x 0.975 x 724.64 = 600.5 mm; a slab has no minimum so lambda = 0.5 and alpha3 = 0.95', [near(a({ast: 157.08, k: 0}).lam, 0.25, 1e-4), near(a({ast: 157.08}).a3, 0.975, 1e-4), near(a({ast: 157.08}).lbd, 600.54, 0.05), near(a({ast: 157.08, el: 1}).lam, 0.5, 1e-4), near(a({ast: 157.08, el: 1}).a3, 0.95, 1e-4), a({ast: 157.08, k: 2}).a3], [true, true, true, true, true, 1]);
+  check('the product alpha2 alpha3 alpha5 is not taken below 0.7 (8.5): cd 80 gives alpha2 0.7, 2 As of links gives alpha3 0.825, p = 3 MPa gives alpha5 0.88; product 0.508 so lbd = 0.7 x 724.64 = 507.2 mm', [a({a: 300, c1: 80, c: 80, ast: 628.32, p: 3}).a2, near(a({a: 300, c1: 80, c: 80, ast: 628.32, p: 3}).a3, 0.825, 1e-4), near(a({a: 300, c1: 80, c: 80, ast: 628.32, p: 3}).a5, 0.88, 1e-4), near(a({a: 300, c1: 80, c: 80, ast: 628.32, p: 3}).m235, 0.5082, 1e-3), near(a({a: 300, c1: 80, c: 80, ast: 628.32, p: 3}).lbd, 507.25, 0.05), a({p: 20}).a5], [0.7, true, true, true, true, 0.7]);
+  check('compression: all alpha = 1, lbd = lb,rqd = 724.64 mm, lb,min = max(434.8, 200, 100); a welded cross bar (alpha4 0.7) gives 507.2 mm; hooks do not help in compression', [near(a({ten: 1}).lbd, 724.638, 0.01), near(a({ten: 1}).lbmin, 434.78, 0.01), near(a({ten: 1, w: 1}).lbd, 507.25, 0.05), a({ten: 1, sh: 1}).a1, a({ten: 1}).a2], [true, true, true, 1, 1]);
+  check('the minimum governs a short anchorage: phi 12, sigma 0.2 fyd: lb,rqd = 87.0 mm, lbd0 = 60.9 mm below lb,min = max(26.1, 120, 100) = 120 mm', [near(a({ph: 12, ratio: 0.2}).lbrqd, 86.957, 0.01), a({ph: 12, ratio: 0.2}).minGov, near(a({ph: 12, ratio: 0.2}).lbd, 120, 1e-6)], [true, true, true]);
+  check('lap length at 50 % lapped: alpha6 = sqrt(50 / 25) = 1.4142, l0 = 0.85 x 1.4142 x 724.64 = 871.1 mm, l0,min = max(307.4, 300, 200) = 307.4 mm; alpha3 is 1 with no links (lambda -1)', [near(a({mode: 1}).a6, 1.41421, 1e-4), near(a({mode: 1}).l0, 871.08, 0.1), near(a({mode: 1}).l0min, 307.43, 0.05), a({mode: 1}).a3, a({mode: 1}).minGov], [true, true, true, 1, false]);
+  check('alpha6 limits: 10 % gives 1, 33 % gives 1.149, 100 % gives 1.5; compression lap l0 = 1.4142 x 724.64 = 1024.8 mm', [a({mode: 1, rho1: 10}).a6, near(a({mode: 1, rho1: 33}).a6, 1.14891, 1e-4), a({mode: 1, rho1: 100}).a6, near(a({mode: 1, ten: 1}).l0, 1024.83, 0.1)], [1, true, 1.5, true]);
+  check('lap links: phi 20 and 50 % lapped need sum Ast >= As = 314.2 mm2 (8.7.4.1(3)); 0 mm2 fails, 314.2 passes; phi 16 or 20 % lapped need no check', [a({mode: 1}).needT, a({mode: 1}).okT, a({mode: 1, ast: 314.16}).okT, a({mode: 1, ph: 16}).needT, a({mode: 1, rho1: 20}).needT, a({mode: 1, ph: 16}).okT], [true, false, true, false, false, true]);
+  check('lap alpha3 uses sum Ast,min = As (sigma / fyd): 314.16 mm2 of links gives lambda 0 and alpha3 1; 628.32 gives lambda 1 and alpha3 0.9 with K = 0.1', [near(a({mode: 1, ast: 314.16}).lam, 0, 1e-4), near(a({mode: 1, ast: 628.32}).lam, 1, 1e-4), near(a({mode: 1, ast: 628.32}).a3, 0.9, 1e-4)], [true, true, true]);
+  check('minimum mandrel diameters (Table 8.1N): phi 12 gives 48, 16 gives 64, 20 gives 140 mm', [a({ph: 12}).phiM, a({ph: 16}).phiM, a({ph: 20}).phiM], [48, 64, 140]);
+}
+let tt;
+w.renderCalc('ec2bond'); w.calcResult('ec2bond');
+tt = txt(w, 'xbd_results');
+check('the default page shows fbd 3.00 MPa, lb,rqd 725 mm, lbd 616 mm and the 🔴 note', [tt.includes('3.00 MPa'), tt.includes('725 mm'), tt.includes('616 mm'), tt.includes('🔴')], [true, true, true, true]);
+set('xbd_m', '1'); w.calcResult('ec2bond'); tt = txt(w, 'xbd_results');
+check('the lap page shows l0 871 mm, l0,min 307 mm, alpha6 1.414 and the links requirement and shows the lapped-percentage group', [tt.includes('871 mm'), tt.includes('307 mm'), tt.includes('1.414'), tt.includes('314 mm²'), doc.getElementById('xbd_g1').style.display === ''], [true, true, true, true, true]);
+check('other reference codes open ec2bond too', others('ec2bond', 'xbd_results'), [true, true, true]);
+}
+// ---------- part 284: EN 1992-1-1:2004 concrete cover (4.4.1) (`ec2cover`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = o => J('xcvCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => calc(Object.assign({ex: 1, life: 0, cl: 4, slab: 0, qc: 0, ph: 20, nb: 1, agg: 0, dgam: 0, dst: 0, dadd: 0, dev: 10, xm: 0, sf: 0}, o));
+  check('XC1, 50 years, C30/37 (reaches the C30/37 of column XC1, class S4 - 1 = S3): Table 4.4N S3 / XC1 = 10 mm; phi 20 gives cmin,b 20, cmin 20 and cnom 30 mm (bond governs)', [a({}).sc, a({}).cdur, a({}).cminb, a({}).cmin, a({}).cnom, a({}).gov], [3, 10, 20, 20, 30, 0]);
+  check('XC1 with C25/30 (below C30/37, no reduction): S4 gives 15 mm; phi 16 gives cmin = max(16, 15, 10) = 16 and cnom 26', [a({cl: 3, ph: 16}).sc, a({cl: 3, ph: 16}).cdur, a({cl: 3, ph: 16}).cmin, a({cl: 3, ph: 16}).cnom, a({cl: 3, ph: 16}).gov], [4, 15, 16, 26, 0]);
+  check('XC4 with C40/50 (column XC4 needs C40/50): S3 / XC4 = 25 mm; phi 25 gives cnom 35 mm; aggregate over 32 mm adds 5 to cmin,b: cnom 40 mm', [a({ex: 4, cl: 6, ph: 25}).sc, a({ex: 4, cl: 6, ph: 25}).cdur, a({ex: 4, cl: 6, ph: 25}).cnom, a({ex: 4, cl: 6, ph: 25, agg: 1}).cminb, a({ex: 4, cl: 6, ph: 25, agg: 1}).cnom], [3, 25, 35, 30, 40]);
+  check('XD3, 100 years, C45/55: class 4 + 2 - 1 = S5 gives 50 mm (cnom 60); slab geometry gives S4 = 45 (cnom 55); with special quality control S3 = 40 (cnom 50)', [a({ex: 7, life: 1, cl: 7}).sc, a({ex: 7, life: 1, cl: 7}).cnom, a({ex: 7, life: 1, cl: 7, slab: 1}).sc, a({ex: 7, life: 1, cl: 7, slab: 1}).cnom, a({ex: 7, life: 1, cl: 7, slab: 1, qc: 1}).sc, a({ex: 7, life: 1, cl: 7, slab: 1, qc: 1}).cnom], [5, 60, 4, 55, 3, 50]);
+  check('XS1 uses the XD1/XS1 column of Table 4.4N and the XD2/XS1 column of Table 4.3N (C40/50): C40/50 gives S3 = 30 mm (cnom 40); C35/45 gives S4 = 35 mm (cnom 45); XD1 with C40/50 gives the same 30 mm', [a({ex: 8, cl: 6}).sc, a({ex: 8, cl: 6}).cdur, a({ex: 8, cl: 6}).cnom, a({ex: 8, cl: 5}).sc, a({ex: 8, cl: 5}).cdur, a({ex: 8, cl: 5}).cnom, a({ex: 5, cl: 6}).cdur], [3, 30, 40, 4, 35, 45, 30]);
+  check('XD2 with C40/50: S3 / XD2 = 35 mm (cnom 45); XS2 follows XD3/XS2/XS3 in Table 4.3N (C45/55) and XD2/XS2 in Table 4.4N: C45/55 gives S3 = 35 mm, C40/50 gives S4 = 40 mm', [a({ex: 6, cl: 6}).cdur, a({ex: 6, cl: 6}).cnom, a({ex: 9, cl: 7}).sc, a({ex: 9, cl: 7}).cdur, a({ex: 9, cl: 6}).sc, a({ex: 9, cl: 6}).cdur], [35, 45, 3, 35, 4, 40]);
+  check('class S1 row (3 reductions): X0 10, XC4 15, XD1 20, XD2 25 (restored cell), XD3 30; 100 years without reductions on X0 with C25/30 gives S6 = 20 mm', [a({ex: 0, slab: 1, qc: 1}).sc, a({ex: 0, slab: 1, qc: 1}).cdur, a({ex: 4, cl: 6, slab: 1, qc: 1}).cdur, a({ex: 5, cl: 6, slab: 1, qc: 1}).cdur, a({ex: 6, cl: 6, slab: 1, qc: 1}).cdur, a({ex: 7, cl: 7, slab: 1, qc: 1}).cdur, a({ex: 0, cl: 3, life: 1}).sc, a({ex: 0, cl: 3, life: 1}).cdur], [1, 10, 15, 20, 25, 30, 6, 20]);
+  check('10 mm floor: phi 8 on S1 / X0 with dst 5 gives max(8, 5, 10) = 10 (the minimum governs); with dst 0 the durability value 10 governs', [a({ex: 0, slab: 1, qc: 1, ph: 8, dst: 5}).cmin, a({ex: 0, slab: 1, qc: 1, ph: 8, dst: 5}).gov, a({ex: 0, slab: 1, qc: 1, ph: 8}).gov], [10, 2, 1]);
+  check('additions: XC4 / C25/30 gives S4 = 30; dgam 5 gives 35; dst 5 gives 25 (cmin,b 20 so 25 governs); with XM2 (+10) and rough surface (+5): cmin = 35 + 15 = 50 and cnom 60', [a({ex: 4, cl: 3}).cdur, a({ex: 4, cl: 3, dgam: 5}).cdur2, a({ex: 4, cl: 3, dst: 5}).cdur2, a({ex: 4, cl: 3, dst: 5}).cmin, a({ex: 4, cl: 3, dgam: 5, xm: 2, sf: 1}).cmin, a({ex: 4, cl: 3, dgam: 5, xm: 2, sf: 1}).cnom], [30, 35, 25, 25, 50, 60]);
+  check('cover cast against prepared ground is at least 40 mm and against soil 75 mm: default cnom 30 rises to 40 and 75; the minimum cmin is unchanged', [a({sf: 2}).cnom, a({sf: 3}).cnom, a({sf: 3}).cmin, a({sf: 2}).floor], [40, 75, 20, 40]);
+  check('bundle of 3 bars of 20 mm: equivalent diameter 20 sqrt(3) = 34.64 mm so cmin,b 34.64 and cnom 44.64', [near(a({nb: 3}).phn, 34.641, 1e-3), near(a({nb: 3}).cmin, 34.641, 1e-3), near(a({nb: 3}).cnom, 44.641, 1e-3)], [true, true, true]);
+}
+let tt;
+w.renderCalc('ec2cover'); w.calcResult('ec2cover');
+tt = txt(w, 'xcv_results');
+check('the default page shows cnom 30 mm, cmin 20 mm, class S3 and the 🔴 note', [tt.includes('30 mm'), tt.includes('20 mm'), tt.includes('S3'), tt.includes('🔴')], [true, true, true, true]);
+set('xcv_ex', '7'); set('xcv_l', '1'); set('xcv_cl', '7'); w.calcResult('ec2cover'); tt = txt(w, 'xcv_results');
+check('XD3, 100 years, C45/55 shows cnom 60 mm and class S5', [tt.includes('60 mm'), tt.includes('S5'), tt.includes('50 mm')], [true, true, true]);
+check('other reference codes open ec2cover too', others('ec2cover', 'xcv_results'), [true, true, true]);
+}
+﻿// ---------- part 285: EN 1993-1-8:2005 bolts, fillet welds and hole spacing (`ec3conn`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const bolt = o => J('xjnBolt(' + JSON.stringify(o) + ')');
+const weld = o => J('xjnWeld(' + JSON.stringify(o) + ')');
+const space = o => J('xjnSpace(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => bolt(Object.assign({bi: 2, ci: 5, si: 2, th: 0, n: 1, t: 12, e1: 40, p1: 70, e2: 35, p2: 70, pl: 0, pt: 0, ho: 0, sl: 0, cs: 0, lj: 0, gm2: 1.25, dm: 32, nb: 4, V: 240, T: 0, ct: 0, ks: 0, mu: 0}, o));
+  check('shear per plane through the thread, M20 (As 245 mm2) 8.8: 0.6 x 800 x 245 / 1.25 = 94.08 kN, two planes 188.16 kN; 10.9 uses alpha_v 0.5: 98.0 kN; 4.6: 47.04 kN; 4.8: 39.2 kN', [near(a({}).fvPlane, 94.08, 1e-3), near(a({n: 2}).fvRd, 188.16, 1e-3), near(a({ci: 6}).fvPlane, 98, 1e-3), near(a({ci: 0}).fvPlane, 47.04, 1e-3), near(a({ci: 1}).fvPlane, 39.2, 1e-3)], [true, true, true, true, true]);
+  check('shear through the unthreaded shank uses the gross area 314.16 mm2 and alpha_v 0.6: 0.6 x 800 x 314.16 / 1.25 = 120.64 kN (also for 10.9)', [near(a({th: 1}).fvPlane, 120.637, 1e-2), near(a({th: 1, ci: 6}).fvPlane, 0.6 * 1000 * 314.159 / 1.25 / 1000, 1e-2)], [true, true]);
+  check('tension M20 8.8: 0.9 x 800 x 245 / 1.25 = 141.12 kN; countersunk k2 0.63: 98.78 kN; punching with dm 32, t 12, fu 490: 0.6 pi x 32 x 12 x 490 / 1.25 = 283.74 kN', [near(a({}).ftRd, 141.12, 1e-3), near(a({cs: 1}).ftRd, 98.784, 1e-3), near(a({}).bpRd, 283.739, 0.01)], [true, true, true]);
+  check('hole diameters: M12 13, M16 18, M20 22, M24 26, M27 30, M30 33 mm', [a({bi: 0}).d0, a({bi: 1}).d0, a({bi: 2}).d0, a({bi: 4}).d0, a({bi: 5}).d0, a({bi: 6}).d0], [13, 18, 22, 26, 30, 33]);
+  check('bearing, end and edge bolt (e1 40, e2 35, p2 70, d0 22, fu 490, t 12): alpha_d = 40 / 66 = 0.6061, k1 = min(2.7545, 2.7545, 2.5) = 2.5, Fb,Rd = 2.5 x 0.6061 x 490 x 20 x 12 / 1.25 = 142.55 kN', [near(a({}).ad, 0.606061, 1e-5), near(a({}).ab, 0.606061, 1e-5), a({}).k1, near(a({}).fbRd, 142.545, 0.01)], [true, true, 2.5, true]);
+  check('bearing, inner bolt: alpha_d = 70 / 66 - 1/4 = 0.8106, Fb,Rd = 190.65 kN; the fub / fu ratio limits alpha_b for class 4.6 with e1 60: 400 / 490 = 0.8163', [near(a({pl: 1, pt: 1}).ad, 0.810606, 1e-5), near(a({pl: 1, pt: 1}).fbRd, 190.654, 0.02), near(a({ci: 0, e1: 60}).ab, 0.816327, 1e-5)], [true, true, true]);
+  check('k1 formula: edge bolt with e2 25 and p2 50: 2.8 x 25 / 22 - 1.7 = 1.4818 and 1.4 x 50 / 22 - 1.7 = 1.4818; a single line (p2 0) ignores p2', [near(a({e2: 25, p2: 50}).k1, 1.48182, 1e-4), a({p2: 0}).k1, near(a({p2: 0, e2: 25}).k1, 1.48182, 1e-4)], [true, 2.5, true]);
+  check('hole type: oversized holes 0.8 x 142.55 = 114.04 kN, slotted perpendicular 0.6 x 142.55 = 85.53 kN; a single lap joint with one row caps bearing at 1.5 fu d t / gM2 = 141.12 kN', [near(a({ho: 1}).fbRd, 114.036, 0.01), near(a({ho: 2}).fbRd, 85.527, 0.01), near(a({sl: 1}).fbRd, 141.12, 1e-3), a({sl: 1}).capped, a({sl: 1, ho: 1}).capped], [true, true, true, true, false]);
+  check('long joint: Lj 800 mm with d 20 gives 1 - (800 - 300) / 4000 = 0.875 so Fv,Rd per plane 82.32 kN; Lj 300 gives 1; very long joints stop at 0.75', [a({lj: 800}).blf, near(a({lj: 800}).fvPlane, 82.32, 1e-3), a({lj: 300}).blf, a({lj: 10000}).blf], [0.875, true, 1, 0.75]);
+  check('per-bolt demand: V 240 kN and T 200 kN on 4 bolts give 60 kN shear and 50 kN tension; combined 60 / 94.08 + 50 / (1.4 x 141.12) = 0.8908 passes; V 400 kN gives 100 kN above 94.08', [a({T: 200}).fvEd, a({T: 200}).ftEd, near(a({T: 200}).comb, 0.890839, 1e-4), a({T: 200}).okComb, a({}).okSh, a({V: 400}).okSh, a({T: 200}).okTn], [60, 50, true, true, true, false, true]);
+  check('slip, M20 8.8: Fp,C = 0.7 x 800 x 245 = 137.2 kN; category C (gM3 1.25) class A: 0.5 x 137.2 / 1.25 = 54.88 kN; category B (gM3 1.1) 62.36 kN; with 50 kN tension (cat. C) (137.2 - 0.8 x 50) x 0.5 / 1.25 = 38.88 kN; class 4.6 is not pre-loaded', [near(a({ct: 2}).fpc, 137.2, 1e-3), near(a({ct: 2}).fsRd, 54.88, 1e-3), near(a({ct: 1}).fsRd, 62.3636, 1e-3), near(a({ct: 2, T: 200}).fsRd, 38.88, 1e-3), a({ci: 0}).slipOk, a({ct: 2, ks: 4, mu: 3}).ks, near(a({ct: 2, ks: 4, mu: 3}).fsRd, 0.63 * 0.2 * 137.2 / 1.25, 1e-3)], [true, true, true, true, false, 0.63, true]);
+  const w1 = o => weld(Object.assign({si: 2, a: 5, L: 200, Ft: 100, Fl: 0, jt: 0, lj: 200, gm2: 1.25}, o));
+  check('fillet weld S355 (fu 490, bw 0.9): fvw,d = 490 / sqrt(3) / (0.9 x 1.25) = 251.47 MPa, Fw,Rd = 1257.3 N/mm for a = 5 and 251.47 kN over 200 mm; throat 5 gives leg 7.07 mm', [near(w1({}).fvwd, 251.468117, 1e-3), near(w1({}).fwRd, 1257.3406, 0.01), near(w1({}).fwTot, 251.468117, 1e-2), near(w1({}).leg, 7.0711, 1e-3), w1({}).bw], [true, true, true, true, 0.9]);
+  check('correlation factor bw: S235 0.8, S275 0.85, S355 0.9, S420 1.0, S460 1.0; S235 fvw,d = 360 / sqrt(3) / (0.8 x 1.25) = 207.85 MPa', [w1({si: 0}).bw, w1({si: 1}).bw, w1({si: 2}).bw, w1({si: 3}).bw, w1({si: 4}).bw, near(w1({si: 0}).fvwd, 207.846, 1e-3)], [0.8, 0.85, 0.9, 1, 1, true]);
+  check('transverse force 100 kN on a = 5, L = 200: sigma_perp = tau_perp = 100000 / (sqrt(2) x 5 x 200) = 70.71 MPa, equivalent 141.42 MPa against 490 / (0.9 x 1.25) = 435.56: 0.3247; simplified 500 / 1257.3 = 0.3977 (more conservative)', [near(w1({}).sp, 70.7107, 1e-3), near(w1({}).seq, 141.421, 1e-2), near(w1({}).lim1, 435.556, 1e-2), near(w1({}).ratioD, 0.32469, 1e-4), near(w1({}).ratioS, 0.39766, 1e-4)], [true, true, true, true, true]);
+  check('longitudinal force 100 kN: tau_par = 100 MPa, equivalent 173.2 MPa: both methods give 0.3977', [near(w1({Ft: 0, Fl: 100}).tl, 100, 1e-6), near(w1({Ft: 0, Fl: 100}).ratioD, 0.39766, 1e-4), near(w1({Ft: 0, Fl: 100}).ratioS, 0.39766, 1e-4)], [true, true, true]);
+  check('minimum length max(30, 6 a): a = 5 gives 30 (L 29 fails, 30 passes), a = 8 gives 48; throat under 3 mm fails', [w1({}).minL, w1({L: 29}).okL, w1({L: 30}).okL, w1({a: 8}).minL, w1({a: 2.9}).okA, w1({a: 3}).okA], [30, false, true, 48, false, true]);
+  check('long joints: lap Lj 1000 with a = 5 (150a = 750): 1.2 - 0.2 x 1000 / 750 = 0.9333; stiffener weld L 3000: 1.1 - 3 / 17 = 0.9235, L 1700: 1.0, L 12000: 0.6 floor; no reduction for jt 1; fvw,d scales with the factor', [near(w1({lj: 1000}).bl, 0.933333, 1e-5), near(w1({jt: 2, L: 3000}).bl, 0.923529, 1e-5), w1({jt: 2, L: 1700}).bl, w1({jt: 2, L: 12000}).bl, w1({jt: 1, lj: 5000}).bl, near(w1({lj: 1000}).fvwd, 251.468117 * 0.933333, 1e-3)], [true, true, 1, 0.6, 1, true]);
+  const s1 = o => space(Object.assign({d0: 22, t: 12, ex: 0, e1: 40, e2: 35, p1: 70, p2: 70}, o));
+  check('Table 3.3 d0 22, t 12: e1 and e2 from 1.2 d0 = 26.4 to 4t + 40 = 88 (exposed) or max(8t, 125) = 125 (not exposed); p1 from 2.2 d0 = 48.4 and p2 from 2.4 d0 = 52.8 up to min(14t, 200) = 168; t 16 gives 200', [near(s1({}).e1[0], 26.4, 1e-9), s1({}).e1[1], s1({ex: 1}).e1[1], near(s1({}).p1[0], 48.4, 1e-9), s1({}).p1[1], near(s1({}).p2[0], 52.8, 1e-9), s1({t: 16}).p1[1]], [true, 88, 125, true, 168, true, 200]);
+  check('spacing checks: the defaults pass; e1 20 fails; p1 40 fails; p2 50 fails; e1 100 fails when exposed but passes when not exposed', [s1({}).ok1 && s1({}).ok2 && s1({}).okp1 && s1({}).okp2, s1({e1: 20}).ok1, s1({p1: 40}).okp1, s1({p2: 50}).okp2, s1({e1: 100}).ok1, s1({e1: 100, ex: 1}).ok1], [true, false, false, false, false, true]);
+}
+let tt;
+w.renderCalc('ec3conn'); w.calcResult('ec3conn');
+tt = txt(w, 'xjn_results');
+check('the default page shows Fv,Rd 94.1 kN, Fb,Rd 142.5 kN, Ft,Rd 141.1 kN and the 🔴 note', [tt.includes('94.1 kN'), tt.includes('142.5 kN'), tt.includes('141.1 kN'), tt.includes('🔴')], [true, true, true, true]);
+set('xjn_m', '1'); w.calcResult('ec3conn'); tt = txt(w, 'xjn_results');
+check('the weld page shows 251.5 kN, 1257 N/mm and 0.398, and hides the bolt group', [tt.includes('251.5 kN'), tt.includes('1257 N/mm'), tt.includes('0.398'), doc.getElementById('xjn_g0').style.display === 'none'], [true, true, true, true]);
+set('xjn_m', '2'); w.calcResult('ec3conn'); tt = txt(w, 'xjn_results');
+check('the spacing page shows 26.4 to 88.0 mm and 48.4 mm', [tt.includes('26.4'), tt.includes('88.0'), tt.includes('48.4'), doc.getElementById('xjn_g2').style.display === ''], [true, true, true, true]);
+check('other reference codes open ec3conn too', others('ec3conn', 'xjn_results'), [true, true, true]);
+}
+
+﻿// ---------- part 286: ACI 318-14 bearing (22.8), shear friction (22.9) and corbels (16.5) (`acisf`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const bear = o => J('xcrBear(' + JSON.stringify(o) + ')');
+const fric = o => J('xcrFric(' + JSON.stringify(o) + ')');
+const corb = o => J('xcrCorbel(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const b1 = o => bear(Object.assign({fc: 30, A1: 40000, A2: 160000, wider: 1, Bu: 1000}, o));
+  check('bearing 200 x 200 on 400 x 400 (sqrt(A2 / A1) = 2): Bn = 0.85 x 30 x 40000 x 2 = 2040 kN, phi Bn = 0.65 x 2040 = 1326 kN; A2 = 90000 gives factor 1.5 and phi Bn 994.5 kN; A2 above 4 A1 is capped at 2; not wider gives 1020 kN and 663 kN', [near(b1({}).Bn, 2040, 1e-6), near(b1({}).pBn, 1326, 1e-6), b1({A2: 90000}).ratio, near(b1({A2: 90000}).pBn, 994.5, 1e-6), b1({A2: 1000000}).ratio, near(b1({wider: 0}).Bn, 1020, 1e-6), near(b1({wider: 0}).pBn, 663, 1e-6)], [true, true, 1.5, true, 2, true, true]);
+  check('bearing check: Bu 1000 kN passes with phi Bn 1326; Bu 1400 fails; the design bearing stress is 0.65 x 0.85 x 30 x 2 = 33.15 MPa; A2 smaller than A1 gives the factor 1', [b1({}).ok, b1({Bu: 1400}).ok, near(b1({}).stress, 33.15, 1e-6), b1({A2: 20000}).ratio], [true, false, true, 1]);
+  const f1 = o => fric(Object.assign({fc: 30, fy: 420, lam: 0, surf: 0, ac: 150000, Vu: 400, alpha: 90, Nu: 0, Nuc: 0, avfp: 0}, o));
+  check('shear friction Vu 400 kN (Vn = 533.3 kN) monolithic mu 1.4: Avf = 533333 / (1.4 x 420) = 907.0 mm2; roughened mu 1.0: 1269.8; not roughened mu 0.6: 2116.4; steel mu 0.7: 1814.2', [near(f1({}).avf, 907.029, 1e-2), near(f1({surf: 1}).avf, 1269.84, 1e-2), near(f1({surf: 2}).avf, 2116.4, 1e-1), near(f1({surf: 3}).avf, 533333.33 / (0.7 * 420), 1e-1)], [true, true, true, true]);
+  check('maximum Vn: monolithic normalweight 30 MPa, Ac 150000: least of 900, 855 and 1650 = 855 kN; not roughened or lightweight: least of 900 and 5.5 Ac = 825 kN; Vu 500 kN needs Vn 666.7 below 855 but Vu 700 kN needs 933 above', [near(f1({}).vmax, 855, 1e-6), f1({surf: 2}).vmax, f1({lam: 2}).vmax, f1({Vu: 500}).okMax, f1({Vu: 700}).okMax, f1({}).first, f1({surf: 2}).first], [true, 825, 825, true, false, true, false]);
+  check('lightweight lambda: all-lightweight 0.75 gives mu = 1.05 and Avf = 533333 / (1.05 x 420) = 1209.4; sand-lightweight 0.85 gives mu 1.19', [near(f1({lam: 2}).mu, 1.05, 1e-9), near(f1({lam: 2}).avf, 1209.37, 1e-1), near(f1({lam: 1}).mu, 1.19, 1e-9)], [true, true, true]);
+  check('inclined bars at 60 degrees: k = 1.4 sin60 + cos60 = 1.7124, Avf = 533333 / (420 x 1.7124) = 741.5 mm2; permanent compression 100 kN on perpendicular bars: 907.0 - 100000 / 420 = 668.9; the compression is ignored for inclined bars', [near(f1({alpha: 60}).k, 1.71244, 1e-4), near(f1({alpha: 60}).avf, 741.54, 1e-1), near(f1({Nu: 100}).avf, 668.93, 1e-1), near(f1({alpha: 60, Nu: 100}).avf, 741.54, 1e-1)], [true, true, true, true]);
+  check('net tension 90 kN adds An = 90000 / (0.9 x 420) = 238.1 mm2: total 1145.1 mm2; fy 500 is limited to 420 for shear friction (and 550 for tension)', [near(f1({Nuc: 90}).an, 238.095, 1e-2), near(f1({Nuc: 90}).tot, 1145.12, 1e-1), f1({fy: 500}).fyv, near(f1({fy: 500}).avf, f1({}).avf, 1e-9), f1({fy: 600}).fyt], [true, true, 420, true, 550]);
+  check('provided Avf 1000 mm2 perpendicular: Vn = 1.4 x 1000 x 420 = 588 kN, phi Vn = 441 kN passes Vu 400; Avf 900 gives 396.9 kN and fails; with Nu 100 kN: Vn = 1.4 (1000 x 420 + 100000) = 728 kN limited to 855', [near(f1({avfp: 1000}).pVn, 441, 1e-6), f1({avfp: 1000}).okProv, near(f1({avfp: 900}).pVn, 396.9, 1e-6), f1({avfp: 900}).okProv, near(f1({avfp: 1000, Nu: 100}).vnProv, 728, 1e-6), f1({avfp: 1000, Nuc: 90}).okTot], [true, true, true, false, true, false]);
+  const c1 = o => corb(Object.assign({fc: 30, fy: 420, lam: 0, bw: 300, h: 500, d: 450, av: 150, Vu: 500, Nuc: 0, prev: 0, hout: 250, asp: 0}, o));
+  check('corbel bw 300, h 500, d 450, av 150, Vu 500: av / d = 0.3333, Nuc raised to 0.2 Vu = 100 kN, Mu = 500 x 150 + 100 x 50 = 80 kN.m; Vu / phi 666.7 is below the limit min(810, 769.5, 1485) = 769.5 kN', [near(c1({}).avd, 1 / 3, 1e-9), c1({}).nuc, c1({}).Mu, near(c1({}).vlim, 769.5, 1e-6), c1({}).okV, c1({Vu: 600}).okV, c1({}).ok1 && c1({}).ok2 && c1({}).ok3], [true, 100, 80000, true, true, false, true]);
+  check('corbel reinforcement: a = 32.13 mm, Af = 585.3, An = 100000 / (0.75 x 420) = 317.5, Avf = 500000 / (0.75 x 1.4 x 420) = 1133.8; Asc = max(902.7, 2/3 Avf + An = 1073.3, 385.7) = 1073.3 mm2 (shear friction governs); Ah = 0.5 (1073.3 - 317.5) = 377.9', [near(c1({}).a, 32.1324, 1e-3), near(c1({}).af, 585.27, 1e-2), near(c1({}).an, 317.46, 1e-2), near(c1({}).avf, 1133.79, 1e-2), near(c1({}).asc, 1073.32, 1e-2), c1({}).gov, near(c1({}).ah, 377.93, 1e-2)], [true, true, true, true, true, 1, true]);
+  check('corbel rules: Nuc prevented uses the entered value (0 gives An 0); Nuc above Vu fails; av / d above 1 fails; outer depth under 0.5 d (225 mm) fails; lightweight limit (0.2 - 0.07 / 3) f\'c bw d = 715.5 kN and (5.5 - 1.9 / 3) bw d = 657 kN', [c1({prev: 1}).nuc, c1({prev: 1}).an, c1({prev: 1, Nuc: 600}).ok2, c1({av: 500}).ok1, c1({hout: 200}).ok3, near(c1({lam: 2}).vlim, 657, 1e-6), near(c1({lam: 2, fc: 30}).mu, 1.05, 1e-9)], [0, 0, false, false, false, true, true]);
+  check('corbel provided steel: 1073 mm2 is just below 1073.3 and fails, 1100 passes; the minimum 0.04 f\'c / fy bw d governs a very small shear', [c1({asp: 1073}).okAsp, c1({asp: 1100}).okAsp, c1({Vu: 40, prev: 1}).gov], [false, true, 2]);
+}
+let tt;
+w.renderCalc('acisf'); w.calcResult('acisf');
+tt = txt(w, 'xcr_results');
+check('the bearing page shows Bn 2040 kN, phi Bn 1326 kN, 33.15 MPa and the 🔴 note', [tt.includes('2040 kN'), tt.includes('1326 kN'), tt.includes('33.15 MPa'), tt.includes('🔴')], [true, true, true, true]);
+set('xcr_m', '1'); w.calcResult('acisf'); tt = txt(w, 'xcr_results');
+check('the shear friction page shows Avf 907 mm2 and 855 kN and hides the bearing group', [tt.includes('907 mm²'), tt.includes('855 kN'), doc.getElementById('xcr_g0').style.display === 'none', doc.getElementById('xcr_g1').style.display === ''], [true, true, true, true]);
+set('xcr_m', '2'); w.calcResult('acisf'); tt = txt(w, 'xcr_results');
+check('the corbel page shows Af 585 mm2, Asc 1073 mm2, Ah 378 mm2 and 769 kN', [tt.includes('585 mm²'), tt.includes('1073 mm²'), tt.includes('378 mm²'), tt.includes('769 kN')], [true, true, true, true]);
+check('other reference codes open acisf too', others('acisf', 'xcr_results'), [true, true, true]);
+}
+
+
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
