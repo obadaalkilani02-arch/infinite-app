@@ -754,6 +754,46 @@ set('xew_m', '2'); w.calcResult('ec8wall'); tt = txt(w, 'xew_results');
 check('the sliding page shows Vdd 326.3 kN and VRd,S 1593.5 kN', [tt.includes('326.3 kN') || tt.includes('326.2 kN'), tt.includes('1593.5 kN') || tt.includes('1593.4 kN'), tt.includes('1267.2 kN')], [true, true, true]);
 check('other reference codes open ec8wall too', others('ec8wall', 'xew_results'), [true, true, true]);
 }
+// ---------- part 300: EN 1992-1-1:2004 time-dependent concrete (`ec2time`: strength and modulus development 3.1.2 / 3.1.3 (3.1) to (3.5), creep coefficient 3.1.4 and Annex B (B.1) to (B.10) with non-linear creep (3.7) and effective modulus (7.20), drying and autogenous shrinkage (3.8) to (3.13) and (B.11) (B.12) checked against Table 3.2) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const prp = o => J('xcpProps(' + JSON.stringify(o) + ')');
+const crp = o => J('xcpCreep(' + JSON.stringify(o) + ')');
+const shr = o => J('xcpShr(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const p = o => prp(Object.assign({fck: 30, cem: 1, t: 28, agg: 0}, o));
+  check('Table 3.1: fcm = 38, fctm = 0.3 x 30^(2/3) = 2.8965, Ecm = 22 x 3.8^0.3 = 32.837 GPa; C60/75: fctm = 2.12 ln(1 + 6.8) = 4.3547 and Ecm = 39.100 GPa', [near(p({}).fcm, 38, 1e-9), near(p({}).fctm, 2.896468, 1e-6), near(p({}).ecm, 32836.568, 1e-2), near(p({fck: 60}).fctm, 4.354742, 1e-6), near(p({fck: 60}).ecm, 39099.874, 1e-2)], [true, true, true, true, true]);
+  check('aggregate: limestone x 0.9, sandstone x 0.7, basalt x 1.2 (3.1.3(2))', [near(p({agg: 1}).ecm, 0.9 * 32836.568, 1e-2), near(p({agg: 2}).ecm, 0.7 * 32836.568, 1e-2), near(p({agg: 3}).ecm, 1.2 * 32836.568, 1e-2)], [true, true, true]);
+  check('strength at 7 days (class N, s = 0.25): beta_cc = exp(0.25 (1 - 2)) = 0.77880, fcm(t) = 29.594, fck(t) = 21.594, fctm(t) = 2.2558 (alpha 1), Ecm(t) = 30.464 GPa', [near(p({t: 7}).bcc, 0.778801, 1e-6), near(p({t: 7}).fcmT, 29.59443, 1e-4), near(p({t: 7}).fckT, 21.59443, 1e-4), near(p({t: 7}).fctmT, 2.255772, 1e-5), near(p({t: 7}).ecmT, 30463.912, 1e-2)], [true, true, true, true, true]);
+  check('at 28 days every factor is 1; at 90 days beta_cc = 1.11690, fcm(t) = 42.442, fck(t) stays 30 (3.1.2(5)), fctm(t) = 3.1180 (alpha 2/3), Ecm(t) = 33.944 GPa', [near(p({}).bcc, 1, 1e-12), near(p({}).fckT, 30, 1e-12), near(p({t: 90}).bcc, 1.116900, 1e-6), near(p({t: 90}).fcmT, 42.44219, 1e-4), near(p({t: 90}).fckT, 30, 1e-12), near(p({t: 90}).fctmT, 3.118015, 1e-5), near(p({t: 90}).ecmT, 33943.921, 1e-2)], [true, true, true, true, true, true, true]);
+  check('cement coefficients s: R 0.20, N 0.25, S 0.38; the slow class gains less early: 7-day factor exp(0.38 x -1) = 0.6839, rapid exp(-0.2) = 0.8187; 3 days or less is flagged', [p({cem: 0}).s, p({cem: 1}).s, p({cem: 2}).s, near(p({cem: 2, t: 7}).bcc, 0.683861, 1e-6), near(p({cem: 0, t: 7}).bcc, 0.818731, 1e-6), p({t: 3}).early, p({t: 7}).early], [0.2, 0.25, 0.38, true, true, true, false]);
+  const sh = o => shr(Object.assign({fck: 30, cem: 1, rh: 50, ac: 150000, u: 1600, ts: 7, t: 1000}, o));
+  const tab = {20: [0.62, 0.58, 0.49, 0.30, 0.17, 0], 40: [0.48, 0.46, 0.38, 0.24, 0.13, 0], 60: [0.38, 0.36, 0.30, 0.19, 0.10, 0], 80: [0.30, 0.28, 0.24, 0.15, 0.08, 0], 90: [0.27, 0.25, 0.21, 0.13, 0.07, 0]};
+  const got = {}; for (const k of Object.keys(tab)) got[k] = [20, 40, 60, 80, 90, 100].map(rh => +(sh({fck: +k, rh: rh, t: 0}).ecd0 * 1000).toFixed(2));
+  check('B.11 and B.12 against all 30 values of Table 3.2 (cement N, fck 20 to 90, RH 20 to 100 %)', got, tab);
+  check('shrinkage (class N, RH 50, h0 187.5): beta_RH = 1.35625, eps_cd,0 = 482.24e-6, kh = 0.86875, eps_cd(inf) = 418.95e-6; rapid cement 667.9e-6 and slow 386.9e-6 for eps_cd,0', [near(sh({}).h0, 187.5, 1e-9), near(sh({}).bRH, 1.35625, 1e-9), near(sh({}).ecd0, 0.000482241, 1e-9), near(sh({}).kh, 0.86875, 1e-9), near(sh({}).ecdInf, 0.000418947, 1e-9), near(sh({cem: 0}).ecd0, 0.000667892, 1e-9), near(sh({cem: 2}).ecd0, 0.000386883, 1e-9)], [true, true, true, true, true, true, true]);
+  check('development in time (ts 7, t 1000): beta_ds = 993 / (993 + 0.04 x sqrt(187.5^3)) = 0.90627, eps_cd(t) = 379.68e-6; autogenous 2.5 x 20e-6 = 50e-6 with beta_as = 0.99821 gives 49.91e-6; total 429.59e-6 at t and 468.95e-6 at infinity', [near(sh({}).bds, 0.906272, 1e-6), near(sh({}).ecdT, 0.00037968, 1e-8), near(sh({}).ecaInf, 0.00005, 1e-12), near(sh({}).bas, 0.998208, 1e-6), near(sh({}).ecaT, 0.00004991, 1e-8), near(sh({}).ecsT, 0.00042959, 1e-8), near(sh({}).ecsInf, 0.000468947, 1e-9), near(sh({t: 0}).ecsT, 0.000468947, 1e-9)], [true, true, true, true, true, true, true, true]);
+  check('kh interpolation (Table 3.3): h0 100 -> 1.0, 150 -> 0.925, 200 -> 0.85, 250 -> 0.80, 300 -> 0.75, 400 -> 0.725, 500 and 800 -> 0.70, below 100 stays 1.0', [100, 150, 200, 250, 300, 400, 500, 800, 50].map(h => +sh({ac: h * 800, u: 1600}).kh.toFixed(4)), [1, 0.925, 0.85, 0.8, 0.75, 0.725, 0.7, 0.7, 1]);
+  const c = o => crp(Object.assign({fck: 30, cem: 1, rh: 50, ac: 150000, u: 1600, t0: 28, t: 0, temp: 20, sig: 0}, o));
+  check('creep (C30/37, RH 50, h0 187.5, class N, t0 = 28 at 20 degrees): alpha1 0.94406, alpha2 0.98369, phi_RH = 1.79494, beta(fcm) = 2.72532, t0 adjusted by temperature 27.9475 (class N: alpha 0 leaves it), beta(t0) = 0.48862, phi0 = 2.39025', [near(c({}).phiRH, 1.794945, 1e-5), near(c({}).bfcm, 2.725320, 1e-5), near(c({}).t0T, 27.94749, 1e-4), near(c({}).t0e, 27.94749, 1e-4), near(c({}).bt0, 0.488624, 1e-5), near(c({}).phi0, 2.390250, 1e-4), near(c({}).phiInf, 2.390250, 1e-4)], [true, true, true, true, true, true, true]);
+  check('time development (B.7): beta_H = 1.5 x (1 + 0.6^18) x 187.5 + 250 x 0.95971 = 521.207, beta_c at 10 000 days = (9972 / 10 493.2)^0.3 = 0.98483, phi(t) = 2.35400; t = 0 means infinity with beta_c = 1', [near(c({}).bH, 521.2073, 1e-3), near(c({t: 10000}).bc, 0.984832, 1e-5), near(c({t: 10000}).phiT, 2.353995, 1e-4), near(c({}).bc, 1, 1e-12), near(c({t: 20}).bc, 0, 1e-12)], [true, true, true, true, true]);
+  check('cement type moves the age at loading (B.9): class R at 7 days becomes 12.096 (beta(t0) = 0.57261, a bigger creep reduction), class S becomes 4.0357; temperature 40 degrees ages 28 days to 66.86 (B.10)', [near(c({cem: 0, t0: 7}).t0e, 12.09624, 1e-3), near(c({cem: 0, t0: 7}).bt0, 0.572613, 1e-5), near(c({cem: 2, t0: 7}).t0e, 4.035666, 1e-3), near(c({temp: 40}).t0T, 66.8634, 1e-3), near(c({t0: 0.1}).t0e, 0.5, 1e-12)], [true, true, true, true, true]);
+  check('low strength branch (fcm 28 not above 35): phi_RH = 1 + 0.2 / (0.1 x 300^(1/3)) = 1.29876 and beta_H = 915.82 with no alpha factors', [near(c({fck: 20, rh: 80, ac: 150000, u: 1000}).h0, 300, 1e-9), near(c({fck: 20, rh: 80, ac: 150000, u: 1000}).phiRH, 1.298760, 1e-5), near(c({fck: 20, rh: 80, ac: 150000, u: 1000}).bH, 915.8215, 1e-3), near(c({fck: 20, rh: 80, ac: 150000, u: 1000}).bfcm, 3.174902, 1e-5)], [true, true, true, true]);
+  check('non-linear creep (3.7): sigma 15 MPa at fck(28) = 30 gives k = 0.5 and phi x exp(1.5 x 0.05) = x 1.07788; 12 MPa (k = 0.4) stays linear; creep strain = phi sigma / (1.05 Ecm) and Ec,eff = Ecm / (1 + phi)', [near(c({sig: 15}).ks, 0.5, 1e-12), c({sig: 15}).nl, near(c({sig: 15}).phiNl, 2.390250 * 1.0778842, 1e-4), c({sig: 12}).nl, near(c({sig: 12}).phiNl, 2.390250, 1e-4), near(c({sig: 15}).eccInf, 0.00112088, 1e-7), near(c({}).ecEff, 9685.588, 1e-1), near(c({sig: 15}).ecEff, 32836.568 / (1 + 2.390250 * 1.0778842), 1e-1)], [true, true, true, false, true, true, true, true]);
+}
+let tt;
+w.renderCalc('ec2time'); w.calcResult('ec2time');
+tt = txt(w, 'xcp_results');
+check('the default page (strength at 7 days, class N) shows fcm(t) 29.6 MPa, Ecm 32.84 GPa and the 🔴 note', [tt.includes('29.6 MPa'), tt.includes('32.84 GPa'), tt.includes('0.779'), tt.includes('🔴')], [true, true, true, true]);
+set('xcp_m', '1'); w.calcResult('ec2time'); tt = txt(w, 'xcp_results');
+check('the creep page shows phi(inf, t0) = 2.390 and Ec,eff 9.69 GPa and shows the shared group but not the strength group', [tt.includes('2.390'), tt.includes('9.69 GPa'), doc.getElementById('xcp_g0').style.display === 'none', doc.getElementById('xcp_gs').style.display === '', doc.getElementById('xcp_g1').style.display === ''], [true, true, true, true, true]);
+set('xcp_m', '2'); w.calcResult('ec2time'); tt = txt(w, 'xcp_results');
+check('the shrinkage page shows eps_cd,0 0.482 per mille and the total 0.469 per mille at infinity and hides the creep group', [tt.includes('0.482'), tt.includes('0.469'), doc.getElementById('xcp_g1').style.display === 'none', doc.getElementById('xcp_g2').style.display === ''], [true, true, true, true]);
+check('other reference codes open ec2time too', others('ec2time', 'xcp_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
