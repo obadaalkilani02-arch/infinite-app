@@ -549,6 +549,80 @@ set('xnh_m', '2'); w.calcResult('necha'); tt = txt(w, 'xnh_results');
 check('the seal page shows 450 mm and the 5 threads', [tt.includes('450 mm'), tt.includes('5.0'), tt.includes('501.15'), doc.getElementById('xnh_g2').style.display === ''], [true, true, true, true]);
 check('other reference codes open necha too', others('necha', 'xnh_results'), [true, true, true]);
 }
+// ---------- part 295: EN 1992-1-1:2004 slab detailing: supports (9.3.1.2), shear reinforcement (9.3.2), flat slabs (9.4.1, 9.4.2) and punching reinforcement detailing (9.4.3) (`ec2slab`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const sup = o => J('xesSupport(' + JSON.stringify(o) + ')');
+const shr = o => J('xesShear(' + JSON.stringify(o) + ')');
+const flat = o => J('xesFlat(' + JSON.stringify(o) + ')');
+const pun = o => J('xesPunch(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const s = o => sup(Object.assign({fck: 30, fyk: 500, gc: 1.5, gs: 1.15, acc: 1, d: 150, asSpan: 600, mmax: 20, span: 4, sup: 0, asTop: 0}, o));
+  check('simply supported slab: half of the span steel (600 -> 300 mm2/m) continues to the support; al = d = 150 mm', [s({}).half, s({}).al], [300, 150]);
+  check('partial fixity not considered: top steel for 25 % of the maximum span moment (20 -> 5 kN.m/m): a = 150 - sqrt(150^2 - 2 x 5e6 / (20 x 1000)) = 1.676, z = 149.16, As = 5e6 / (434.78 x 149.16) = 77.10 mm2/m; extends 0.2 x 4 m = 800 mm', [s({sup: 1}).msup, near(s({sup: 1}).a, 1.67603, 1e-4), near(s({sup: 1}).z, 149.16198, 1e-4), near(s({sup: 1}).asTop, 77.09739, 1e-4), s({sup: 1}).len], [5, true, true, true, 800]);
+  check('end support uses 15 percent: 3 kN.m/m gives 46.15 mm2/m; the provided top steel 80 passes the interior case and 60 fails (77.1); a section that cannot resist the moment is flagged; alpha_cc 0.85 raises the steel', [s({sup: 2}).msup, near(s({sup: 2}).asTop, 46.15436, 1e-4), s({sup: 1, asTop: 80}).okTop, s({sup: 1, asTop: 60}).okTop, s({sup: 1, mmax: 4000}).okM, s({sup: 1, acc: 0.85}).asTop > s({sup: 1}).asTop], [3, true, true, false, false, true]);
+  const h = o => shr(Object.assign({fck: 30, fyk: 500, h: 250, d: 210, al: 90, ved: 100, vrdmax: 400, bent: 0, s: 0, st: 0, asw: 0}, o));
+  check('slab shear reinforcement: thickness >= 200 (250 passes, 180 fails); longitudinal spacing 0.75 d (1 + cot alpha) = 157.5 for 90 degrees and 315 for 45 degrees; bent-up bars d = 210; transverse 1.5 d = 315', [h({}).okH, h({h: 180}).okH, near(h({}).smaxL, 157.5, 1e-9), near(h({al: 45}).smaxL, 315, 1e-9), h({}).smaxB, h({}).stMax], [true, false, true, true, 210, 315]);
+  check('minimum ratio 0.08 sqrt(30) / 500 = 0.000876 and 0.876 mm2/mm per metre width (0.619 for 45 degrees); bent-up bars alone only when VEd <= VRd,max / 3 (100 <= 133 passes, 200 fails)', [near(h({}).rhoMin, 0.00087636, 1e-7), near(h({}).aswMin, 0.876356, 1e-5), near(h({al: 45}).aswMin, 0.876356 * Math.SQRT1_2, 1e-5), h({}).bentOk, h({ved: 200}).bentOk, h({bent: 1, ved: 200}).okBent], [true, true, true, true, false, false]);
+  check('spacing checks: links at 150 mm pass (157.5), 200 mm fail; bent-up bars at 210 pass, 250 fail; transverse 300 passes, 350 fails; minimum area per metre at 150 mm = 0.876 x 150 = 131.5: 140 passes, 120 fails', [h({s: 150}).okS, h({s: 200}).okS, h({bent: 1, s: 210}).okS, h({bent: 1, s: 250}).okS, h({st: 300}).okSt, h({st: 350}).okSt, near(h({s: 150}).aswMinRow, 131.4534, 1e-3), h({s: 150, asw: 140}).okAsw, h({s: 150, asw: 120}).okAsw], [true, false, true, false, true, false, true, true, false]);
+  const f = o => flat(Object.assign({pw: 6, at: 2000, ty: 0, cz: 400, y: 300, z: 250}, o));
+  check('internal column: top steel 0.5 At = 1000 mm2 in a width of 2 x 0.125 x 6000 = 1500 mm; at least 2 bottom bars through the column', [f({}).strip, f({}).aStrip, f({}).nBot], [1500, 1000, 2]);
+  check('effective width: edge column be = cz + y = 400 + 300 = 700; corner column be = z + y / 2 = 250 + 150 = 400 mm', [f({}).beEdge, f({}).beCorner, f({}).be, f({ty: 1}).be], [700, 400, 700, 400]);
+  const p = o => pun(Object.assign({fck: 30, fyk: 500, d: 200, al: 90, sr: 150, st: 250, asw: 0, a1: 100, n: 3, st1: 250, st2: 350, aout: 700, k: 1.5, bent: 0}, o));
+  check('Asw,min = 0.08 sqrt(30) / 500 x 150 x 250 / (1.5 sin90 + cos90) = 21.91 mm2 per leg (18.59 for 45 degrees); 25 passes, 20 fails', [near(p({}).aswMin, 21.9089, 1e-3), near(p({al: 45}).aswMin, 18.59032, 1e-3), p({asw: 25}).okAsw, p({asw: 20}).okAsw], [true, true, true, false]);
+  check('layout limits d = 200: first perimeter within d / 2 = 100 (100 passes, 120 fails); radial spacing 0.75 d = 150 (150 passes, 160 fails); tangential 1.5 d = 300 inside and 2 d = 400 outside', [p({}).okFirst, p({a1: 120}).okFirst, p({}).okSr, p({sr: 160}).okSr, p({}).st1Max, p({}).st2Max, p({st1: 320}).okSt1, p({st2: 420}).okSt2], [true, false, true, false, 300, 400, false, false]);
+  check('outermost perimeter within k d = 300 of the perimeter with no reinforcement at 700 mm: with 3 perimeters the last is at 100 + 2 x 150 = 400 and the gap 300 passes; 2 perimeters leave 450 and fail; at least 3 perimeters are needed; 1 perimeter fails the minimum of two (one is enough for bent-up bars)', [p({}).aLast, p({}).gap, p({}).okOut, p({n: 2}).aLast, p({n: 2}).okOut, p({}).nMin, p({n: 1}).okN, p({n: 1, bent: 1}).okN], [400, 300, true, 250, false, 3, false, true]);
+}
+let tt;
+w.renderCalc('ec2slab'); w.calcResult('ec2slab');
+tt = txt(w, 'xes_results');
+check('the support page shows 300 mm2/m, al 150 mm and the 🔴 note', [tt.includes('300 mm²/m'), tt.includes('150 mm'), tt.includes('🔴')], [true, true, true]);
+set('xes_m', '3'); w.calcResult('ec2slab'); tt = txt(w, 'xes_results');
+check('the punching detailing page shows 21.9 mm2, 150 mm and hides the support group', [tt.includes('21.9 mm²'), tt.includes('150 mm'), doc.getElementById('xes_g0').style.display === 'none', doc.getElementById('xes_g3').style.display === ''], [true, true, true, true]);
+set('xes_m', '2'); w.calcResult('ec2slab'); tt = txt(w, 'xes_results');
+check('the flat slab page shows 1500 mm, 1000 mm2 and 700 mm', [tt.includes('1500 mm'), tt.includes('1000 mm²'), tt.includes('700 mm')], [true, true, true]);
+check('other reference codes open ec2slab too', others('ec2slab', 'xes_results'), [true, true, true]);
+}
+// ---------- part 296: NFPA 13 (2016) clause 9.3.5, seismic sway bracing of sprinkler piping (`nfpa13sw`: Tables 9.3.5.9.3, 9.3.5.5.2(a) (c) (e), 9.3.5.11.8(a) (b) (c)) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const cp = ss => J('xzbCp(' + ss + ')');
+const zone = o => J('xzbZone(' + JSON.stringify(o) + ')');
+const brace = o => J('xzbBrace(' + JSON.stringify(o) + ')');
+const space = o => J('xzbSpace(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('seismic coefficient Table 9.3.5.9.3: Ss 0.33 or less gives 0.35; 1.0 gives 0.51; 2.0 gives 0.93; 2.2 gives 1.03; 4.0 gives 1.87; above 4.0 stays 1.87', [cp(0.2), cp(0.33), cp(1.0), cp(2.0), cp(2.2), cp(4.0), cp(5)], [0.35, 0.35, 0.51, 0.93, 1.03, 1.87, 1.87]);
+  check('linear interpolation (9.3.5.9.3.2): Ss 0.45 gives 0.39; 0.35 gives 0.35 + 0.03 x 0.02 / 0.07 = 0.3586; 2.25 gives 1.05', [near(cp(0.45), 0.39, 1e-9), near(cp(0.35), 0.358571, 1e-6), near(cp(2.25), 1.05, 1e-9)], [true, true, true]);
+  const z = o => zone(Object.assign({ss: 1, sz: 3, sch: 0, sp: 9, len: 9, wb: 150}, o));
+  check('zone weight: 2 in. Schedule 40 water-filled 7.607 kg/m x 9 m = 68.46 plus 150 kg of branches = 218.46 kg; Wp = 1.15 x = 251.23 kg; Fpw = 0.51 x 251.23 = 128.13 kg (1.2565 kN)', [near(z({}).mpm, 7.606873, 1e-5), near(z({}).w, 218.4619, 1e-3), near(z({}).wp, 251.2311, 1e-3), near(z({}).fpw, 128.1279, 1e-3), near(z({}).fkn, 1.256505, 1e-5)], [true, true, true, true, true]);
+  check('limit table: spacing 9 m uses the 9.1 m (30 ft) column: Schedule 40 2 in. 341 lb = 154.67 kg; use 0.828 passes; spacing 6 m uses the 6.1 m column (520 lb); 7 m the 7.6 m column; 12.2 m the last; 13 m exceeds the 12 m maximum', [z({}).col, near(z({}).lim, 154.675, 1e-3), z({}).ok, near(z({}).use, 0.828368, 1e-5), z({sp: 6}).col, z({sp: 7}).col, z({sp: 12.2}).col, z({sp: 13}).over, z({sp: 13}).ok], [2, true, true, true, 0, 1, 4, true, false]);
+  check('other pipe: Schedule 10 2 in. 256 lb at 30 ft = 116.1 kg (fails with Fpw 128.1); Schedule 5 has no 5 in. or 6 in. rows (not available); Schedule 40 6 in. and larger: 5173 lb at 30 ft', [near(z({sch: 1}).lim, 256 * 0.45359237, 1e-3), z({sch: 1}).ok, z({sch: 2, sz: 8}).avail, z({sch: 2, sz: 9}).avail, near(z({sz: 9}).lim, 5173 * 0.45359237, 1e-3)], [true, false, false, false, true]);
+  check('a heavier zone fails: Ss 2.0 (Cp 0.93) gives Fpw 233.6 kg above the 154.7 kg limit; a small zone with 20 kg of branches and Ss 0.2 passes', [near(z({ss: 2}).fpw, 0.93 * 251.2311, 1e-3), z({ss: 2}).ok, z({ss: 0.2, wb: 20}).ok], [true, false, true]);
+  const b = o => brace(Object.assign({f: 5, ang: 60, len: 1, wpkg: 0}, o));
+  check('brace angle bands: 60 to 90 degrees from vertical use the third column; 45 to 59 the second; 30 to 44 the first; under 30 is outside the tables', [b({}).band, b({ang: 50}).band, b({ang: 40}).band, b({ang: 90}).band, b({ang: 20}).low, b({}).low], [2, 1, 0, 2, true, false]);
+  check('1 m (39.4 in.) brace carrying 5 kN (1124 lb) at 60 degrees: 1 in. Schedule 40 pipe is within l/r = 100 (42 in.) with 5456 lb = 24.27 kN and passes; all-thread rod 3/4 in. falls to l/r = 300 with 446 lb and fails; rod threaded at ends 7/8 in. uses l/r = 200 with 1952 lb = 8.68 kN and passes; rod 3/8 is too long (no table)', [b({}).rows[0].ok, b({}).rows[0].tab, near(b({}).rows[0].kn, 24.26949, 1e-4), b({}).rows[13].ok, b({}).rows[13].tab, b({}).rows[19].ok, b({}).rows[19].tab, near(b({}).rows[19].kn, 8.682925, 1e-4), b({}).rows[10].ok, b({}).rows[10].tab], [true, '100', true, false, '300', true, '200', true, false, '']);
+  check('the lightest suitable brace is the one with the smallest area: 1 in. pipe (0.494 in2); a heavier load of 30 kN (6744 lb) exceeds the 1 in. pipe (5456 lb) and needs a bigger section; an impossible load of 80 kN has none', [b({}).best.name, b({f: 30}).best.area > 0.494, b({f: 30}).okRows.length < b({}).okRows.length, b({f: 80}).best], ['أنبوب Schedule 40 قطر 1 in', true, true, null]);
+  check('net vertical reaction (9.3.5.10): Fpw 5 kN = 510 kg with Wp 400 kg: at 40 degrees it exceeds 0.5 Wp below 45 degrees so uplift must be resisted; at 50 degrees it exceeds 1.0 Wp below 60 degrees so yes; at 60 degrees no; Wp 0 skips', [b({ang: 40, wpkg: 400}).vert, b({ang: 50, wpkg: 400}).vert, b({ang: 60, wpkg: 400}).vert, b({ang: 40}).vert, b({ang: 40, wpkg: 2000}).vert], [true, true, false, false, false]);
+  const s = o => space(Object.assign({lat: 9, lon: 18, endL: 1.2, endLong: 6, riser: 3, fourSp: 6, coup: 400, brl: 1.5, rad: 10.7, hang: 100}, o));
+  check('spacing: lateral 9 m passes, 13 fails (12 m); longitudinal 18 passes, 25 fails (24 m); last lateral brace 1.2 m passes, 2 fails (1.8 m); last longitudinal 6 passes, 13 fails (12 m)', [s({}).okLat, s({lat: 13}).okLat, s({}).okLong, s({lon: 25}).okLong, s({}).okEnd, s({endL: 2}).okEnd, s({}).okEndL, s({endLong: 13}).okEndL], [true, false, true, false, true, false, true, false]);
+  check('risers over 0.9 m need a four-way brace and spacing of 7.6 m or less (6 passes, 8 fails); a 0.5 m riser needs none; coupling brace within 600 mm (400 passes, 700 fails); slenderness 1500 / 10.7 = 140 passes and a 4 m brace 374 fails; hanging within 150 mm', [s({}).fourWay, s({}).okFour, s({fourSp: 8}).okFour, s({riser: 0.5}).fourWay, s({riser: 0.5, fourSp: 20}).okFour, s({}).okCoup, s({coup: 700}).okCoup, near(s({}).lr, 140.1869, 1e-3), s({}).okSl, s({brl: 4}).okSl, s({}).okHang, s({hang: 200}).okHang], [true, true, false, false, true, true, false, true, true, false, true, false]);
+}
+let tt;
+w.renderCalc('nfpa13sw'); w.calcResult('nfpa13sw');
+tt = txt(w, 'xzb_results');
+check('the default page shows Cp 0.510, Wp 251.2 kg, Fpw 128.1 kg, the 154.7 kg limit and the 🔴 note', [tt.includes('0.510'), tt.includes('251.2 kg'), tt.includes('128.1 kg'), tt.includes('154.7 kg'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xzb_m', '1'); w.calcResult('nfpa13sw'); tt = txt(w, 'xzb_results');
+check('the brace page shows the lightest brace and hides the zone group', [tt.includes('Schedule 40'), tt.includes('24.27 kN'), doc.getElementById('xzb_g0').style.display === 'none', doc.getElementById('xzb_g1').style.display === ''], [true, true, true, true]);
+set('xzb_m', '2'); w.calcResult('nfpa13sw'); tt = txt(w, 'xzb_results');
+check('the spacing page shows the 12 m and 24 m limits', [tt.includes('12 m'), tt.includes('24 m'), tt.includes('7.6 m')], [true, true, true]);
+check('other reference codes open nfpa13sw too', others('nfpa13sw', 'xzb_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
