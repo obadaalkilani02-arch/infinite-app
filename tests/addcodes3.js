@@ -515,6 +515,40 @@ tt = txt(w, 'xhg_results');
 check('the default page shows 4.6 m, 10 mm, 7.6 kg/m, 2.42 kN, 1500 mm and the 🔴 note', [tt.includes('4.6 m'), tt.includes('10 mm'), tt.includes('7.6 kg/m'), tt.includes('2.42 kN'), tt.includes('1500 mm'), tt.includes('🔴')], [true, true, true, true, true, true]);
 check('other reference codes open nfpa13hg too', others('nfpa13hg', 'xhg_results'), [true, true, true]);
 }
+// ---------- part 294: NFPA 70 (NEC 2008) Articles 500 and 501: temperature class, wiring methods and conduit seals of Class I locations (`necha`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const tmp = o => J('xnhTemp(' + JSON.stringify(o) + ')');
+const seal = o => J('xnhSeal(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const t = o => tmp(Object.assign({cls: 0, ait: 280, organic: 0, mark: 0}, o));
+  check('Class I, ignition temperature 280 C: the marking may not exceed it so T2A (280) is the hottest class; 12 classes from T2A to T6 are allowed; 449 C gives T2 and 450 C gives T1; 85 C gives T6 and 84 C has none', [t({}).best[1], t({}).codes.length, t({ait: 449}).best[1], t({ait: 450}).best[1], t({ait: 450}).codes.length, t({ait: 85}).best[1], t({ait: 84}).ok], ['T2A', 12, 'T2', 'T1', 14, 'T6', false]);
+  check('Class II dust: the marking must be less than the ignition temperature: 200 C gives T3A (180) not T3 (200); 201 C gives T3; organic dust is capped at 165 C: ignition 200 gives T3B (165), ignition 150 gives T4 (135)', [t({cls: 1, ait: 200}).best[1], t({cls: 1, ait: 201}).best[1], t({cls: 1, ait: 200, organic: 1}).best[1], t({cls: 1, ait: 200, organic: 1}).cap, t({cls: 1, ait: 150, organic: 1}).best[1], t({cls: 1, ait: 200}).strict, t({cls: 1, ait: 200, organic: 1}).strict], ['T3A', 'T3', 'T3B', 165, 'T4', true, false]);
+  check('80 percent of the ignition temperature defines high temperature for seals: 224 C for 280 C; the marking check: 280 passes for Class I, 281 fails; 200 fails for Class II dust of 200 C', [near(t({}).high, 224, 1e-9), t({mark: 280}).okMark, t({mark: 281}).okMark, t({cls: 1, ait: 200, mark: 200}).okMark, t({cls: 1, ait: 200, mark: 180}).okMark], [true, true, false, false, true]);
+  const s = o => seal(Object.assign({div: 1, encl: 0, arc: 1, splice: 0, size: 1, exc: 0, devT: 0, ait: 280, link: 0, nip: 0, bnd: 0, thru: 0, listed: 0}, o));
+  check('Division 1 enclosure entry: an arcing device needs a seal within 450 mm; without arcing devices a seal is needed only for trade size 2 and larger with splices or terminals (2 in. yes, 1.5 in. no, 2 in. without splices no)', [s({}).entry, s({}).dist, s({arc: 0}).entry, s({arc: 0, size: 2, splice: 1}).entry, s({arc: 0, size: 1.5, splice: 1}).entry, s({arc: 0, size: 2, splice: 0}).entry], [true, 450, false, true, false, false]);
+  check('Division 2 enclosure entry: only the arcing-device rule applies (the size 2 rule does not)', [s({div: 2}).entry, s({div: 2, arc: 0, size: 2, splice: 1}).entry, s({div: 2, arc: 0}).ruleSize], [true, false, false]);
+  check('exceptions to the arcing rule: sealed chamber / oil / nonincendive (1 and 2) remove the seal; the factory-sealed exception (3) works for small entries only; the size rule still applies with splices', [s({exc: 1}).entry, s({exc: 2}).entry, s({exc: 3}).entry, s({exc: 3, size: 2}).entry, s({exc: 1}).excUsed, s({exc: 1, size: 2, splice: 1}).entry], [false, false, false, true, true, true]);
+  check('high temperature: a device surface at 230 C exceeds 80 percent of 280 C (224) and counts as an ignition source; 200 C does not', [s({arc: 0, devT: 230}).hot, s({arc: 0, devT: 230}).entry, s({arc: 0, devT: 200}).hot, s({arc: 0, devT: 200}).entry], [true, true, false, false]);
+  check('two explosionproof enclosures joined by a nipple of 900 mm or less need one seal (within 450 mm of either); 1000 mm or no link do not qualify', [s({link: 1, nip: 800}).group, s({link: 1, nip: 900}).group, s({link: 1, nip: 1000}).group, s({link: 0, nip: 500}).group, s({link: 1, nip: 0}).group], [true, true, false, false, false]);
+  check('boundary seals: within 3.05 m of the boundary; the unbroken-conduit exception is for Division 1 only; threads engaged 5 or 4.5 for listed factory-threaded entries', [s({bnd: 1}).boundary, s({bnd: 1}).bndDist, s({bnd: 1, thru: 1}).through, s({bnd: 1, thru: 1, div: 2}).through, s({bnd: 0}).boundary, s({}).threads, s({listed: 1}).threads], [true, 3050, true, false, false, 5, 4.5]);
+  check('pressurized enclosure: Division 1 needs a seal within 450 mm; Division 2 is not covered by that clause', [s({encl: 1}).entryP, s({encl: 1, div: 2}).entryP, s({encl: 1}).entry], [true, false, false]);
+}
+let tt;
+w.renderCalc('necha'); w.calcResult('necha');
+tt = txt(w, 'xnh_results');
+check('the temperature page shows 280 C, T2A, T2A or colder list and 224 C and the 🔴 note', [tt.includes('280 °C'), tt.includes('T2A (280 °C)'), tt.includes('224.0 °C'), tt.includes('🔴')], [true, true, true, true]);
+set('xnh_m', '1'); w.calcResult('necha'); tt = txt(w, 'xnh_results');
+check('the wiring page shows the Division 1 methods and hides the temperature group', [tt.includes('501.10(A)(1)'), tt.includes('MI'), doc.getElementById('xnh_g0').style.display === 'none', doc.getElementById('xnh_g1').style.display === ''], [true, true, true, true]);
+set('xnh_d', '1'); w.calcResult('necha'); tt = txt(w, 'xnh_results');
+check('Division 2 wiring page shows the extra methods', [tt.includes('501.10(B)(1)'), tt.includes('PLTC')], [true, true]);
+set('xnh_m', '2'); w.calcResult('necha'); tt = txt(w, 'xnh_results');
+check('the seal page shows 450 mm and the 5 threads', [tt.includes('450 mm'), tt.includes('5.0'), tt.includes('501.15'), doc.getElementById('xnh_g2').style.display === ''], [true, true, true, true]);
+check('other reference codes open necha too', others('necha', 'xnh_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
