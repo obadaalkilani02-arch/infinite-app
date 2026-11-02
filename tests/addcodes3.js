@@ -623,6 +623,42 @@ set('xzb_m', '2'); w.calcResult('nfpa13sw'); tt = txt(w, 'xzb_results');
 check('the spacing page shows the 12 m and 24 m limits', [tt.includes('12 m'), tt.includes('24 m'), tt.includes('7.6 m')], [true, true, true]);
 check('other reference codes open nfpa13sw too', others('nfpa13sw', 'xzb_results'), [true, true, true]);
 }
+// ---------- part 297: NFPA 72 (2016) clauses 17.14, 17.16, 17.7.1.8, 17.7.3.2.1, 17.7.3.3, 17.7.3.4 (`nfpa72md`: manual fire alarm boxes, supervisory signal-initiating devices, smoke detector ambient limits and mounting) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const man = o => J('xfmManual(' + JSON.stringify(o) + ')');
+const sup = o => J('xfmSuper(' + JSON.stringify(o) + ')');
+const smk = o => J('xfmSmoke(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const m = o => man(Object.assign({h: 1100, dEx: 1.2, tr: 50, wg: 0, dGr: 1.2, red: 1, cont: 1, vis: 1}, o));
+  check('operable part height (17.14.5): 1070 and 1220 mm are the limits (42 in = 1.0668 m is rounded to 1.07 m in the SI text); 1100 passes; 1000 and 1300 fail', [m({}).okHeight, m({h: 1070}).okHeight, m({h: 1220}).okHeight, m({h: 1000}).okHeight, m({h: 1300}).okHeight, m({h: 1069}).okHeight, m({h: 1221}).okHeight], [true, true, true, false, false, false, false]);
+  check('exit door distance 1.5 m (17.14.8.4): 1.5 passes, 1.6 fails; travel 61 m (17.14.8.5): 61 passes, 62 fails', [m({dEx: 1.5}).okExit, m({dEx: 1.6}).okExit, m({tr: 61}).okTravel, m({tr: 62}).okTravel], [true, false, true, false]);
+  check('grouped openings over 12.2 m (17.14.8.6): 12.2 m is not "over"; 15 m with a box 1.2 m from the side passes and with 2 m fails', [m({wg: 12.2}).grouped, m({wg: 12.3}).grouped, m({wg: 15}).okGroup, m({wg: 15, dGr: 2}).okGroup, m({wg: 10, dGr: 5}).okGroup], [false, true, true, false, true]);
+  check('colour (17.14.8.3), background (17.14.4), visibility (17.14.8.2): each one failing makes okAll false', [m({}).okAll, m({red: 0}).okRed, m({red: 0}).okAll, m({cont: 0}).okCont, m({vis: 0}).okVis, m({vis: 0}).okAll], [true, false, false, false, false, false]);
+  const s = o => sup(Object.assign({rev: 2, frac: 0.2, nor: 1, tank: 0, lvl: 70, both: 1, ts: 4.4, rs: 4.4, pk: 0, dp: 70, ps: 120, pm: 100}, o));
+  check('control valve (17.16.1.2): two revolutions or one fifth of travel passes, either one is enough; 3 revolutions and 30 % fails; restoration must be at the normal position only (17.16.1.3)', [s({}).okValve, s({rev: 3, frac: 0.2}).okValve, s({rev: 2, frac: 0.5}).okValve, s({rev: 3, frac: 0.3}).okValve, s({}).okRestore, s({nor: 0}).okRestore], [true, true, true, false, true, false]);
+  check('water level (17.16.3): pressure tank 70 mm passes and 80 fails; other tanks 300 mm passes and 310 fails (a 200 mm drop passes for a gravity tank); a pressure tank device must indicate high and low', [s({}).okTank, s({lvl: 80}).okTank, s({tank: 1, lvl: 300}).okTank, s({tank: 1, lvl: 310}).okTank, s({tank: 1, lvl: 200}).okTank, s({both: 0}).okBoth, s({tank: 1, both: 0}).okBoth], [true, false, true, false, true, false, true]);
+  check('water and room temperature (17.16.4, 17.16.5): 4.4 C (40 F) passes, 5 C fails, zero or negative set points are rejected', [s({}).okTemp, s({ts: 5}).okTemp, s({ts: 0}).okTemp, s({ts: 3}).okTemp, s({}).okRoom, s({rs: 5}).okRoom, s({rs: -1}).okRoom], [true, false, false, true, true, false, false]);
+  check('pressure (17.16.2.2): tank or dry-pipe 70 kPa (10 psi) passes, 80 fails and both directions are required; steam: 110 % of a 100 kPa minimum = 110 kPa, 120 passes, 105 fails and only low pressure is required', [s({}).okPrs, s({dp: 80}).okPrs, s({pk: 1}).okPrs, s({both: 0}).okPrsBoth, s({pk: 1, both: 0}).okPrsBoth, s({pk: 2}).okPrs, s({pk: 2, ps: 105}).okPrs, s({pk: 2, both: 0}).okPrsBoth, near(s({pk: 2}).steamMin, 110, 1e-9), s({pk: 2, ps: 110}).okPrs], [true, false, true, false, false, true, false, true, true, true]);
+  const k = o => smk(Object.assign({t: 20, rh: 50, v: 0.3, mount: 0, drop: 100, peak: 500}, o));
+  check('ambient limits (17.7.1.8): 0 and 38 C pass, -1 and 39 fail; 93 % passes and 94 fails; 1.5 m/s passes and 1.6 fails; any failure makes the whole set unsuitable', [k({t: 0}).okT, k({t: 38}).okT, k({t: -1}).okT, k({t: 39}).okT, k({rh: 93}).okRh, k({rh: 94}).okRh, k({v: 1.5}).okV, k({v: 1.6}).okV, k({}).allAmbient, k({t: 45}).allAmbient, k({rh: 95}).allAmbient, k({v: 2}).allAmbient], [true, true, false, false, true, false, true, false, true, false, false, false]);
+  check('sidewall mounting (17.7.3.2.1): the top of the detector at 300 mm or less below the ceiling passes, 350 fails; on the ceiling it always passes; first detector within 910 mm of the peak or high side passes, 1000 fails', [k({mount: 1, drop: 300}).okWall, k({mount: 1, drop: 350}).okWall, k({mount: 0, drop: 900}).okWall, k({peak: 910}).okRow, k({peak: 1000}).okRow], [true, false, true, true, false]);
+}
+let tt;
+w.renderCalc('nfpa72md'); w.calcResult('nfpa72md');
+tt = txt(w, 'xfm_results');
+check('the default page shows 1100 mm, 1.2 m, 50 m, the limits and the 🔴 note', [tt.includes('1100 mm'), tt.includes('1070'), tt.includes('61 m'), tt.includes('1.5 m'), tt.includes('🔴'), tt.includes('✘')], [true, true, true, true, true, false]);
+set('xfm_m', '1'); w.calcResult('nfpa72md'); tt = txt(w, 'xfm_results');
+check('the supervisory page shows the valve rule and hides the manual-box group', [tt.includes('17.16.1.2'), doc.getElementById('xfm_g0').style.display === 'none', doc.getElementById('xfm_g1').style.display === ''], [true, true, true]);
+set('xfm_dv', '4'); set('xfm_pk', '2'); w.calcResult('nfpa72md'); tt = txt(w, 'xfm_results');
+check('steam pressure shows the 110 % minimum of 110.0 kPa', [tt.includes('110.0 kPa'), tt.includes('17.16.2.2.3')], [true, true]);
+set('xfm_m', '2'); w.calcResult('nfpa72md'); tt = txt(w, 'xfm_results');
+check('the smoke page shows the ambient limits and 0.30 m/s', [tt.includes('93 %'), tt.includes('0.30 m/s'), tt.includes('17.7.1.8'), tt.includes('مناسب')], [true, true, true, true]);
+check('other reference codes open nfpa72md too', others('nfpa72md', 'xfm_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
