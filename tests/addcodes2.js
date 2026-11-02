@@ -3145,6 +3145,48 @@ set('xwl_m', '1'); w.calcResult('aciwall'); tt = txt(w, 'xwl_results');
 check('the shear page shows Vc 745 kN, 3637 kN, 0.0025 and hides the axial group', [tt.includes('745 kN'), tt.includes('3637 kN'), tt.includes('0.0025'), doc.getElementById('xwl_g0').style.display === 'none', doc.getElementById('xwl_g1').style.display === ''], [true, true, true, true, true]);
 check('other reference codes open aciwall too', others('aciwall', 'xwl_results'), [true, true, true]);
 }
+// ---------- part 289: ACI 318-14 chapter 18 special moment frames: beams (18.6), columns (18.7), joints (18.8) (`aciseis`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const beam = o => J('xzsBeam(' + JSON.stringify(o) + ')');
+const col = o => J('xzsCol(' + JSON.stringify(o) + ')');
+const joint = o => J('xzsJoint(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => beam(Object.assign({fc: 30, fy: 420, fyt: 420, lam: 0, bw: 300, h: 600, d: 540, ln: 5000, c1: 500, c2: 500, ast: 1500, asb: 1000, db: 20, wu: 40, Pu: 0, dh: 10, legs: 2, s: 0}, o));
+  check('beam dimensions: ln 5000 >= 4 d = 2160; bw >= min(0.3 h = 180, 250) = 180; the beam narrower than the column has no projection; ln 2000 and bw 150 fail', [a({}).ok1, a({}).bwMin, a({}).ok2, a({}).proj, a({}).ok3, a({ln: 2000}).ok1, a({bw: 150}).ok2], [true, 180, true, 0, true, false, false, false].slice(0, 7));
+  check('beam wider than the column: bw 700 on c2 500 gives projection 100 <= min(500, 0.75 x 500 = 375); bw 1400 gives 450 and fails', [a({bw: 700}).proj, a({bw: 700}).projMax, a({bw: 700}).ok3, a({bw: 1400}).ok3], [100, 375, true, false]);
+  check('longitudinal steel: minimum max(0.25 sqrt(30) / 420 ; 1.4 / 420) x 300 x 540 = 540 mm2; rho 1500 / 162000 = 0.00926; 400 mm2 fails the minimum; 5000 mm2 gives rho 0.0309 above 0.025', [near(a({}).asMin, 540, 1e-6), near(a({}).rhoT, 0.0092593, 1e-6), a({}).okAs, a({ast: 400}).okAs, a({ast: 5000}).okAs], [true, true, true, false, false]);
+  check('nominal moments: top 1500 mm2 Mn = 314.26 kN.m, bottom 1000 mm2 Mn = 215.27 kN.m; positive >= half of negative (157.1) passes; 600 mm2 below gives 131.9 and fails', [near(a({}).mnT, 314.2588, 1e-3), near(a({}).mnB, 215.2706, 1e-3), a({}).ok4, near(a({asb: 600}).mnB, 131.88, 0.05), a({asb: 600}).ok4], [true, true, true, true, false]);
+  check('probable moments with 1.25 fy: Mpr top 384.72 and bottom 265.49 kN.m; Ve = (384.72 + 265.49) / 5 + 40 x 5 / 2 = 130.04 + 100 = 230.04 kN', [near(a({}).mprT, 384.7169, 1e-3), near(a({}).mprB, 265.4853, 1e-3), near(a({}).ve0, 130.0404, 1e-3), a({}).vg, near(a({}).ve, 230.0404, 1e-3)], [true, true, true, 100, true]);
+  check('hoops: Vc = 0 because the earthquake shear 130 >= half of Ve (115) and Pu 0 < Ag f\'c / 20 = 270 kN: Av / s = 230.04 / 0.75 / (420 x 540) = 1.3524 mm2/mm; Pu 300 kN restores Vc = 150.84 kN and Av / s 0.6873', [a({}).eqHalf, a({}).vc, near(a({}).avs, 1.352384, 1e-5), near(a({Pu: 300}).vc, 150.8428, 1e-3), near(a({Pu: 300}).avs, 0.68733, 1e-4)], [true, 0, true, true, true]);
+  check('hoop spacing: min(d / 4 = 135, 6 x 20 = 120, 150) = 120 mm over 2 h = 1200 mm, d / 2 = 270 outside; 2 legs of 10 mm at 100 mm give 1.5708 and pass; at 150 mm the spacing exceeds 120 and Av / s 1.047 fails', [a({}).sMax, a({}).zone, a({}).sMid, near(a({s: 100}).avsP, 1.570796, 1e-5), a({s: 100}).okS && a({s: 100}).okAv, a({s: 150}).okS, a({s: 150}).okAv], [120, 1200, 270, true, true, false, false]);
+  const c = o => col(Object.assign({fc: 30, fyt: 420, lam: 0, ty: 0, b: 500, h: 500, lu: 3000, db: 20, Pu: 1500, ast: 4000, nl: 8, hx: 150, c: 40, dh: 12, a1: 0, a2: 0, s: 0, mt: 300, mb: 300, d: 440}, o));
+  check('column limits: 500 x 500 passes 300 mm and 0.4; 250 mm and 300 x 800 (0.375) fail; rho 4000 / 250000 = 0.016 in range, 2000 (0.008) and 16000 (0.064) fail', [c({}).ok1 && c({}).ok2, c({b: 250, h: 250}).ok1, c({b: 300, h: 800}).ok2, near(c({}).ratio, 1, 1e-9), c({}).okRho, c({ast: 2000}).okRho, c({ast: 16000}).okRho], [true, false, false, true, true, false, false]);
+  check('column zones: lo = max(500, 3000 / 6, 450) = 500; so = 100 + (350 - 150) / 3 -> capped at 150; spacing = min(500 / 4 = 125, 6 x 20 = 120, 150) = 120 inside and min(120, 150) = 120 outside; hx 350 gives so 100; hx 100 caps at 150', [c({}).lo, c({}).so, c({}).sMax, c({}).sOut, c({hx: 350}).so, c({hx: 100}).so, c({lu: 6000}).lo], [500, 150, 120, 120, 100, 150, 1000]);
+  check('confinement (Pu 1500 <= 0.3 Ag f\'c 2250): Ach = 420^2 = 176400, Ag / Ach 1.4172; (a) 0.3 (0.4172) 30 / 420 = 0.008941 governs over (b) 0.006429; Ash required at s 120 = 0.008941 x 120 x 420 = 450.6 mm2; kf = 1 and kn = 8 / 6', [c({}).high, c({}).Ach, near(c({}).agach, 1.4172336, 1e-6), near(c({}).ra, 0.0089407, 1e-6), near(c({}).rb, 0.0064286, 1e-6), c({}).rc, near(c({}).ash1, 450.612, 0.01), c({}).gov, c({}).kf, near(c({}).kn, 4 / 3, 1e-9)], [false, 176400, true, true, true, 0, true, 0, 1, true]);
+  check('high axial load Pu 3000 > 0.3 Ag f\'c: (c) 0.2 kf kn Pu / (fyt Ach) = 0.010798 governs, hx must be <= 200; fc 80 also counts as high; hx 250 fails only when high', [c({Pu: 3000}).high, near(c({Pu: 3000}).rc, 0.0107980, 1e-6), c({Pu: 3000}).gov, c({Pu: 3000}).hxMax, c({fc: 80}).high, c({hx: 250}).okHx, c({hx: 250, Pu: 3000}).okHx], [true, true, 2, 200, true, true, false]);
+  check('provided hoops: legs of 380 mm2 at s = 100 cover 0.008941 x 420 x 100 = 375.5 and pass; 300 mm2 fails; s over the maximum fails', [c({a1: 380, a2: 380, s: 100}).okA, c({a1: 300, a2: 380, s: 100}).okA, c({a1: 380, a2: 380, s: 130}).okS], [true, false, false]);
+  check('circular column D 500: Ag / Ach 1.4172, (d) 0.45 (0.4172) 30 / 420 = 0.013411 governs over (e) 0.008571; spiral wire area at s 120 and Dc 420: 0.013411 x 420 x 120 / 4 = 169.0 mm2', [near(c({ty: 1}).ra, 0.0134111, 1e-6), near(c({ty: 1}).rb, 0.0085714, 1e-6), near(c({ty: 1}).abReq, 168.98, 0.05), c({ty: 1}).dc, c({ty: 1, Pu: 3000}).gov], [true, true, true, 420, 2]);
+  check('column shear: Ve = (300 + 300) / 3 = 200 kN; Pu 1500 above Ag f\'c / 20 = 375 kN so Vc = 0.17 (1 + 1500000 / (14 x 250000)) sqrt(30) x 500 x 440 = 292.6 kN and no stirrups are needed; Pu 100 kN gives Vc = 0 and Av / s = 200 / 0.75 / (420 x 440) = 1.443', [c({}).ve, c({}).vc0, near(c({}).vc, 292.64, 0.05), c({}).avs, near(c({Pu: 100}).avs, 1.443001, 1e-5)], [200, false, true, 0, true]);
+  const j = o => joint(Object.assign({fc: 30, fy: 420, lam: 0, snc: 1500, snb: 1000, b: 500, h: 500, bw: 300, e: 0, hb: 600, cf: 0, at: 1500, ab: 1000, vcol: 150, db: 20}, o));
+  check('strong column: 1500 / 1000 = 1.5 >= 1.2 passes; 1100 gives 1.1 and fails', [j({}).sc, j({}).okSc, j({snc: 1100}).sc, j({snc: 1100}).okSc], [1.5, true, 1.1, false]);
+  check('joint area: beam narrower than the column: bj = min(500, 300 + 500, 2 x 250) = 500, Aj = 250000; column 400 wide gives 400; eccentricity 50 gives min(400, 700, 2 x 150) = 300; wider beam gives the column width', [j({}).bj, j({}).Aj, j({b: 400}).bj, j({b: 400, e: 50}).bj, j({bw: 600}).bj], [500, 250000, 400, 300, 500]);
+  check('joint shear: Vj = 1.25 x 420 x 2500 / 1000 - 150 = 1162.5 kN; Vn = 1.7 sqrt(30) x 250000 = 2327.8 kN (four faces), 1643.2 (1.2) and 1369.3 (1.0); phi Vn = 1978.6 passes with use 0.5875', [near(j({}).vj, 1162.5, 1e-6), near(j({}).vn, 2327.82, 0.01), near(j({cf: 1}).vn, 1643.17, 0.01), near(j({cf: 2}).vn, 1369.31, 0.01), near(j({}).pvn, 1978.648, 0.01), j({}).okV, near(j({}).use, 0.58751, 1e-4), j({at: 3000, ab: 3000, cf: 2}).okV], [true, true, true, true, true, true, true, false]);
+  check('joint depth: column 500 >= 20 x 20 = 400 (normalweight), lightweight 26 x 20 = 520 fails, h 300 fails; h >= beam depth / 2 = 300', [j({}).dmin, j({}).okD, j({lam: 2}).dmin, j({lam: 2}).okD, j({h: 300}).okD, j({h: 300}).okH, j({h: 250}).okH], [400, true, 520, false, false, true, false]);
+}
+let tt;
+w.renderCalc('aciseis'); w.calcResult('aciseis');
+tt = txt(w, 'xzs_results');
+check('the beam page shows Ve 230.0 kN, Av / s 1.352 mm2/mm, the 120 mm spacing and the 🔴 note', [tt.includes('230.0 kN'), tt.includes('1.352 mm²/mm'), tt.includes('120 mm'), tt.includes('🔴')], [true, true, true, true]);
+set('xzs_m', '1'); w.calcResult('aciseis'); tt = txt(w, 'xzs_results');
+check('the column page shows lo 500 mm, 0.0089 and Ash 451 mm2 and hides the beam group', [tt.includes('500 mm'), tt.includes('0.0089'), tt.includes('451'), doc.getElementById('xzs_g0').style.display === 'none', doc.getElementById('xzs_g1').style.display === ''], [true, true, true, true, true]);
+set('xzs_m', '2'); w.calcResult('aciseis'); tt = txt(w, 'xzs_results');
+check('the joint page shows 1.500, 1979 or 1978.6 kN and 1162.5 kN', [tt.includes('1.500'), tt.includes('1162.5 kN'), tt.includes('1978.6 kN')], [true, true, true]);
+check('other reference codes open aciseis too', others('aciseis', 'xzs_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
