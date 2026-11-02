@@ -447,6 +447,46 @@ tt = txt(w, 'xec_results');
 check('the default page shows lambda 43.3, lambda_lim 37.5, M2 56.4 kN.m, MEd 123.2 kN.m and the 🔴 note', [tt.includes('43.3'), tt.includes('37.5'), tt.includes('56.4 kN·m'), tt.includes('123.2 kN·m'), tt.includes('🔴')], [true, true, true, true, true]);
 check('other reference codes open ec2col too', others('ec2col', 'xec_results'), [true, true, true]);
 }
+// ---------- part 292: EN 1998-1:2004 detailing of primary seismic beams and columns, DCM and DCH (5.4.3, 5.5.3) and strong column (4.4.2.3) (`ec8det`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const beam = o => J('xe8Beam(' + JSON.stringify(o) + ')');
+const colm = o => J('xe8Col(' + JSON.stringify(o) + ')');
+const strong = o => J('xe8Strong(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+const com = {fck: 30, fyk: 500, fywk: 500, gc: 1.5, gs: 1.15, dch: 0, q0: 3.9, t1: 0.8, tc: 0.5};
+{
+  const a = o => beam(Object.assign({}, com, {bw: 300, hw: 500, d: 450, b: 300, as: 1700, asc: 1000, dbL: 16, dbw: 8, s: 100, first: 50}, o));
+  check('curvature ductility: T1 0.8 >= TC 0.5 gives mu = 2 x 3.9 - 1 = 6.8; T1 0.4 < TC gives 1 + 2 x 2.9 x 0.5 / 0.4 = 8.25', [a({}).mu, a({t1: 0.4}).mu, a({t1: 0.5}).mu], [6.8, 8.25, 6.8]);
+  check('fctm: C30 = 0.3 x 30^(2/3) = 2.8965 MPa and C60 = 2.12 ln(1 + 68 / 10) = 4.3547 MPa', [near(a({}).fctm, 2.896468, 1e-5), near(a({fck: 60}).fctm, 4.354742, 1e-5)], [true, true]);
+  check('beam ratios: rho = 1700 / (300 x 450) = 0.012593, rho\' = 0.007407, rho_max = 0.007407 + 0.0018 / (6.8 x 0.0021739) x 20 / 434.78 = 0.013009 passes; As 1800 gives 0.013333 and fails; rho_min = 0.5 x 2.8965 / 500 = 0.002896', [near(a({}).rho, 0.0125926, 1e-7), near(a({}).rhoC, 0.0074074, 1e-7), near(a({}).rhoMax, 0.0130086, 1e-6), a({}).okMax, a({as: 1800}).okMax, near(a({}).rhoMin, 0.0028965, 1e-7), a({as: 300}).okMin], [true, true, true, true, false, true, false]);
+  check('compression steel at least half of the tension steel: 1000 >= 850 passes, 800 fails', [a({}).okHalf, a({asc: 800}).okHalf], [true, false]);
+  check('critical region: DCM lcr = hw = 500; DCH 1.5 hw = 750 mm', [a({}).lcr, a({dch: 1}).lcr], [500, 750]);
+  check('hoop spacing: DCM min(500 / 4 = 125, 24 x 8 = 192, 225, 8 x 16 = 128) = 125; DCH min(125, 192, 175, 6 x 16 = 96) = 96; 100 passes both, 130 fails DCM, 100 fails nothing in DCM but 110 fails DCH', [a({}).sMax, a({dch: 1}).sMax, a({}).okS, a({s: 130}).okS, a({dch: 1, s: 100}).okS, a({dch: 1, s: 90}).okS], [125, 96, true, false, false, true]);
+  check('hoop details: dbw >= 6 (5 fails), first hoop within 50 mm (60 fails), beam width >= 200 (150 fails)', [a({}).okDbw, a({dbw: 5}).okDbw, a({}).okFirst, a({first: 60}).okFirst, a({}).okBw, a({bw: 150}).okBw], [true, false, true, false, true, false]);
+  const c = o => colm(Object.assign({}, com, {bc: 500, hc: 500, lcl: 3000, N: 1500, as: 4000, bo: 420, ho: 420, nbx: 4, nby: 4, nx: 4, ny: 4, dbw: 10, dbL: 20, s: 100, base: 1, prot: 0}, o));
+  check('column axial force: nu = 1500e3 / (250000 x 20) = 0.3 passes both classes; N 3000 gives 0.6 which passes DCM (0.65) but fails DCH (0.55); rho_l 4000 / 250000 = 0.016 passes, 2000 and 12000 fail', [c({}).nu, c({}).okNu, c({N: 3000}).nu, c({N: 3000}).okNu, c({N: 3000, dch: 1}).okNu, c({}).nuMax, c({dch: 1}).nuMax, c({}).rhoL, c({}).okRho, c({as: 2000}).okRho, c({as: 12000}).okRho], [0.3, true, 0.6, true, false, 0.65, 0.55, 0.016, true, false, false]);
+  check('critical region: DCM max(hc 0.5, lcl / 6 = 0.5, 0.45) = 500 mm; DCH max(0.75, 0.5, 0.6) = 750 mm; lcl 1000 gives lcl / hc = 2 so the whole column is critical', [c({}).lcr, c({dch: 1}).lcr, c({lcl: 1000}).whole, c({}).whole, c({lcl: 6000}).lcr], [500, 750, true, false, 1000]);
+  check('confinement effectiveness (12 bars, 4 per side, bo = ho = 420): sum bi^2 = 4 x 58800 = 235200; alpha_n = 1 - 235200 / (6 x 420 x 420) = 0.7778; alpha_s = (1 - 100 / 840)^2 = 0.7761; alpha = 0.60362', [c({}).nb, c({}).sumb2, near(c({}).an, 0.777778, 1e-6), near(c({}).as, 0.776077, 1e-6), near(c({}).alpha, 0.603616, 1e-6), near(c({}).bimax, 140, 1e-9)], [12, 235200, true, true, true, true]);
+  check('hoops 10 mm with 4 legs per direction: rho_w = 78.54 x (4 x 420 + 4 x 420) / (420 x 420 x 100) = 0.01496; omega_wd = 0.01496 x 434.78 / 20 = 0.3252; required 30 x 6.8 x 0.3 x 0.0021739 x 500 / 420 - 0.035 = 0.12339; provided alpha omega = 0.19631 passes', [near(c({}).rhoW, 0.01496, 1e-5), near(c({}).wwd, 0.325217, 1e-5), near(c({}).req, 0.123385, 1e-5), near(c({}).prov, 0.196306, 1e-5), c({}).okConf], [true, true, true, true, true]);
+  check('only the perimeter hoop (2 legs per direction): omega_wd 0.1626 and alpha omega 0.0982 fail the 0.1234 requirement; protection by the strong column rule (q0 x 2/3 = 2.6, mu = 4.2) lowers the requirement to 0.0628 and passes', [near(c({nx: 2, ny: 2}).wwd, 0.162608, 1e-5), near(c({nx: 2, ny: 2}).prov, 0.098153, 1e-5), c({nx: 2, ny: 2}).okConf, near(c({nx: 2, ny: 2, prot: 1}).mu, 4.2, 1e-9), near(c({nx: 2, ny: 2, prot: 1}).req, 0.0628261, 1e-6), c({nx: 2, ny: 2, prot: 1}).okConf], [true, true, false, true, true, true]);
+  check('minimum omega_wd: DCM base 0.08 and above the base none; DCH base 0.12 and above 0.08; 0.3252 passes all', [c({}).wmin, c({base: 0}).wmin, c({dch: 1}).wmin, c({dch: 1, base: 0}).wmin, c({}).okW, c({nx: 2, ny: 2, s: 300}).okW], [0.08, 0, 0.12, 0.08, true, false]);
+  check('hoop spacing: DCM min(210, 175, 8 x 20 = 160) = 160; DCH min(140, 125, 6 x 20 = 120) = 120; s 100 passes; s 130 passes DCM but fails DCH; bar spacing 140 <= 200 (DCM) and <= 150 (DCH)', [c({}).sMax, c({dch: 1}).sMax, c({}).okS, c({s: 130}).okS, c({s: 130, dch: 1}).okS, c({}).okBar, c({dch: 1}).okBar, c({bo: 520, ho: 520}).okBar && c({bo: 520, ho: 520, dch: 1}).okBar], [160, 120, true, true, false, true, true, false]);
+  check('hoop diameter: DCM at least 6; DCH at least max(6, 0.4 x 20 x sqrt(434.78 / 434.78) = 8): 10 passes, 6 fails in DCH and passes in DCM', [c({}).dbwMin, c({dch: 1}).dbwMin, c({dbw: 6}).okDbw, c({dbw: 6, dch: 1}).okDbw, c({dch: 1}).okDbw], [6, 8, true, false, true]);
+  check('strong column: 1500 / 1000 = 1.5 >= 1.3 passes; 1200 gives 1.2 and fails; needed 1300 kN.m; mu 6.8 and with q0 x 2/3 mu = 4.2', [strong(Object.assign({}, com, {mrc: 1500, mrb: 1000})).ratio, strong(Object.assign({}, com, {mrc: 1500, mrb: 1000})).ok, strong(Object.assign({}, com, {mrc: 1200, mrb: 1000})).ok, strong(Object.assign({}, com, {mrc: 1200, mrb: 1000})).need, strong(Object.assign({}, com, {mrc: 1500, mrb: 1000})).mu, near(strong(Object.assign({}, com, {mrc: 1500, mrb: 1000})).mu23, 4.2, 1e-9)], [1.5, true, false, 1300, 6.8, true]);
+}
+let tt;
+w.renderCalc('ec8det'); w.calcResult('ec8det');
+tt = txt(w, 'xe8_results');
+check('the beam page shows mu 6.80, lcr 500 mm, spacing 125 mm, rho 0.0126 and the 🔴 note', [tt.includes('6.80'), tt.includes('500 mm'), tt.includes('125 mm'), tt.includes('0.0126'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xe8_m', '1'); w.calcResult('ec8det'); tt = txt(w, 'xe8_results');
+check('the column page shows nu 0.300, alpha omega 0.196, lcr 500 mm and hides the beam group', [tt.includes('0.300'), tt.includes('0.196'), tt.includes('500 mm'), doc.getElementById('xe8_g0').style.display === 'none', doc.getElementById('xe8_g1').style.display === ''], [true, true, true, true, true]);
+set('xe8_m', '2'); w.calcResult('ec8det'); tt = txt(w, 'xe8_results');
+check('the strong column page shows 1.500, 6.80 and 4.20', [tt.includes('1.500'), tt.includes('6.80'), tt.includes('4.20')], [true, true, true]);
+check('other reference codes open ec8det too', others('ec8det', 'xe8_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
