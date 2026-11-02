@@ -1,0 +1,18 @@
+{
+ "ميل الدعامة المائلة": "inclined strut slope",
+ "عزم التشقق للمقطع": "Cracking moment of the section",
+ "باستعمال": "using",
+ "الهبوط الكلي للعنصر": "Total deflection of the member",
+ "في الكابولي النسبة": "For a cantilever, the ratio",
+ "تنسب إلى طوله": "is based on its length",
+ "معامل تخفيض مقاومة الضغط": "Compressive strength reduction factor",
+ "قيمة معامل الشد": "The value of the tension coefficient",
+ "وطول التوزيع": "and the distribution length",
+ "في عدم الاستمرار الكلي يشترط أن": "In full discontinuity it is required that",
+ "تخفض عند عدم انتظام توزيع الحمل أو عند وجود قص كبير، ويصمم حديد للشد العرضي": "is reduced when the load distribution is non-uniform or large shear is present, and reinforcement is designed for the transverse tension",
+ "فرق قوتي الوتر": "Difference of the two tie forces",
+ "مساحة الخرسانة المشدودة التي تقع خارج الكانات": "the area of tensile concrete lying outside the links",
+ "عرض شريحة العمود يساوي": "Column strip width equals",
+ "مطبوع بنص متداخل الرموز": "is printed with overlapping symbols",
+ "جدار القص": "Shear wall"
+}

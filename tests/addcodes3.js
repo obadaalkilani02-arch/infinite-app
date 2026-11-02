@@ -794,6 +794,115 @@ set('xcp_m', '2'); w.calcResult('ec2time'); tt = txt(w, 'xcp_results');
 check('the shrinkage page shows eps_cd,0 0.482 per mille and the total 0.469 per mille at infinity and hides the creep group', [tt.includes('0.482'), tt.includes('0.469'), doc.getElementById('xcp_g1').style.display === 'none', doc.getElementById('xcp_g2').style.display === ''], [true, true, true, true]);
 check('other reference codes open ec2time too', others('ec2time', 'xcp_results'), [true, true, true]);
 }
+// ---------- part 301: EN 1992-1-1:2004 deflection by calculation (`ec2defl`: 7.4.3 uncracked / fully cracked sections with the distribution coefficient (7.18) (7.19), effective modulus (7.20), shrinkage curvature (7.21), limits 7.4.1(4) (5)) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const cal = o => J('xdnCalc(' + JSON.stringify(Object.assign({sch: 0, L: 6, q: 15, b: 300, h: 500, bf: 300, hf: 0, d: 450, d2: 50, as: 1256, as2: 0, fck: 30, es: 200000, phi: 2.5, ecs: 0.4}, o)) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+const rel = (a, b, e) => Math.abs(a - b) <= (e || 1e-6) * Math.abs(b);
+{
+  const r = cal({});
+  check('materials: Ecm = 22 x 3.8^0.3 = 32 836.57 MPa, Ec,eff = Ecm / 3.5 = 9381.88, fctm = 2.89647; alpha_e = 200 000 / Ecm = 6.09077 short and 21.3177 long term', [rel(r.ecm, 32836.568031, 1e-8), rel(r.ecEff, 9381.876580, 1e-8), rel(r.fctm, 2.896468154, 1e-8), rel(r.aeS, 6.0907705, 1e-7), rel(r.aeL, 21.317697, 1e-7)], [true, true, true, true, true]);
+  const rho = 1256 / (300 * 450), a = 6.0907705034573 * rho, xc = 450 * (-a + Math.sqrt(a * (a + 2)));
+  check('uncracked transformed rectangle: yI = 258.1768 mm, II = 3.370304e9 mm4 (short term), 3.997351e9 (long term, alpha_e 21.32)', [rel(r.sS.yI, 258.17679378, 1e-7), rel(r.sS.II, 3370303813.52, 1e-7), rel(r.sL.II, 3997350794.67, 1e-7)], [true, true, true]);
+  check('fully cracked rectangle: x = d (-alpha rho + sqrt(alpha rho (alpha rho + 2))) = 128.1238 mm and Icr = b x3 / 3 + alpha As (d - x)2 = 1.002898e9; long term x = 207.887, Icr = 2.467943e9', [rel(r.sS.x, xc, 1e-9), rel(r.sS.x, 128.12378278, 1e-7), rel(r.sS.Icr, 1002897897.83, 1e-7), rel(r.sL.x, 207.887352575, 1e-7), rel(r.sL.Icr, 2467942757.73, 1e-7)], [true, true, true, true, true]);
+  check('cracking and distribution (7.19): Mcr = 2.89647 x 3.3703e9 / 241.82 = 40.368 kN m, M = 15 x 36 / 8 = 67.5, zeta = 1 - 1.0 (40.368 / 67.5)2 = 0.64234 short and 1 - 0.5 (...)2 = 0.82117 long', [rel(r.Mcr, 40.3682418, 1e-7), near(r.M, 67.5, 1e-12), rel(r.zS, 0.64233856, 1e-7), rel(r.zL, 0.82116928, 1e-7), r.cracked], [true, true, true, true, true]);
+  check('deflections (5 q L4 / 384 E I): aI = 2.28722, aII = 7.68636, short-term interpolation (7.18) 5.75529 mm; long term with Ec,eff 10.18426 mm; creep increment 4.42897', [rel(r.aIS, 2.28722152, 1e-7), rel(r.aIIS, 7.68635714, 1e-7), rel(r.dS, 5.75529451, 1e-7), rel(r.dL, 10.18426409, 1e-7), rel(r.dCreep, 10.18426409 - 5.75529451, 1e-6)], [true, true, true, true, true]);
+  check('shrinkage curvature (7.21): 1/r uncracked = 4.57946e-7 and cracked 1.050684e-6 per mm, interpolated with zeta_long = 9.44685e-7, delta = L2 / 8 x curvature = 4.25108 mm; total 14.43535 mm = L / 415.7 within L / 250 = 24 mm', [rel(r.kI, 4.5794645e-7, 1e-6), rel(r.kII, 1.05068445e-6, 1e-6), rel(r.kcs, 9.4468469e-7, 1e-6), rel(r.dCs, 4.25108109, 1e-6), rel(r.dT, 14.43534518, 1e-6), near(r.ratio, 415.65, 0.01), near(r.lim, 24, 1e-9), near(r.lim2, 12, 1e-9), r.ok], [true, true, true, true, true, true, true, true, true]);
+  const c2 = cal({as2: 628});
+  check('compression steel 628 mm2 at d2 = 50: yI = 254.0065, II = 3.506079e9, x = 122.9753, Icr = 1.021131e9; long term x = 187.506, Icr = 2.745381e9; Mcr 41.2826; total 12.00176 mm', [rel(c2.sS.yI, 254.00649616, 1e-7), rel(c2.sS.II, 3506078708.39, 1e-7), rel(c2.sS.x, 122.97531072, 1e-7), rel(c2.sS.Icr, 1021131183.50, 1e-7), rel(c2.sL.x, 187.50599263, 1e-7), rel(c2.sL.Icr, 2745380950.83, 1e-7), rel(c2.Mcr, 41.28257521, 1e-7), rel(c2.dT, 12.00175596, 1e-6), c2.sL.okComp], [true, true, true, true, true, true, true, true, true]);
+  const t1 = cal({bf: 1000, hf: 120});
+  check('T section 1000 x 120 flange with 300 web: short-term neutral axis 75.678 mm lies in the flange (rectangle bf), II = 5.617359e9, Icr = 1.216369e9, Mcr = 52.3047; long-term x = 131.0205 passes the flange (T branch), Icr = 3.473707e9; total 10.23165 mm', [rel(t1.sS.x, 75.67783631, 1e-7), t1.sS.flange, rel(t1.sS.yI, 188.92860065, 1e-7), rel(t1.sS.II, 5617358976.60, 1e-7), rel(t1.sS.Icr, 1216369158.00, 1e-7), rel(t1.Mcr, 52.3047166, 1e-7), rel(t1.sL.x, 131.02054700, 1e-6), t1.sL.flange, rel(t1.sL.Icr, 3473706572.74, 1e-6), rel(t1.dT, 10.23164664, 1e-6)], [true, true, true, true, true, true, true, false, true, true]);
+  const t2 = cal({bf: 1000, hf: 120, as: 4000, q: 60});
+  check('heavily reinforced T section (As 4000, q 60): short-term x = 125.7827 mm below the flange (T branch), Icr = 3.224274e9, M = 270 kN m, zeta = 0.94449 / 0.97224, total 18.29521 mm still within L / 250', [rel(t2.sS.x, 125.78265022, 1e-6), !t2.sS.flange, rel(t2.sS.Icr, 3224273594.66, 1e-6), near(t2.M, 270, 1e-9), rel(t2.zS, 0.94448697, 1e-6), rel(t2.zL, 0.97224348, 1e-6), rel(t2.dT, 18.29521118, 1e-6), t2.ok], [true, true, true, true, true, true, true, true]);
+  const cu = cal({sch: 1, L: 2.5, q: 10}), ss = cal({sch: 2, q: 40}), cp = cal({sch: 3, L: 2.5, q: 20});
+  check('cantilever with a distributed load (L 2.5, q 10): M = q L2 / 2 = 31.25 below Mcr so zeta = 0, aI = q L4 / 8 E I = 0.441208 mm, long term 1.301991, shrinkage k = 1/2 gives 1.431083, total 2.733074', [near(cu.M, 31.25, 1e-12), !cu.cracked, near(cu.zS, 0, 1e-12), rel(cu.dS, 0.44120786, 1e-6), rel(cu.dL, 1.30199126, 1e-6), rel(cu.dCs, 1.43108267, 1e-6), rel(cu.dT, 2.73307393, 1e-6)], [true, true, true, true, true, true, true]);
+  check('central point load 40 kN on 6 m: M = P L / 4 = 60, aI = P L3 / 48 E I, total 11.22523 mm; cantilever tip load 20 kN on 2.5 m: M = 50 and total 6.61756 mm (k = 1/3 and 1/2 for shrinkage)', [near(ss.M, 60, 1e-12), rel(ss.dS, 3.72789760, 1e-6), rel(ss.dT, 11.22523210, 1e-6), near(cp.M, 50, 1e-12), rel(cp.dS, 1.71481296, 1e-6), rel(cp.dT, 6.61756015, 1e-6)], [true, true, true, true, true, true]);
+  const lg = cal({q: 4}), fl = cal({L: 8, q: 22});
+  check('a light load below the cracking moment: M = 18 gives zeta = 0, uncracked deflection 0.609926 mm, total 3.860632 mm; a long beam (L 8, q 22): M = 176, total 58.446 mm exceeds L / 250 = 32 mm and L / 500 = 16', [!lg.cracked, near(lg.zL, 0, 1e-12), rel(lg.dS, 0.60992574, 1e-6), rel(lg.dT, 3.86063176, 1e-6), rel(fl.dT, 58.4460746, 1e-6), near(fl.lim, 32, 1e-9), near(fl.lim2, 16, 1e-9), fl.ok], [true, true, true, true, true, true, true, false]);
+  check('compression steel is flagged when it lies in the tension zone: d2 = 150 mm with the short-term x about 123 gives okComp false, while the long-term x of about 187 keeps it inside', [cal({as2: 628, d2: 150}).sS.okComp, cal({as2: 628, d2: 150}).sL.okComp, cal({as2: 628, d2: 50}).sS.okComp, cal({}).sS.okComp], [false, true, true, true]);
+}
+let tt;
+w.renderCalc('ec2defl'); w.calcResult('ec2defl');
+tt = txt(w, 'xdn_results');
+check('the default page shows Mcr 40.37 kN m, M 67.50 kN m, total 14.44 mm with L / 416 and the 🔴 note and passes L / 250', [tt.includes('40.37 kN·m'), tt.includes('67.50 kN·m'), tt.includes('14.44 mm'), tt.includes('L / 416'), tt.includes('🔴'), !tt.includes('✘')], [true, true, true, true, true, true]);
+set('xdn_l', '8'); set('xdn_q', '22'); w.calcResult('ec2defl'); tt = txt(w, 'xdn_results');
+check('the long beam page reports 58.45 mm and a failed limit', [tt.includes('58.45 mm'), tt.includes('✘')], [true, true]);
+set('xdn_as', '0'); w.calcResult('ec2defl'); tt = txt(w, 'xdn_results');
+check('no tension steel asks for the reinforcement area', [tt.includes('أدخل مساحة حديد الشد')], [true]);
+check('other reference codes open ec2defl too', others('ec2defl', 'xdn_results'), [true, true, true]);
+}
+// ---------- part 302: EN 1992-1-1:2004 strut-and-tie details (`ec2stm`: struts and nodes 6.5.2 / 6.5.4 (6.55) to (6.62), transverse tension in compression fields 6.5.3 (6.58) (6.59), partially loaded areas 6.7 (6.63), corbels J.3, surface reinforcement J.1 and frame corners J.2.2) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const stt = o => J('xsmStrut(' + JSON.stringify(Object.assign({fck: 30, gc: 1.5, acc: 1, type: 3, boost: 0, f: 800, b: 300, w: 150}, o)) + ')');
+const tie = o => J('xsmTie(' + JSON.stringify(Object.assign({f: 1000, a: 200, b: 600, h: 2000, fyd: 435}, o)) + ')');
+const par = o => J('xsmPart(' + JSON.stringify(Object.assign({fck: 30, gc: 1.5, acc: 1, b1: 200, d1: 200, b2: 600, d2: 600, h: 500, f: 2500}, o)) + ')');
+const cor = o => J('xsmCorbel(' + JSON.stringify(Object.assign({ac: 200, hc: 500, z: 400, f: 500, hd: 0, fyd: 435, asm: 1500, asl: 600, vrdc: 200}, o)) + ')');
+const srf = o => J('xsmSurf(' + JSON.stringify(Object.assign({phi: 40, act: 40000, cover: 50, h1: 600, h2: 500, tan: 0.7, f1: 400, f2: 500}, o)) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('design strength fcd = 1 x 30 / 1.5 = 20 MPa and nu = 1 - 30 / 250 = 0.88; limits: strut fcd = 20, cracked strut 0.6 x 0.88 x 20 = 10.56, CCC 17.6, CCT one direction 0.85 x 17.6 = 14.96, more than one direction 0.75 x 17.6 = 13.2, triaxial 3 x 17.6 = 52.8', [near(stt({}).fcd, 20, 1e-12), near(stt({}).nu, 0.88, 1e-12), ...stt({}).lims.map((x, i) => near(x, [20, 10.56, 17.6, 14.96, 13.2, 52.8][i], 1e-9))], [true, true, true, true, true, true, true, true]);
+  check('node check: 800 kN on 300 x 150 mm gives 17.78 MPa against 14.96 (ratio 1.188) so it fails and the 10 % increase (16.456) still fails; a 200 mm node gives 13.33 and passes with capacity 14.96 x 300 x 150 = 673.2 kN', [near(stt({}).sigma, 17.777778, 1e-5), stt({}).ok, near(stt({}).ratio, 1.188352, 1e-5), near(stt({boost: 1}).lim, 16.456, 1e-9), stt({boost: 1}).ok, near(stt({w: 200}).sigma, 13.333333, 1e-5), stt({w: 200}).ok, near(stt({}).fmax, 673.2, 1e-9)], [true, false, true, true, false, true, true, true]);
+  check('the 10 % increase applies to the three node types only: not to struts (types 0, 1) and not to the triaxial node (type 5)', [stt({type: 0, boost: 1}).boost, stt({type: 1, boost: 1}).boost, stt({type: 2, boost: 1}).boost, stt({type: 4, boost: 1}).boost, stt({type: 5, boost: 1}).boost], [1, 1, 1.1, 1.1, 1]);
+  check('alpha_cc and gamma_c change fcd: 0.85 x 30 / 1.5 = 17 MPa and C50: nu = 0.8, k3 x nu x fcd = 0.75 x 0.8 x 33.33 = 20', [near(stt({acc: 0.85}).fcd, 17, 1e-12), near(stt({fck: 50, type: 4}).lim, 20, 1e-9)], [true, true]);
+  check('transverse tension, partial discontinuity (b = 600 <= H / 2 = 1000): T = 0.25 x (600 - 200) / 600 x 1000 = 166.67 kN, bef = b = 600, As = 166 667 / 435 = 383.1 mm2', [tie({}).partial, near(tie({}).t, 166.666667, 1e-5), near(tie({}).bef, 600, 1e-9), near(tie({}).as, 383.1418, 1e-3), tie({}).okA], [true, true, true, true, true]);
+  check('full discontinuity (b = 1500 > 1000): h = H / 2 = 1000, T = 0.25 x (1 - 0.7 x 200 / 1000) x 1000 = 215 kN, bef = 0.5 x 2000 + 0.65 x 200 = 1130 mm; a = 1200 above h is flagged', [!tie({b: 1500}).partial, near(tie({b: 1500}).hh, 1000, 1e-9), near(tie({b: 1500}).t, 215, 1e-9), near(tie({b: 1500}).bef, 1130, 1e-9), tie({b: 1500, a: 1200}).okA, near(tie({b: 1500, a: 1200}).t, 0.25 * (1 - 0.7 * 1.2) * 1000, 1e-9)], [true, true, true, true, false, true]);
+  check('the two tension rules switch at b = H / 2 = 1000 (a = 200): partial gives (1 - 0.2) / 4 x 1000 = 200 at b = 1000 and full gives 0.25 x (1 - 0.14) x 1000 = 215 just above', [near(tie({b: 1000}).t, 200, 1e-9), tie({b: 1000}).partial, near(tie({b: 1001}).t, 0.25 * (1 - 0.7 * 200 / 1000) * 1000, 1e-9)], [true, true, true]);
+  check('partially loaded area: Ac0 = 40 000, Ac1 = 360 000, sqrt = 3.0 so FRdu = 40 000 x 20 x 3 / 1000 = 2400 kN (not capped), 2500 kN fails; Ac1 = 640 000 gives k = 4 capped at 3: still 2400; Ac1 = 160 000 gives 1600', [near(par({}).ac0, 40000, 1e-9), near(par({}).k, 3, 1e-9), near(par({}).frdu, 2400, 1e-9), !par({}).capped, par({}).ok, near(par({b2: 800, d2: 800}).k, 4, 1e-9), par({b2: 800, d2: 800}).capped, near(par({b2: 800, d2: 800}).frdu, 2400, 1e-9), near(par({b2: 400, d2: 400}).frdu, 1600, 1e-9), par({b2: 400, d2: 400, f: 1500}).ok], [true, true, true, true, false, true, true, true, true, true]);
+  check('distribution height and shape: h >= max(b2 - b1, d2 - d1) = 400 so 500 passes and 350 fails; a rectangular 600 x 400 distribution of a square load is not similar in shape', [near(par({}).hMin, 400, 1e-9), par({}).okH, par({h: 350}).okH, par({}).similar, par({d2: 400}).similar], [true, true, false, true, false]);
+  check('corbel: tan theta = 400 / 200 = 2.0 within 1.0 to 2.5, theta = 63.43 degrees, Ftd = 500 x 200 / 400 = 250 kN, As = 574.7 mm2 against 1500 provided, strut force 500 / sin = 559.02 kN; HEd 50 adds to Ftd = 300', [near(cor({}).tan, 2, 1e-12), cor({}).okTan, cor({}).okShort, near(cor({}).theta, 63.434949, 1e-5), near(cor({}).ftd, 250, 1e-9), near(cor({}).asm, 574.7126, 1e-3), cor({}).okAs, near(cor({}).fc, 559.016994, 1e-5), near(cor({hd: 50}).ftd, 300, 1e-9)], [true, true, true, true, true, true, true, true, true]);
+  check('corbel limits: ac = 100 gives tan 4 above 2.5 and ac = 450 gives 0.889 below 1.0; ac = z0 = 400 is no longer a corbel; 500 mm2 of steel is not enough for 574.7', [cor({ac: 100}).okTan, cor({ac: 450}).okTan, cor({ac: 400}).okShort, cor({asm: 500}).okAs, cor({ac: 450}).okShort], [false, false, false, false, false]);
+  check('corbel links (J.3): ac 200 < 0.5 hc = 250 -> 0.25 x 1500 = 375 mm2 and 600 passes; ac 300 above 0.5 hc with FEd 500 > VRd,c 200 -> 0.5 x 500 000 / 435 = 574.7 mm2 (600 passes, 500 fails); FEd 150 below VRd,c needs none', [cor({}).caseL, near(cor({}).aslMin, 375, 1e-9), cor({}).okAsl, cor({ac: 300}).caseL, near(cor({ac: 300}).aslMin, 574.7126, 1e-3), cor({ac: 300}).okAsl, cor({ac: 300, asl: 500}).okAsl, cor({ac: 300, f: 150}).caseL, near(cor({ac: 300, f: 150}).aslMin, 0, 1e-12)], [0, true, true, 1, true, true, false, 2, true]);
+  check('surface reinforcement: 40 mm bars exceed 32 so it is needed, 0.01 x 40 000 = 400 mm2; 32 mm is not enough to need it; cover 80 > 70 gives 0.005 x 40 000 = 200 mm2 while 50 gives none', [srf({}).need, near(srf({}).min, 400, 1e-9), srf({phi: 32}).need, srf({}).dur, srf({cover: 80}).dur, near(srf({cover: 80}).durMin, 200, 1e-9)], [true, true, false, false, true, true]);
+  check('frame corners (J.2.2): h2 / h1 = 500 / 600 = 0.833 lies between 2/3 and 3/2 so no link or anchorage check; 400 / 600 = 2/3 exactly is outside the open range; the swapped order gives the same ratio; tan theta 0.7 is inside 0.4 to 1.0 and 0.3 is not; dF = 100 kN', [srf({}).noCheck, srf({h2: 400}).noCheck, near(srf({h1: 500, h2: 600}).ratio, 500 / 600, 1e-12), srf({}).okTan, srf({tan: 0.3}).okTan, srf({tan: 1.2}).okTan, near(srf({}).dF, 100, 1e-9)], [true, false, true, true, false, false, true]);
+}
+let tt;
+w.renderCalc('ec2stm'); w.calcResult('ec2stm');
+tt = txt(w, 'xsm_results');
+check('the default page (CCT node) shows 17.78 MPa against 14.96 MPa, fails, and shows the strut group only', [tt.includes('17.78 MPa'), tt.includes('14.96 MPa'), tt.includes('✘'), tt.includes('🔴'), doc.getElementById('xsm_g0').style.display === '', doc.getElementById('xsm_g1').style.display === 'none'], [true, true, true, true, true, true]);
+set('xsm_m', '1'); w.calcResult('ec2stm'); tt = txt(w, 'xsm_results');
+check('the tie page shows T 166.7 kN and 383 mm2', [tt.includes('166.7 kN'), tt.includes('383 mm²'), doc.getElementById('xsm_g1').style.display === '', doc.getElementById('xsm_g0').style.display === 'none'], [true, true, true, true]);
+set('xsm_m', '2'); w.calcResult('ec2stm'); tt = txt(w, 'xsm_results');
+check('the partially loaded page shows FRdu 2400.0 kN and fails 2500 kN', [tt.includes('2400.0 kN'), tt.includes('✘')], [true, true]);
+set('xsm_m', '3'); w.calcResult('ec2stm'); tt = txt(w, 'xsm_results');
+check('the corbel page shows Ftd 250.0 kN, 575 mm2 and tan 2.00', [tt.includes('250.0 kN'), tt.includes('575 mm²'), tt.includes('2.00')], [true, true, true]);
+set('xsm_m', '4'); w.calcResult('ec2stm'); tt = txt(w, 'xsm_results');
+check('the surface page shows 400 mm2 and the default ratio 0.67 (exactly 2/3, outside the open range so a strut-and-tie model is required)', [tt.includes('400 mm²'), tt.includes('0.67'), doc.getElementById('xsm_g4').style.display === ''], [true, true, true]);
+check('other reference codes open ec2stm too', others('ec2stm', 'xsm_results'), [true, true, true]);
+}
+// ---------- part 303: EN 1992-1-1:2004 Annex I (`ec2flat`: flat slab moment apportionment Table I.1, edge and corner column moment limit I.1.2(5), lateral load distribution to shear walls I.1.2(6)) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const str = o => J('xfaStrips(' + JSON.stringify(Object.assign({lt: 7, bd: 0, mneg: 400, mpos: 250, pick: 1}, o)) + ')');
+const edg = o => J('xfaEdge(' + JSON.stringify(Object.assign({type: 0, cz: 400, y: 200, z: 300, d: 220, fck: 30, m: 60}, o)) + ')');
+const wl = o => J('xfaWalls(' + JSON.stringify(Object.assign({p: 1000, yp: 10, ns: 12, walls: [{y: 0, ei: 1}, {y: 8, ei: 2}, {y: 16, ei: 1}]}, o)) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('Table I.1 mid-range (70 % and 60 %) for a 7 m panel: strips 3.5 + 3.5 m; negative 280 + 120 kN m; positive 150 + 100 kN m; per metre 80, 34.286, 42.857, 28.571', [near(str({}).wc, 3.5, 1e-12), near(str({}).wm, 3.5, 1e-12), near(str({}).mnc, 280, 1e-9), near(str({}).mnm, 120, 1e-9), near(str({}).mpc, 150, 1e-9), near(str({}).mpm, 100, 1e-9), near(str({}).pnc, 80, 1e-9), near(str({}).pnm, 34.285714, 1e-5), near(str({}).ppc, 42.857143, 1e-5), near(str({}).ppm, 28.571429, 1e-5)], [true, true, true, true, true, true, true, true, true, true]);
+  check('limits of Table I.1: lower 60 % / 40 % negative and 50 % / 50 % positive (240 + 160, 125 + 125); upper 80 % / 20 % and 70 % / 30 % (320 + 80, 175 + 75); the two strips always add to 100 %', [near(str({pick: 0}).mnc, 240, 1e-9), near(str({pick: 0}).mnm, 160, 1e-9), near(str({pick: 0}).mpc, 125, 1e-9), near(str({pick: 0}).mpm, 125, 1e-9), near(str({pick: 2}).mnc, 320, 1e-9), near(str({pick: 2}).mnm, 80, 1e-9), near(str({pick: 2}).mpc, 175, 1e-9), near(str({pick: 2}).mpm, 75, 1e-9), [0, 1, 2].every(p => near(str({pick: p}).mnc + str({pick: p}).mnm, 400, 1e-9) && near(str({pick: p}).mpc + str({pick: p}).mpm, 250, 1e-9))], [true, true, true, true, true, true, true, true, true]);
+  check('a drop wider than a third of the panel (3000 mm > 2333) sets the column strip to the drop width 3.0 m and the middle strip to 4.0 m; 2000 mm is not enough and keeps 3.5 m; per metre column strip becomes 280 / 3 = 93.33', [str({bd: 3000}).drop, near(str({bd: 3000}).wc, 3, 1e-12), near(str({bd: 3000}).wm, 4, 1e-12), near(str({bd: 3000}).pnc, 93.333333, 1e-5), str({bd: 2000}).drop, near(str({bd: 2000}).wc, 3.5, 1e-12)], [true, true, true, true, false, true]);
+  check('edge column: be = cz + y = 600 mm, Mt,max = 0.17 x 600 x 220^2 x 30 = 148.104 kN m; 60 passes (ratio 0.405) and 200 exceeds by 51.896; corner column: be = z + y / 2 = 400 and Mt,max = 98.736', [near(edg({}).be, 600, 1e-9), near(edg({}).mmax, 148.1040, 1e-6), edg({}).ok, near(edg({}).ratio, 60 / 148.104, 1e-6), edg({m: 200}).ok, near(edg({m: 200}).excess, 51.896, 1e-6), near(edg({type: 1}).be, 400, 1e-9), near(edg({type: 1}).mmax, 98.736, 1e-6), near(edg({}).excess, 0, 1e-12)], [true, true, true, true, false, true, true, true, true]);
+  check('shear walls (I.1): centroid (0 x 1 + 8 x 2 + 16 x 1) / 4 = 8 m, e = 10 - 8 = 2 m, sum EI y2 = 64 + 0 + 64 = 128; Pn = 250 - 125, 500 + 0, 250 + 125 = 125, 500, 375 kN', [near(wl({}).ybar, 8, 1e-12), near(wl({}).e, 2, 1e-12), near(wl({}).sumEIy2, 128, 1e-9), near(wl({}).pn[0].total, 125, 1e-9), near(wl({}).pn[1].total, 500, 1e-9), near(wl({}).pn[2].total, 375, 1e-9), near(wl({}).pn[0].torsion, -125, 1e-9), near(wl({}).sum, 1000, 1e-9)], [true, true, true, true, true, true, true, true]);
+  check('a load through the centroid gives pure stiffness shares 250, 500, 250 and no torsion; equilibrium holds for six unequal walls: sum of forces = P and sum of force x position = P x yp', [near(wl({yp: 8}).pn[0].total, 250, 1e-9), near(wl({yp: 8}).pn[1].total, 500, 1e-9), near(wl({yp: 8}).pn[2].total, 250, 1e-9), near(wl({yp: 8}).pn[0].torsion, 0, 1e-12), (() => { const o = {p: 1800, yp: 11.3, walls: [{y: 0, ei: 1}, {y: 5, ei: 3}, {y: 9.5, ei: 2}, {y: 14, ei: 1.5}, {y: 19, ei: 2.5}, {y: 24, ei: 1}]}; const r = wl(o); const m = r.pn.reduce((s, x, i) => s + x.total * o.walls[i].y, 0); return near(r.sum, 1800, 1e-7) && near(m, 1800 * 11.3, 1e-6); })()], [true, true, true, true, true]);
+  check('unused walls (EI 0) take no load and do not shift the centroid; more than 25 storeys is flagged', [wl({walls: [{y: 0, ei: 1}, {y: 8, ei: 2}, {y: 16, ei: 1}, {y: 40, ei: 0}]}).pn[3].total, near(wl({walls: [{y: 0, ei: 1}, {y: 8, ei: 2}, {y: 16, ei: 1}, {y: 40, ei: 0}]}).ybar, 8, 1e-12), wl({walls: [{y: 0, ei: 1}, {y: 8, ei: 2}, {y: 16, ei: 1}, {y: 40, ei: 0}]}).count, wl({ns: 25}).okStoreys, wl({ns: 26}).okStoreys], [0, true, 3, true, false]);
+}
+let tt;
+w.renderCalc('ec2flat'); w.calcResult('ec2flat');
+tt = txt(w, 'xfa_results');
+check('the default page shows strips 3.50 m, 280.0 kN m negative in the column strip and the 🔴 note', [tt.includes('3.50 m'), tt.includes('280.0 kN·m'), tt.includes('150.0 kN·m'), tt.includes('🔴'), doc.getElementById('xfa_g0').style.display === ''], [true, true, true, true, true]);
+set('xfa_m', '1'); w.calcResult('ec2flat'); tt = txt(w, 'xfa_results');
+check('the edge column page shows Mt,max 148.1 kN m and passes', [tt.includes('148.1 kN·m'), tt.includes('600 mm'), !tt.includes('✘'), doc.getElementById('xfa_g1').style.display === '', doc.getElementById('xfa_g0').style.display === 'none'], [true, true, true, true, true]);
+set('xfa_m', '2'); w.calcResult('ec2flat'); tt = txt(w, 'xfa_results');
+check('the wall page shows 125.0, 500.0 and 375.0 kN and the centroid 8.00 m', [tt.includes('125.0 kN'), tt.includes('500.0 kN'), tt.includes('375.0 kN'), tt.includes('8.00 m')], [true, true, true, true]);
+check('other reference codes open ec2flat too', others('ec2flat', 'xfa_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
