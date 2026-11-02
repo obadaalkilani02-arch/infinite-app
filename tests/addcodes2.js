@@ -3082,6 +3082,69 @@ check('other reference codes open acisf too', others('acisf', 'xcr_results'), [t
 }
 
 
+// ---------- part 287: ACI 318-14 torsion of rectangular beams (22.7, 9.6.4, 9.7.5, 9.7.6.3) (`acitor`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const tor = o => J('xtqCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => tor(Object.assign({fc: 30, fy: 420, fyt: 420, lam: 0, bw: 300, h: 500, d: 450, c: 40, dt: 10, Tu: 30, Vu: 100, Nu: 0, comp: 0, th: 45, at: 0, s: 0, alp: 0}, o));
+  check('section 300 x 500, cover 40 + 10 mm stirrup: centreline offset 45, Aoh = 210 x 410 = 86100 mm2, ph = 2 (210 + 410) = 1240, Acp = 150000, pcp = 1600, Ao = 0.85 Aoh = 73185', [a({}).Aoh, a({}).ph, a({}).Acp, a({}).pcp, near(a({}).Ao, 73185, 1e-6)], [86100, 1240, 150000, 1600, true]);
+  check('threshold torsion f\'c 30: Tth = 0.083 sqrt(30) x 150000^2 / 1600 = 6.393 kN.m, Tcr = 0.33 ... = 25.42 kN.m, phi Tth 4.795 and phi Tcr 19.06', [near(a({}).tth, 6.392949, 1e-4), near(a({}).tcr, 25.41775, 1e-3), near(a({}).phi * a({}).tth, 4.794712, 1e-4), near(a({}).phi * a({}).tcr, 19.06331, 1e-3)], [true, true, true, true]);
+  check('torsion is neglected when Tu does not exceed phi Tth: 4 kN.m yes, 5 kN.m no', [a({Tu: 4}).negl, a({Tu: 5}).negl], [true, false]);
+  check('axial compression 500 kN raises both by sqrt(1 + 500000 / (0.33 x 150000 x 5.477)) = 1.6865: Tth 10.78 and Tcr 42.87 kN.m; tension -500 kN lowers them to sqrt(1 - 1.8444) -> 0 (floored)', [near(a({Nu: 500}).tth, 10.78152, 1e-3), near(a({Nu: 500}).tcr, 42.86629, 1e-3), a({Nu: -500}).tth, near(a({Nu: -100}).nf, 1 - 100000 / (0.33 * 150000 * Math.sqrt(30)), 1e-9)], [true, true, 0, true]);
+  check('compatibility torsion: Tu 30 above phi Tcr (19.06) is reduced to 19.06 kN.m; equilibrium torsion keeps 30; compatibility Tu 10 is not reduced', [near(a({comp: 1}).tud, 19.06331, 1e-3), a({}).tud, a({comp: 1, Tu: 10}).tud, a({comp: 1}).red], [true, 30, 10, true]);
+  check('section limit: sqrt((100000 / 135000)^2 + (30e6 x 1240 / (1.7 x 86100^2))^2) = 3.043 MPa against 0.75 (0.17 + 0.66) sqrt(30) = 3.410 passes; Tu 40 gives 4.005 and fails; Vc = 0.17 sqrt(30) x 135000 = 125.7 kN', [near(a({}).lhs, 3.043329, 1e-4), near(a({}).rhs, 3.409573, 1e-4), a({}).okSec, near(a({Tu: 40}).lhs, 4.0049, 1e-3), a({Tu: 40}).okSec, near(a({}).vc, 125.7023, 1e-3)], [true, true, true, true, false, true]);
+  check('stirrups: At / s = 30e6 / (0.75 x 2 x 73185 x 420 x cot45) = 0.6507 mm2/mm; Al = 0.6507 x 1240 x 1 = 806.8 mm2; theta 30: cot 1.732 gives At / s 0.3757 and Al 1397.5', [near(a({}).ats, 0.650667, 1e-5), near(a({}).al, 806.827, 1e-2), near(a({th: 30}).ats, 0.375664, 1e-5), near(a({th: 30}).al, 1397.5, 0.1), a({th: 10}).th, a({th: 80}).th], [true, true, true, true, 30, 60]);
+  check('combined transverse steel: Av / s = (100 / 0.75 - 125.7) x 1000 / (420 x 450) = 0.0404 plus 2 x 0.6507 = 1.3417 mm2/mm against the minimum max(0.2426, 0.25) = 0.25', [near(a({}).avs, 0.040376, 1e-5), near(a({}).totReq, 1.341709, 1e-4), near(a({}).totMin, 0.25, 1e-9), near(a({}).tot, 1.341709, 1e-4), a({Tu: 6, Vu: 0}).tot > 0.25], [true, true, true, true, true]);
+  check('minimum longitudinal steel: 0.42 sqrt(30) x 150000 / 420 = 821.6 less 0.6507 x 1240 = 14.76 (a) and less 0.175 x 300 / 420 x 1240 = 155 (b): the lesser (a) 14.76 mm2 is below the calculated 806.8 which governs', [near(a({}).almin, 14.757, 1e-2), near(a({}).alDes, 806.827, 1e-2), a({Tu: 5}).alDes >= a({Tu: 5}).almin], [true, true, true]);
+  check('limits: spacing min(ph / 8 = 155, 300) = 155 mm; longitudinal bar diameter max(0.042 s, 10): s unset gives 10 mm, s 300 gives 12.6 mm; sqrt(f\'c) is capped at 8.3 MPa (f\'c 100) and fy at 420', [a({}).smax, a({}).dbl, near(a({s: 300}).dbl, 12.6, 1e-9), a({fc: 100}).sfc, a({fy: 500, fyt: 600}).fy, a({fy: 500, fyt: 600}).fyt], [155, 10, true, 8.3, 420, 420]);
+  check('provided steel: At 78.5 mm2 at s = 150 gives Tn,a = 2 x 73185 x 78.5 x 420 / 150 = 32.17 kN.m, Al 1500 gives Tn,b = 74.37; phi Tn = 24.13 below Tu 30 fails; s = 100 gives phi Tn = 36.19 and passes; s 200 exceeds 155 mm', [near(a({at: 78.5, s: 150, alp: 1500}).tnA, 32.1721, 1e-3), near(a({at: 78.5, s: 150, alp: 1500}).tnB, 74.3654, 1e-3), a({at: 78.5, s: 150, alp: 1500}).okProv, near(a({at: 78.5, s: 100, alp: 1500}).phi * a({at: 78.5, s: 100, alp: 1500}).tn, 36.1936, 1e-3), a({at: 78.5, s: 100, alp: 1500}).okProv, a({at: 78.5, s: 200, alp: 1500}).okS, a({}).hasProv], [true, true, false, true, true, false, false]);
+  check('oversized cover (200 mm) leaves no core: the geometry is invalid', [a({c: 200}).okGeo, a({}).okGeo], [false, true]);
+}
+let tt;
+w.renderCalc('acitor'); w.calcResult('acitor');
+tt = txt(w, 'xtq_results');
+check('the default page shows Tth 6.39 kN.m, Tcr 25.42 kN.m, At / s 0.651 mm2/mm, Al 807 mm2 and the 🔴 note', [tt.includes('6.39 kN·m'), tt.includes('25.42 kN·m'), tt.includes('0.651 mm²/mm'), tt.includes('807 mm²'), tt.includes('🔴')], [true, true, true, true, true]);
+set('xtq_tu', '3'); w.calcResult('acitor'); tt = txt(w, 'xtq_results');
+check('a small torsion shows that it can be neglected and no reinforcement lines', [tt.includes('6.39 kN·m'), !tt.includes('mm²/mm')], [true, true]);
+check('other reference codes open acitor too', others('acitor', 'xtq_results'), [true, true, true]);
+}
+// ---------- part 288: ACI 318-14 walls: thickness and simplified axial design (11.3.1, 11.5.3), in-plane shear and minimum reinforcement (11.5.4, 11.6, 11.7) (`aciwall`) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const ax = o => J('xwlAxial(' + JSON.stringify(o) + ')');
+const sh = o => J('xwlShear(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => ax(Object.assign({fc: 30, h: 200, len: 1000, lc: 3000, lu: 6000, hu: 3000, wt: 0, kk: 0, Pu: 500, e: 0}, o));
+  check('minimum thickness (Table 11.3.1.1): bearing max(100, 3000 / 25 = 120) = 120 mm; nonbearing max(100, 3000 / 30 = 100) = 100; unsupported height 2400 gives 96 so 100 governs; exterior basement 190 mm; 200 mm passes, 110 fails the bearing wall', [a({}).hmin, a({wt: 1}).hmin, a({hu: 2400}).hmin, a({wt: 2}).hmin, a({}).okH, a({h: 110}).okH, a({wt: 1, h: 110}).okH], [120, 100, 100, 190, true, false, true]);
+  check('simplified axial strength: k 0.8, lc 3000, h 200: k lc / 32 h = 0.375, Pn = 0.55 x 30 x 200000 x (1 - 0.1406) = 2835.9 kN, phi Pn = 0.65 Pn = 1843.4 kN', [a({}).sl, near(a({}).red, 0.859375, 1e-9), near(a({}).pn, 2835.9375, 1e-3), near(a({}).ppn, 1843.359375, 1e-3), a({}).ok, a({Pu: 2000}).ok, near(a({}).use, 500 / 1843.359375, 1e-6)], [0.375, true, true, true, true, false, true]);
+  check('k 1.0 gives reduction 1 - 0.46875^2 = 0.7803; k 2.0 gives 0.1211; a very slender wall (lc 8000, k 2.0, ratio 2.5) is floored at 0', [near(a({kk: 1}).red, 0.780273, 1e-5), near(a({kk: 2}).red, 0.121094, 1e-5), a({kk: 2, lc: 8000}).red, a({kk: 2, lc: 8000}).pn], [true, true, 0, 0]);
+  check('middle third: e <= h / 6 = 33.3 mm passes, 40 mm fails; two layers of reinforcement above 250 mm (not for basement walls)', [a({e: 33}).okE, a({e: 40}).okE, a({}).hw, a({h: 300}).hw, a({h: 300, wt: 2}).hw], [true, false, false, true, false]);
+  const s = o => sh(Object.assign({fc: 30, fy: 420, fyt: 420, lam: 0, lw: 4000, h: 250, hw: 6000, Nu: 0, Mu: 0, Vu: 600, det: 0, rt: 0, db: 12, nl: 2, dh: 12, st: 200, dv: 12, sv: 200, base: 0}, o));
+  check('in-plane shear: d = 0.8 x 4000 = 3200 mm, Vn,max = 0.83 sqrt(30) x 250 x 3200 = 3636.9 kN, Vc (compression) = 0.17 sqrt(30) x 800000 = 744.9 kN', [s({}).d, near(s({}).vmax, 3636.878, 0.01), near(s({}).vc, 744.9027, 1e-3), s({}).Ag], [3200, true, true, 1000000]);
+  check('Vu 600: Vu / phi = 800 kN, Vs = 55.1 kN, Av / s = 55097 / (420 x 3200) = 0.0410 mm2/mm (rho_t 0.000164) so the minimum 0.0025 governs; 0.5 phi Vc = 279.3 kN so Vu is above it and Eq. 11.6.2 applies', [s({}).vnReq, near(s({}).vsReq, 55.0973, 1e-3), near(s({}).avs, 0.040995, 1e-5), s({}).half, s({}).rt, s({}).rlMin], [800, true, true, false, 0.0025, 0.0025]);
+  check('Vu 200 (below 0.5 phi Vc): Table 11.6.1 bars <= 16 mm with fy 420 give rho_l 0.0012 and rho_t 0.0020; fy 300: 0.0015 and 0.0025; 20 mm bars: 0.0015 and 0.0025; welded wire: 0.0012 and 0.0020', [s({Vu: 200}).half, s({Vu: 200}).rlMin, s({Vu: 200}).rt, s({Vu: 200, fy: 300}).rlMin, s({Vu: 200, fy: 300}).rt, s({Vu: 200, db: 20}).rlMin, s({Vu: 200, db: 20}).rt, s({Vu: 200, rt: 1, db: 20}).rlMin, s({Vu: 200, rt: 1, db: 20}).rt], [true, 0.0012, 0.002, 0.0015, 0.0025, 0.0015, 0.0025, 0.0012, 0.002]);
+  check('Eq. 11.6.2 with Vu 3000 kN (rho_t = 0.009688): hw / lw 1.5 gives rho_l = 0.0025 + 0.5 x 1.0 x 0.007188 = 0.006094; hw / lw 0.5 equals rho_t (capped); hw / lw 3 gives the 0.0025 floor; Vn above the maximum is flagged', [near(s({Vu: 3000}).rt, 0.00968779, 1e-7), near(s({Vu: 3000}).rlMin, 0.0060939, 1e-6), near(s({Vu: 3000, hw: 2000}).rlMin, 0.00968779, 1e-7), s({Vu: 3000, hw: 12000}).rlMin, s({Vu: 3000}).okMax, s({}).okMax], [true, true, true, 0.0025, false, true]);
+  check('simplified Vc for axial tension -2000 kN: 0.17 (1 - 2e6 / (3.5 x 1e6)) sqrt(30) x 800000 = 319.2 kN; large tension floors at 0', [near(s({Nu: -2000}).vc, 319.244, 1e-2), s({Nu: -10000}).vc], [true, 0]);
+  check('detailed Vc: Mu 0 gives eq. (d) only = 0.27 sqrt(30) x 800000 = 1183.1 kN; Nu 1000 kN adds Nu d / 4 lw = 200 kN: 1383.1; Mu 12000 with Vu 600 (Mu / Vu - lw / 2 = 18000 mm) gives eq. (e) = 316.5 kN as the lesser; Mu 2000 keeps (d) below (e) 1533.6', [near(s({det: 1}).vc, 1183.0807, 1e-2), s({det: 1}).vcE, near(s({det: 1, Nu: 1000}).vc, 1383.0807, 1e-2), near(s({det: 1, Mu: 12000}).vc, 316.4619, 1e-2), near(s({det: 1, Mu: 2000}).vc, 1183.0807, 1e-2), near(s({det: 1, Mu: 2000}).vcE, 1533.6, 0.2), near(s({det: 1, Nu: 1000, Mu: 12000}).vc, 352.0175, 1e-2)], [true, null, true, true, true, true, true]);
+  check('spacing: 3h = 750 capped at 450 mm; with shear reinforcement required lw / 3 = 1333 and lw / 5 = 800 do not govern; a short wall lw 1200 (Vu 600) gives lw / 3 = 400 and lw / 5 = 240; without Vs required 450', [s({}).s3, s({}).sl, s({}).st, s({lw: 1200, Vu: 600}).sl, s({lw: 1200, Vu: 600}).st, s({Vu: 200}).sl, s({h: 120}).s3], [450, 450, 450, 400, 240, 450, 360]);
+  check('provided steel 2 layers of 12 mm at 200 mm: rho = 2 x 113.1 / (250 x 200) = 0.004524 for both directions; Vs = 2 x 113.1 x 420 x 3200 / 200 = 1520 kN; phi (Vc + Vs) = 1698.7 kN passes Vu 600; spacing 600 mm exceeds 450', [near(s({}).rtP, 0.00452389, 1e-7), near(s({}).rlP, 0.00452389, 1e-7), near(s({}).vsP, 1520.028, 0.01), s({}).okV, s({}).okRt && s({}).okRl, s({sv: 600}).okSl, s({st: 600}).okSt, s({st: 0}).hasP], [true, true, true, true, true, false, false, false]);
+  check('weak provided steel fails: 8 mm bars at 300 mm give rho_t 0.00134 below 0.0025; two-layer rule above 250 mm; sqrt(f\'c) capped at 8.3 MPa', [s({dh: 8, st: 300}).okRt, s({h: 300}).two, s({h: 300, base: 1}).two, s({h: 200}).two, s({fc: 100}).sfc], [false, true, false, false, 8.3]);
+}
+let tt;
+w.renderCalc('aciwall'); w.calcResult('aciwall');
+tt = txt(w, 'xwl_results');
+check('the axial page shows 120 mm, Pn 2836 kN, phi Pn 1843 kN and the 🔴 note', [tt.includes('120 mm'), tt.includes('2836 kN'), tt.includes('1843 kN'), tt.includes('🔴')], [true, true, true, true]);
+set('xwl_m', '1'); w.calcResult('aciwall'); tt = txt(w, 'xwl_results');
+check('the shear page shows Vc 745 kN, 3637 kN, 0.0025 and hides the axial group', [tt.includes('745 kN'), tt.includes('3637 kN'), tt.includes('0.0025'), doc.getElementById('xwl_g0').style.display === 'none', doc.getElementById('xwl_g1').style.display === ''], [true, true, true, true, true]);
+check('other reference codes open aciwall too', others('aciwall', 'xwl_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
