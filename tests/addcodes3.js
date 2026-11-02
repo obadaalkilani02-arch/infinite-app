@@ -487,6 +487,34 @@ set('xe8_m', '2'); w.calcResult('ec8det'); tt = txt(w, 'xe8_results');
 check('the strong column page shows 1.500, 6.80 and 4.20', [tt.includes('1.500'), tt.includes('6.80'), tt.includes('4.20')], [true, true, true]);
 check('other reference codes open ec8det too', others('ec8det', 'xe8_results'), [true, true, true]);
 }
+// ---------- part 293: NFPA 13 (2016) chapter 9, hanging of sprinkler piping (`nfpa13hg`: Tables 9.2.2.1, 9.1.2.1, clauses 9.2.3, 9.2.5, 9.1.1.2) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const hg = o => J('xhgCalc(' + JSON.stringify(o) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  const a = o => hg(Object.assign({mat: 0, sz: 4, main: 0, close: 0, span: 3.5, rod: 10, hp: 0, pend: 0, endL: 600, arm: 300, clr: 100, riser: 6, clamp: 400}, o));
+  const row = (mat) => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(sz => a({mat: mat, sz: sz}).maxS);
+  check('Table 9.2.2.1(b) steel pipe except threaded lightwall (3/4 NA; 1 and 1 1/4 in. 3.7 m; 1 1/2 in. and larger 4.6 m)', row(0), [0, 3.7, 3.7, 4.6, 4.6, 4.6, 4.6, 4.6, 4.6, 4.6, 4.6, 4.6]);
+  check('threaded lightwall steel: 1 to 3 in. 3.7 m, larger NA; copper tube: 3/4 and 1 in. 2.4, 1 1/4 and 1 1/2 in. 3.0, 2 to 3 in. 3.7, 3 1/2 in. and larger 4.6 m', [row(1), row(2)], [[0, 3.7, 3.7, 3.7, 3.7, 3.7, 3.7, 0, 0, 0, 0, 0], [2.4, 2.4, 3.0, 3.0, 3.7, 3.7, 3.7, 4.6, 4.6, 4.6, 4.6, 4.6]]);
+  check('CPVC: 5 ft 6 in. (1.7 m), 6 ft (1.8), 6 ft 6 in. (2.0), 7 ft (2.1), 8 ft (2.4), 9 ft (2.7), 10 ft (3.0) for 3/4 to 3 in., larger NA; ductile iron only 3, 4, 6 and 8 in. at 4.6 m', [row(3), row(4)], [[1.7, 1.8, 2.0, 2.1, 2.4, 2.7, 3.0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 4.6, 0, 4.6, 0, 4.6, 4.6]]);
+  check('spacing check: 2 in. steel 3.5 m passes (max 4.6), 5 m fails, 3/4 in. steel is not applicable and fails; sprinklers closer than 1.8 m on a branch line allow up to 3.7 m for copper 1 in. (2.4 to 3.7) but not on a main', [a({}).okS, a({span: 5}).okS, a({sz: 0}).na, a({sz: 0}).okS, a({mat: 2, sz: 1, span: 3.5}).okS, a({mat: 2, sz: 1, span: 3.5, close: 1}).okS, a({mat: 2, sz: 1, span: 3.5, close: 1, main: 1}).okS, a({mat: 2, sz: 1, close: 1}).useS], [true, false, true, false, false, true, false, 3.7]);
+  check('hanger rod (Table 9.1.2.1): up to 4 in. (100 mm) 10 mm; 5, 6 and 8 in. 12 mm; a 10 mm rod on 5 in. pipe fails', [a({sz: 8}).rod, a({sz: 9}).rod, a({sz: 10}).rod, a({sz: 11}).rod, a({sz: 9, rod: 10}).okRod, a({sz: 9, rod: 12}).okRod, a({}).okRod], [10, 12, 12, 12, false, true, true]);
+  check('weight of 2 in. Schedule 40 pipe (OD 60.325, ID 52.5 mm): steel 5.442 kg/m, water 2.165 kg/m, total 7.607 kg/m; over 3.5 m W = 0.2612 kN; hanger design load 5 W + 114 kg x 9.81 = 1.306 + 1.118 = 2.424 kN', [near(a({}).steel, 5.441971, 1e-4), near(a({}).water, 2.164902, 1e-4), near(a({}).mpm, 7.606873, 1e-4), near(a({}).W, 0.261182, 1e-5), near(a({}).load, 2.42425, 1e-4), a({}).hasW, a({mat: 2}).hasW], [true, true, true, true, true, true, false]);
+  check('1 in. pipe 3.059 kg/m and 4 in. pipe 24.288 kg/m full of water; the sizes of the table use nominal 20 to 200 mm', [near(a({sz: 1}).mpm, 3.058826, 1e-4), near(a({sz: 8}).mpm, 24.288045, 1e-4), a({sz: 0}).mm, a({sz: 11}).mm], [true, true, 20, 200]);
+  check('unsupported end length: steel 1 in. 900 mm, 1 1/4 in. 1200, 1 1/2 in. and larger 1500; copper 450, 600, 750; above 100 psi with pendent sprinklers 300 (steel) and 150 (copper); CPVC has no limit here', [a({sz: 1}).endMax, a({sz: 2}).endMax, a({sz: 3}).endMax, a({mat: 2, sz: 1}).endMax, a({mat: 2, sz: 2}).endMax, a({mat: 2, sz: 4}).endMax, a({hp: 1, pend: 1}).endLim, a({mat: 2, hp: 1, pend: 1}).endLim, a({mat: 3}).endLim, a({hp: 1}).endLim], [900, 1200, 1500, 450, 600, 750, 300, 150, 0, 1500]);
+  check('end length check: 600 mm on 2 in. steel passes (1500), 1600 fails; 400 mm fails at 100 psi with pendent sprinklers (300)', [a({}).okEnd, a({endL: 1600}).okEnd, a({endL: 400, hp: 1, pend: 1}).okEnd, a({mat: 3, endL: 5000}).okEnd], [true, false, false, true]);
+  check('armover: steel 600 mm, copper 300; high pressure pendent 300 and 150; 300 mm passes steel, 700 fails', [a({}).armLim, a({mat: 2}).armLim, a({hp: 1, pend: 1}).armLim, a({mat: 2, hp: 1, pend: 1}).armLim, a({}).okArm, a({arm: 700}).okArm, a({mat: 2, arm: 350}).okArm], [600, 300, 300, 150, true, false, false]);
+  check('clearances and risers: hanger to upright sprinkler 75 mm minimum (100 passes, 60 fails); riser supports every 7.6 m maximum (6 passes, 8 fails); clamp within 600 mm (400 passes, 700 fails)', [a({}).okClr, a({clr: 60}).okClr, a({}).okRiser, a({riser: 8}).okRiser, a({}).okClamp, a({clamp: 700}).okClamp], [true, false, true, false, true, false]);
+}
+let tt;
+w.renderCalc('nfpa13hg'); w.calcResult('nfpa13hg');
+tt = txt(w, 'xhg_results');
+check('the default page shows 4.6 m, 10 mm, 7.6 kg/m, 2.42 kN, 1500 mm and the 🔴 note', [tt.includes('4.6 m'), tt.includes('10 mm'), tt.includes('7.6 kg/m'), tt.includes('2.42 kN'), tt.includes('1500 mm'), tt.includes('🔴')], [true, true, true, true, true, true]);
+check('other reference codes open nfpa13hg too', others('nfpa13hg', 'xhg_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
