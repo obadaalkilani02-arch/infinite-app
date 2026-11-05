@@ -1175,6 +1175,58 @@ set('xav_m', '2'); w.calcResult('acicomp'); tt = txt(w, 'xav_results');
 check('the base page shows 800 mm2 and the 0.79 % ratio', [tt.includes('800 mm²'), tt.includes('0.79 %'), doc.getElementById('xav_g2').style.display === ''], [true, true, true]);
 check('other reference codes open acicomp too', others('acicomp', 'xav_results'), [true, true, true]);
 }
+// ---------- part 311: ACI 318-14 reinforcement details (`acirebar`: minimum spacing 25.2, standard hooks and bend diameters 25.3 Tables 25.3.1 and 25.3.2, stirrup anchorage 25.7.1.3, bundled bars 25.6, ties and spirals 25.7.2 and 25.7.3) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const bars = o => J('xazBars(' + JSON.stringify(Object.assign({type: 0, db: 20, dagg: 20, b: 300, c: 40, ds: 10, n: 4}, o)) + ')');
+const pre = o => J('xazPre(' + JSON.stringify(Object.assign({kind: 0, db: 12.7, fci: 35, dagg: 20, s: 50}, o)) + ')');
+const hook = o => J('xazHook(' + JSON.stringify(Object.assign({use: 0, ang: 90, db: 20, wire: 0}, o)) + ')');
+const stir = o => J('xazStir(' + JSON.stringify(Object.assign({db: 20, fyt: 420, fc: 30, lam: 1}, o)) + ')');
+const bun = o => J('xazBun(' + JSON.stringify(Object.assign({n: 3, db: 25, mem: 0, dagg: 20, ld: 800, tie: 13}, o)) + ')');
+const tie = o => J('xazTie(' + JSON.stringify(Object.assign({dl: 25, dt: 10, h: 400, dagg: 20, s: 150, sl: 150, bun: 0, ds: 10, p: 60}, o)) + ')');
+const size = d => J('xazSize(' + d + ')').us;
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('nearest ACI bar size by nominal diameter (No. 3 = 9.5, 4 = 12.7, 5 = 15.9, 6 = 19.1, 7 = 22.2, 8 = 25.4, 9 = 28.7, 10 = 32.3, 11 = 35.8, 14 = 43, 18 = 57.3): 20 mm -> No. 6, 16 -> 5, 12 -> 4, 8 -> 3, 25 -> 8, 28 -> 9, 32 -> 10, 36 -> 11, 40 -> 14, 14 -> 4, 10 -> 3', [size(20), size(16), size(12), size(8), size(25), size(28), size(32), size(36), size(40), size(14), size(10)], [6, 5, 4, 3, 8, 9, 10, 11, 14, 4, 3]);
+  check('minimum clear spacing in a horizontal layer (25.2.1): max(25, db, 4/3 dagg): db 20, dagg 20 -> 26.667; db 32 -> 32; db 16 with dagg 40 -> 53.333; columns (25.2.3): max(40, 1.5 db, 4/3 dagg): db 25 -> 40, db 32 -> 48, db 20 with dagg 40 -> 53.333', [near(bars({}).min, 80 / 3, 1e-9), bars({db: 32}).min, near(bars({db: 16, dagg: 40}).min, 160 / 3, 1e-9), bars({type: 2, db: 25}).min, bars({type: 2, db: 32}).min, near(bars({type: 2, dagg: 40}).min, 160 / 3, 1e-9), near(bars({type: 1}).min, 80 / 3, 1e-9)], [true, 32, true, 40, 48, true, true]);
+  check('bars in a 300 mm wide member with 40 mm cover and 10 mm stirrups: 200 mm inside; 4 x 20 mm bars leave (200 - 80) / 3 = 40 mm clear and fit (n max 4); 5 bars leave 25 mm and fail; one bar has no spacing', [bars({}).inner, bars({}).clear, bars({}).ok, bars({}).nMax, bars({n: 5}).clear, bars({n: 5}).ok, bars({n: 1}).clear, bars({n: 1}).ok], [200, 40, true, 4, 25, false, null, true]);
+  check('pretensioned strands at member ends (Table 25.2.4, SI 28 MPa, 45 and 50 mm): 12.7 mm at 35 MPa -> max(45, 4/3 x 20 + 12.7 = 39.37) = 45; 15.24 -> 50; 9.53 -> max(38.12, 36.2) = 38.12; below 28 MPa 4 db = 50.8; large aggregate 40 mm -> 53.33 + 12.7 = 66.03; 50 passes and 44 fails', [pre({}).table, pre({}).min, pre({db: 15.24}).min, near(pre({db: 9.53}).min, 38.12, 1e-9), near(pre({fci: 25}).min, 50.8, 1e-9), near(pre({dagg: 40}).min, 160 / 3 + 12.7, 1e-9), pre({}).ok, pre({s: 44}).ok], [45, 45, 50, true, true, true, true, false]);
+  check('pretensioned wire (25.2.5): max(5 db, 4/3 dagg + db): 5 mm -> 31.67; 7 mm -> 35', [near(pre({kind: 1, db: 5}).min, 80 / 3 + 5, 1e-9), pre({kind: 1, db: 7}).min], [true, 35]);
+  check('standard hook for main bars (Table 25.3.1): 20 mm (No. 6) 90 degrees -> bend 6 db = 120, extension 12 db = 240; 180 degrees -> max(4 db = 80, 65) = 80; 10 mm -> 65; 28 mm (No. 9) -> bend 8 db = 224, extension 336; 40 mm (No. 14) -> bend 10 db = 400; 135 degrees is not a standard main bar hook', [hook({}).bend, hook({}).ext, hook({ang: 180}).ext, hook({ang: 180, db: 10}).ext, hook({db: 28}).bend, hook({db: 28}).ext, hook({db: 40}).bend, hook({ang: 135}).valid, hook({}).valid], [120, 240, 80, 65, 224, 336, 400, false, true]);
+  check('standard hook for stirrups and ties (Table 25.3.2): 10 mm 90 degrees -> bend 4 db = 40, extension max(6 db = 60, 75) = 75; 16 mm (No. 5) -> 64 and 96; 20 mm (No. 6) -> bend 6 db = 120, extension 12 db = 240; 135 degrees 12 mm -> 48 and 75, 20 mm -> 120 and 120; 180 degrees 12 mm -> max(48, 65) = 65, 20 mm -> 80; 28 mm (No. 9) is not covered', [hook({use: 1, db: 10}).bend, hook({use: 1, db: 10}).ext, hook({use: 1, db: 16}).bend, hook({use: 1, db: 16}).ext, hook({use: 1}).bend, hook({use: 1}).ext, hook({use: 1, ang: 135, db: 12}).bend, hook({use: 1, ang: 135, db: 12}).ext, hook({use: 1, ang: 135}).bend, hook({use: 1, ang: 135}).ext, hook({use: 1, ang: 180, db: 12}).ext, hook({use: 1, ang: 180}).ext, hook({use: 1, db: 28}).valid], [40, 75, 64, 96, 120, 240, 48, 75, 120, 120, 65, 80, false]);
+  check('welded wire used as stirrups or ties (25.3.3): deformed wire larger than D6 -> 4 db, other wires -> 2 db, and the bend must stay 4 db from the nearest welded intersection when its diameter is under 8 db', [hook({use: 2, db: 6}).bend, hook({use: 2, db: 6, wire: 1}).bend, hook({use: 2, db: 6}).nearW, hook({use: 2, db: 6, wire: 1}).nearW], [24, 12, 24, 24]);
+  check('stirrup anchorage (25.7.1.3): No. 5 and smaller or fyt <= 280 MPa -> standard hook (a); No. 6 to No. 8 above 280 MPa -> (b) with embedment 0.17 db fyt / (lambda sqrt(fc)) = 0.17 x 20 x 420 / 5.4772 = 260.72 mm (sqrt(fc) not above 8.3: fc 80 -> 172.05; lambda 0.75 -> 347.62); fyt above 420 is used as 420; above No. 8 not covered', [stir({db: 10}).opt, stir({fyt: 280}).opt, stir({fyt: 281}).opt, near(stir({}).emb, 260.716, 0.01), near(stir({fc: 80}).emb, 1428 / 8.3, 1e-6), near(stir({lam: 0.75}).emb, 347.621, 0.01), near(stir({fyt: 500}).emb, 260.716, 0.01), stir({fyt: 500}).fyCap, stir({}).fyCap, stir({db: 28}).opt], ['a', 'a', 'b', true, true, true, true, true, false, 'x']);
+  check('bundled bars (25.6): three 25 mm bars -> equivalent diameter 25 x sqrt(3) = 43.30, factor 1.20 so 800 -> 960 mm, stagger 40 db = 1000, spacing in a beam max(25, 43.3, 26.67) = 43.3; four bars -> 50 mm, factor 1.33, 1064 mm; two bars -> 35.36 and no increase', [near(bun({}).deq, 25 * Math.sqrt(3), 1e-9), bun({}).fac, near(bun({}).ld, 960, 1e-9), bun({}).stag, near(bun({}).sMin, 25 * Math.sqrt(3), 1e-9), bun({n: 4}).deq, bun({n: 4}).fac, near(bun({n: 4}).ld, 1064, 1e-9), near(bun({n: 2}).deq, 25 * Math.SQRT2, 1e-9), bun({n: 2}).fac], [true, 1.2, true, 1000, true, 50, 1.33, true, true, 1]);
+  check('bundled bars: larger than No. 11 not bundled in beams (40 mm fails, 36 mm passes; a compression member is not restricted); column spacing 1.5 d_eq = 75 for four 25 mm bars; ties around bundles in compression members at least No. 4 = 12.7 mm (12 fails, 13 and 12.7 pass)', [bun({db: 40}).okSize, bun({db: 36}).okSize, bun({db: 40, mem: 1}).okSize, bun({n: 4, mem: 1}).sMin, bun({mem: 1, tie: 12}).okTie, bun({mem: 1, tie: 13}).okTie, bun({mem: 1, tie: 12.7}).okTie, bun({mem: 0, tie: 8}).okTie], [false, true, true, 75, false, true, true, true]);
+  check('ties (25.7.2): 25 mm longitudinal bars need No. 3 ties (9.5 mm); 36 mm bars (No. 11) or bundled bars need No. 4 (12.7): a 10 mm tie fails there; spacing max(16 x 25 = 400, 48 x 10 = 480, 400) = 400, 450 fails; with a 300 mm side 300 governs; an 8 mm tie gives 48 x 8 = 384', [tie({}).minDt, tie({}).okDt, tie({dl: 36}).minDt, tie({dl: 36}).okDt, tie({bun: 1, dl: 20}).minDt, tie({bun: 1, dl: 20, dt: 12.7}).okDt, tie({}).sMax, tie({}).okS, tie({s: 450}).okS, tie({h: 300}).sMax, tie({dt: 8}).sMax], [9.5, true, 12.7, false, 12.7, true, 400, true, false, 300, 384]);
+  check('ties: clear spacing at least 4/3 dagg = 26.67 (150 - 10 = 140 passes, 30 - 10 = 20 fails); no unsupported bar farther than 150 mm clear from a supported one (150 - 25 = 125 passes, 200 - 25 = 175 fails)', [tie({}).clear, tie({}).okClear, tie({s: 30}).okClear, tie({}).sup, tie({}).okSup, tie({sl: 200}).sup, tie({sl: 200}).okSup], [140, true, false, 125, true, 175, false]);
+  check('spirals (25.7.3): clear spacing 60 - 10 = 50 lies between max(25, 4/3 dagg = 26.67) and 75; pitch 100 (90 clear) and 30 (20 clear) fail; aggregate 40 mm raises the lower limit to 53.33 so 50 fails; bar at least 3/8 in. = 9.5 mm (8 fails, 9.5 passes)', [tie({}).spClear, tie({}).okSp, tie({p: 100}).okSp, tie({p: 30}).okSp, near(tie({dagg: 40}).spMin, 160 / 3, 1e-9), tie({dagg: 40}).okSp, tie({ds: 8}).okSd, tie({ds: 9.5}).okSd], [50, true, false, false, true, false, false, true]);
+}
+let tt;
+w.renderCalc('acirebar'); w.calcResult('acirebar');
+tt = txt(w, 'xaz_results');
+check('the default spacing page shows 26.7 mm minimum, 200 mm inside width, 40.0 mm clear spacing and the 🔴 note without failures', [tt.includes('26.7 mm'), tt.includes('200 mm'), tt.includes('40.0 mm'), tt.includes('🔴'), !tt.includes('✘'), doc.getElementById('xaz_g0').style.display === '', doc.getElementById('xaz_g1').style.display === 'none'], [true, true, true, true, true, true, true]);
+set('xaz_n', '5'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('five bars leave 25.0 mm clear, shown with a failure mark', [tt.includes('25.0 mm'), tt.includes('✘')], [true, true]);
+set('xaz_n', '4');
+set('xaz_m', '1'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('the strand page shows 45.0 mm table value, 39.4 mm aggregate condition and 50.0 mm provided with no failure', [tt.includes('45.0 mm'), tt.includes('39.4 mm'), tt.includes('50.0 mm'), !tt.includes('✘'), doc.getElementById('xaz_g1').style.display === ''], [true, true, true, true, true]);
+set('xaz_ps', '40'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('a 40 mm spacing of strands fails', [tt.includes('✘')], [true]);
+set('xaz_m', '2'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('the hook page shows No. 6, bend 120 mm and extension 240 mm', [tt.includes('No. 6'), tt.includes('120 mm'), tt.includes('240 mm'), !tt.includes('✘')], [true, true, true, true]);
+set('xaz_ha', '1'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('a 135 degree hook for a main bar is reported as not standard', [tt.includes('غير معياري'), tt.includes('✘')], [true, true]);
+set('xaz_hu', '1'); set('xaz_ha', '0'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('a 20 mm stirrup with 90 degree hook shows the 261 mm embedment of option (b)', [tt.includes('(b)'), tt.includes('261 mm'), tt.includes('240 mm')], [true, true, true]);
+set('xaz_m', '3'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('the bundle page shows 43.3 mm, 960 mm, 1000 mm and 1.20', [tt.includes('43.3 mm'), tt.includes('960 mm'), tt.includes('1000 mm'), tt.includes('1.20'), doc.getElementById('xaz_g3').style.display === ''], [true, true, true, true, true]);
+set('xaz_m', '4'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
+check('the tie and spiral page shows 9.5 mm, 400 mm, 140.0 mm, 125.0 mm, 50.0 mm and 1.5 turns without failures', [tt.includes('9.5 mm'), tt.includes('400 mm'), tt.includes('140.0 mm'), tt.includes('125.0 mm'), tt.includes('50.0 mm'), tt.includes('1.5 لفات'), !tt.includes('✘')], [true, true, true, true, true, true, true]);
+check('other reference codes open acirebar too', others('acirebar', 'xaz_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
