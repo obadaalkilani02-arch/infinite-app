@@ -1227,6 +1227,50 @@ set('xaz_m', '4'); w.calcResult('acirebar'); tt = txt(w, 'xaz_results');
 check('the tie and spiral page shows 9.5 mm, 400 mm, 140.0 mm, 125.0 mm, 50.0 mm and 1.5 turns without failures', [tt.includes('9.5 mm'), tt.includes('400 mm'), tt.includes('140.0 mm'), tt.includes('125.0 mm'), tt.includes('50.0 mm'), tt.includes('1.5 لفات'), !tt.includes('✘')], [true, true, true, true, true, true, true]);
 check('other reference codes open acirebar too', others('acirebar', 'xaz_results'), [true, true, true]);
 }
+// ---------- part 312: ACI 318-14 Chapter 26 concrete evaluation and acceptance (`acitest`: number of strength tests 26.12.2.1, acceptance of standard-cured specimens 26.12.3.1, field curing 26.5.3.2, cores 26.12.4.1, steel fiber-reinforced concrete 26.12.5.1) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const frq = o => J('xcqFreq(' + JSON.stringify(Object.assign({vol: 230, area: 400, days: 1, batches: 30}, o)) + ')');
+const acc = o => J('xcqAccept(' + JSON.stringify(Object.assign({fc: 30, tests: [33.5, 31.2, 29.4, 34.0, 32.8, 28.6, 30.9, 35.2]}, o)) + ')');
+const cur = o => J('xcqCure(' + JSON.stringify(Object.assign({fc: 30, std: 34, fld: 29, type: 0, days: 7}, o)) + ')');
+const cor = o => J('xcqCore(' + JSON.stringify(Object.assign({fc: 30, cores: [27, 26, 28]}, o)) + ')');
+const fib = o => J('xcqFiber(' + JSON.stringify(Object.assign({fc: 30, fp: 4.5, r300: 4.2, r150: 3.5}, o)) + ')');
+const nums = s => J('xcqNums(' + JSON.stringify(s) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('sampling frequency (26.12.2.1(a)): 230 m3 and 400 m2 in a day -> ceil(230/115) = 2 by volume, ceil(400/450) = 1 by area, 2 per day governed by volume; 231 m3 -> 3; 115 m3 -> 1; 115.1 -> 2', [frq({}).byVol, frq({}).byArea, frq({}).daily, frq({}).gov, frq({vol: 231}).byVol, frq({vol: 115, area: 0}).byVol, frq({vol: 115.1, area: 0}).byVol], [2, 1, 2, 'vol', 3, 1, 2]);
+  check('thin slabs: 100 m3 over 1000 m2 -> ceil(1000/450) = 3 tests by area (thickness 100 mm under 255 mm); one test a day applies when both limits give one', [frq({vol: 100, area: 1000}).byArea, frq({vol: 100, area: 1000}).daily, frq({vol: 100, area: 1000}).gov, frq({vol: 100, area: 1000}).thin, frq({vol: 30, area: 100}).gov, frq({vol: 30, area: 100}).daily, frq({}).thin], [3, 3, 'area', true, 'day', 1, false]);
+  check('project totals (26.12.2.1(b) and (c)): 2 tests in total are fewer than five so five batches are sampled (3 batches -> each batch = 3); 3 days of 2 tests = 6 need no extra; under 40 m3 (30 yes, 40 and 39.9: 40 not, 39.9 yes) tests can be waived with approved evidence', [frq({}).total, frq({}).few, frq({}).req, frq({batches: 3}).req, frq({days: 3}).total, frq({days: 3}).few, frq({days: 3}).req, frq({vol: 30, area: 100}).small, frq({vol: 40, area: 100}).small, frq({vol: 39.9, area: 100}).small], [2, true, 5, 3, 6, false, 6, true, false, true]);
+  check('acceptance (26.12.3.1(b)): eight results with fc 30 -> mean 31.95, minimum 28.6, individual limit 30 - 3.5 = 26.5, six moving averages 31.37, 31.53, 32.07, 31.8, 30.77, 31.57 all >= 30, accepted', [acc({}).n, near(acc({}).mean, 31.95, 1e-9), acc({}).min, acc({}).limit, acc({}).avgs.length, near(acc({}).avgs[0], 94.1 / 3, 1e-9), near(Math.min.apply(null, acc({}).avgs), 92.3 / 3, 1e-9), acc({}).low.length, acc({}).badAvg.length, acc({}).ok], [8, true, 28.6, 26.5, 6, true, true, 0, 0, true]);
+  check('acceptance: results 29 28 27 31 33 -> averages 28, 28.67, 30.33 so the first two groups fail while no individual result is below 26.5; results 32 26 35 34 -> 26 is below 26.5 (test 2) with sound averages; two results are not enough for the average criterion', [acc({tests: [29, 28, 27, 31, 33]}).badAvg, acc({tests: [29, 28, 27, 31, 33]}).low.length, acc({tests: [29, 28, 27, 31, 33]}).ok, acc({tests: [32, 26, 35, 34]}).low, acc({tests: [32, 26, 35, 34]}).badAvg.length, acc({tests: [32, 26, 35, 34]}).ok, acc({tests: [35, 36]}).noAvg, acc({tests: [35, 36]}).ok, acc({tests: []}).n], [[1, 2], 0, false, [2], 0, false, true, false, 0]);
+  check('individual limit: fc 35 -> 31.5 (500 psi = 3.5 MPa); above 35 MPa it is 0.90 fc: fc 36 -> 32.4, fc 50 -> 45 (44.9 fails and 45 passes)', [acc({fc: 35}).limit, near(acc({fc: 36}).limit, 32.4, 1e-9), acc({fc: 50}).limit, acc({fc: 50, tests: [50, 50, 44.9]}).low, acc({fc: 50, tests: [50, 50, 45]}).low.length], [31.5, true, 45, [3], 0]);
+  check('reading the list of results: separators are spaces, commas, semicolons and the Arabic comma; text and non-positive values are ignored', [nums('1 2,3;4'), nums('a 5 x'), nums(''), nums('30،31'), nums('7 0 -2 8')], [[1, 2, 3, 4], [5], [], [30, 31], [7, 8]]);
+  check('field curing (26.5.3.2(e)): 29 against 34 is 85.29 % and passes (28.5 -> 83.82 % fails); 33.6 against 40 (84 %) passes because it exceeds fc by more than 3.5 MPa while 33.5 does not; 7 days for normal concrete (6 fails) and 3 days for high-early-strength (2.9 fails)', [near(cur({}).ratio, 29 / 34, 1e-9), cur({}).c1, cur({}).ok, near(cur({fld: 28.5}).ratio, 28.5 / 34, 1e-9), cur({fld: 28.5}).ok, cur({std: 40, fld: 33.6}).c1, cur({std: 40, fld: 33.6}).c2, cur({std: 40, fld: 33.6}).ok, cur({std: 40, fld: 33.5}).ok, cur({}).minDays, cur({days: 6}).okDays, cur({type: 1, days: 3}).okDays, cur({type: 1, days: 2.9}).okDays, cur({type: 1}).minDays], [true, true, true, true, false, false, true, true, false, 7, false, true, false, 3]);
+  check('cores (26.12.4.1(d)): 27, 26, 28 with fc 30 -> average 27 >= 25.5 and minimum 26 >= 22.5, adequate; 25, 26, 24 -> average 25 < 25.5 fails; 30, 30, 22 -> minimum 22 < 22.5 fails; fewer than three cores never pass', [cor({}).avg, cor({}).avgLim, cor({}).minLim, cor({}).ok, cor({cores: [25, 26, 24]}).okAvg, cor({cores: [25, 26, 24]}).ok, cor({cores: [30, 30, 22]}).okMin, cor({cores: [30, 30, 22]}).okAvg, cor({cores: [30, 30, 22]}).ok, cor({cores: [30, 30]}).ok], [27, 25.5, 22.5, true, false, false, false, true, false, false]);
+  check('steel fibers (26.12.5.1): fc 30 -> 0.62 sqrt(fc) = 3.396; first peak 4.5 -> required residual 4.05 at L/300 and 3.375 at L/150, 4.2 and 3.5 pass; first peak 3.0 -> the 0.62 sqrt(fc) term governs: 3.056 and 2.547; 4.0 at L/300 fails', [near(fib({}).ft, 3.39588, 1e-4), near(fib({}).req300, 4.05, 1e-9), near(fib({}).req150, 3.375, 1e-9), fib({}).ok300, fib({}).ok150, near(fib({fp: 3}).req300, 3.05629, 1e-4), near(fib({fp: 3}).req150, 2.54691, 1e-4), fib({r300: 4}).ok300, fib({r150: 3.3}).ok150], [true, true, true, true, true, true, true, false, false]);
+}
+let tt;
+w.renderCalc('acitest'); w.calcResult('acitest');
+tt = txt(w, 'xcq_results');
+check('the default sampling page shows the 115 m3 and 450 m2 rules, five batches for a short project and the 🔴 note without failures', [tt.includes('115 m³'), tt.includes('450 m²'), tt.includes('خمس خلطات'), tt.includes('🔴'), !tt.includes('✘'), doc.getElementById('xcq_g0').style.display === '', doc.getElementById('xcq_g1').style.display === 'none'], [true, true, true, true, true, true, true]);
+set('xcq_m', '1'); w.calcResult('acitest'); tt = txt(w, 'xcq_results');
+check('the default test results are accepted: limit 26.5 MPa, lowest average 30.8 MPa, no failure mark', [tt.includes('26.5 MPa'), tt.includes('30.8 MPa'), tt.includes('مقبول'), !tt.includes('غير مقبول'), !tt.includes('✘'), doc.getElementById('xcq_g1').style.display === ''], [true, true, true, true, true, true]);
+set('xcq_tt', '29 28 27 31 33'); w.calcResult('acitest'); tt = txt(w, 'xcq_results');
+check('results 29 28 27 31 33 are rejected with the lowest average 28.0 MPa and a failure mark', [tt.includes('غير مقبول'), tt.includes('28.0 MPa'), tt.includes('✘')], [true, true, true]);
+set('xcq_tt', '35 36'); w.calcResult('acitest'); tt = txt(w, 'xcq_results');
+check('two results leave the average criterion open', [tt.includes('غير مكتمل'), tt.includes('غير متاح')], [true, true]);
+set('xcq_m', '2'); w.calcResult('acitest'); tt = txt(w, 'xcq_results');
+check('the curing page shows 85.29 % and a suitable curing', [tt.includes('85.29 %'), tt.includes('ملائمة'), !tt.includes('غير ملائمة'), doc.getElementById('xcq_g2').style.display === ''], [true, true, true, true]);
+set('xcq_cl', '28.5'); w.calcResult('acitest'); tt = txt(w, 'xcq_results');
+check('28.5 MPa against 34 gives 83.82 % and an unsuitable curing', [tt.includes('83.82 %'), tt.includes('غير ملائمة'), tt.includes('✘')], [true, true, true]);
+set('xcq_m', '3'); w.calcResult('acitest'); tt = txt(w, 'xcq_results');
+check('the core page shows average 27.0 MPa against 25.5 MPa, minimum 26.0 against 22.5 and adequate concrete', [tt.includes('27.0 MPa'), tt.includes('25.5 MPa'), tt.includes('22.5 MPa'), tt.includes('كافية إنشائيا'), !tt.includes('✘')], [true, true, true, true, true]);
+set('xcq_m', '4'); w.calcResult('acitest'); tt = txt(w, 'xcq_results');
+check('the fiber page shows 3.40 MPa, 4.05 MPa and passes', [tt.includes('3.40 MPa'), tt.includes('4.05 MPa'), !tt.includes('✘')], [true, true, true]);
+check('other reference codes open acitest too', others('acitest', 'xcq_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
