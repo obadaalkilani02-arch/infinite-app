@@ -1133,6 +1133,48 @@ set('xgb_fx', '0'); w.calcResult('ieccdhw'); tt = txt(w, 'xgb_results');
 check('a public lavatory faucet limits the volume to 2.0 oz and fails', [tt.includes('2.0 oz'), tt.includes('✘')], [true, true]);
 check('other reference codes open ieccdhw too', others('ieccdhw', 'xgb_results'), [true, true, true]);
 }
+// ---------- part 310: ACI 318-14 composite shear, joints and column bases (`acicomp`: horizontal shear transfer 16.4 Table 16.4.4.2 / 16.4.4.1 / 16.4.6 / 16.4.7, beam-column joints 15.3 and 15.4, cast-in-place column to foundation 16.3.4 / 16.3.5.4) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const cmp = o => J('xavComp(' + JSON.stringify(Object.assign({bv: 300, d: 450, h: 500, pre: 0, fc: 30, fyt: 420, av: 157, s: 300, lam: 1, surf: 0, least: 75, vu: 200}, o)) + ')');
+const jnt = o => J('xavJoint(' + JSON.stringify(Object.assign({fcc: 50, ff: 30, rest: 0, sfrs: 0, fc: 30, fyt: 420, b: 400, s: 100, av: 200, hbs: 500, hbd: 600, splice: 0}, o)) + ')');
+const bas = o => J('xavBase(' + JSON.stringify(Object.assign({ag: 160000, as: 1257, dd: 25}, o)) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('minimum tie area (16.4.6.1): max(0.062 sqrt(30) = 0.3396, 0.35) x 300 x 300 / 420 = 75.0 mm2; at fc 100 the first term 0.62 governs: 0.62 x 300 x 300 / 420 = 132.9; 157 passes and 50 fails', [near(cmp({}).avMin, 75, 1e-9), cmp({}).hasMin, near(cmp({fc: 100}).avMin, 0.62 * 300 * 300 / 420, 1e-6), cmp({av: 50}).hasMin], [true, true, true, false]);
+  check('design yield stress of the shear transfer steel is capped at 420 MPa (Table 20.2.2.4a): fyt 500 gives the same Av,min 75.0 mm2 and coefficient 2.2396 MPa as fyt 420 and sets the cap flag; 420 and 300 are used as entered (300: Av,min = 0.35 x 300 x 300 / 300 = 105)', [near(cmp({fyt: 500}).avMin, 75, 1e-9), near(cmp({fyt: 500}).fricTerm, 2.2396, 1e-4), cmp({fyt: 500}).fyCap, cmp({}).fyCap, cmp({fyt: 500}).fyUse, cmp({fyt: 300}).fyUse, near(cmp({fyt: 300}).avMin, 105, 1e-9)], [true, true, true, false, 420, 300, true]);
+  check('joint tie yield stress capped at 550 MPa (lateral support of longitudinal bars, Table 20.2.2.4a): fyt 600 gives Av,min = 0.35 x 400 x 100 / 550 = 25.45 mm2 and the cap flag, while 500 is used as entered (28.0 mm2)', [near(jnt({fyt: 600}).avMin, 0.35 * 400 * 100 / 550, 1e-6), jnt({fyt: 600}).fyCap, jnt({fyt: 600}).fyUse, jnt({fyt: 500}).fyCap, near(jnt({fyt: 500}).avMin, 28, 1e-9)], [true, true, 550, false, true]);
+  check('roughened surface with ties (Table 16.4.4.2(a)): coefficient (1.8 + 0.6 x 157 x 420 / (300 x 300)) = 2.2396 MPa, Vnh = 2.2396 x 300 x 450 = 302.35 kN, phi Vnh = 226.76 kN; Vu 200 passes (ratio 0.882) and 250 fails', [near(cmp({}).fricTerm, 2.2396, 1e-4), near(cmp({}).coef, 2.2396, 1e-4), cmp({}).rule, near(cmp({}).vnh, 302.346, 1e-2), near(cmp({}).phiVnh, 226.7595, 1e-2), cmp({}).ok, near(cmp({}).ratio, 200 / 226.7595, 1e-4), cmp({vu: 250}).ok], [true, true, 'a', true, true, true, true, false]);
+  check('the 3.5 MPa limit and lambda: 600 mm2 of ties gives 3.48 MPa; 700 mm2 would give 3.76 and is capped at 3.5; lightweight lambda 0.85 gives 2.2396 x 0.85 = 1.9037', [near(cmp({av: 600}).coef, 3.48, 1e-6), near(cmp({av: 700}).fricTerm, 3.76, 1e-6), cmp({av: 700}).coef, near(cmp({lam: 0.85}).coef, 1.90366, 1e-4), near(cmp({lam: 0.75}).coef, 2.2396 * 0.75, 1e-4)], [true, true, 3.5, true, true]);
+  check('not roughened with minimum ties 0.55 MPa (Table 16.4.4.2(c)): Vnh = 0.55 x 135 000 = 74.25 kN, phi Vnh = 55.69 so Vu 200 fails; roughened but ties below the minimum (50 mm2) also 0.55 (rule d); not roughened and ties below the minimum is not covered by the table (rule x, no strength, never ok)', [cmp({surf: 1}).coef, cmp({surf: 1}).rule, near(cmp({surf: 1}).vnh, 74.25, 1e-6), near(cmp({surf: 1}).phiVnh, 55.6875, 1e-6), cmp({surf: 1}).ok, cmp({av: 50}).coef, cmp({av: 50}).rule, cmp({av: 50}).none, cmp({surf: 1, av: 50}).rule, cmp({surf: 1, av: 50}).coef, cmp({surf: 1, av: 50}).none, cmp({surf: 1, av: 50}).ok, cmp({surf: 1, av: 50, vu: 0}).ok], [0.55, 'c', true, true, false, 0.55, 'd', false, 'x', 0, true, false, false]);
+  check('above phi x 3.5 bv d = 0.75 x 3.5 x 135 000 = 354.4 kN the horizontal shear is taken by shear friction (22.9, 16.4.4.1): 400 kN triggers it and no phi Vnh check applies; 354 and 354.3 do not, 354.4 does', [near(cmp({}).vmaxRough, 472.5, 1e-6), cmp({vu: 400}).sf, cmp({vu: 400}).ok, cmp({vu: 354}).sf, cmp({vu: 354.3}).sf, cmp({vu: 354.4}).sf], [true, true, false, false, false, true]);
+  check('prestressed composite: d not below 0.80 h (16.4.4.3): d = 300, h = 500 gives 400 mm; nonprestressed keeps 300', [cmp({pre: 1, d: 300}).dUse, cmp({pre: 0, d: 300}).dUse, cmp({pre: 1, d: 450}).dUse, near(cmp({pre: 1, d: 300}).vnh, 2.2396 * 300 * 400 / 1000, 1e-1)], [400, 300, 450, true]);
+  check('maximum tie spacing (16.4.7.2): min(600, 4 x 75 = 300) = 300 so 300 passes and 400 fails; a 200 mm supported element allows 600', [cmp({}).sMax, cmp({}).okS, cmp({s: 400}).okS, cmp({least: 200}).sMax, cmp({least: 200, s: 600}).okS, cmp({least: 200, s: 650}).okS], [300, true, false, 600, true, false]);
+  check('joint concrete strength ratio (15.3.1): column 50 over floor 30 = 1.667 > 1.4 needs a special measure; 40 / 30 = 1.33 and exactly 1.4 (42 / 30) do not, 43 / 30 does; option (c) gives 0.75 x 50 + 0.35 x 30 = 48 MPa for a restrained joint only; column 90 over floor 30 is capped at 75: 0.75 x 75 + 10.5 = 66.75', [near(jnt({}).ratio, 1.66667, 1e-4), jnt({}).special, jnt({fcc: 40}).special, jnt({fcc: 42}).special, jnt({fcc: 43}).special, near(jnt({}).fce, 48, 1e-9), jnt({}).okC, jnt({rest: 1}).okC, jnt({fcc: 90}).capped, near(jnt({fcc: 90}).fccUse, 75, 1e-9), near(jnt({fcc: 90}).fce, 66.75, 1e-9), jnt({}).capped], [true, true, false, false, true, true, false, true, true, true, true, false]);
+  check('joint transverse reinforcement (15.4.2): max(0.062 sqrt(30), 0.35) x 400 x 100 / 420 = 33.33 mm2 per direction; 200 passes; at fc 100 it is 0.62 x 400 x 100 / 420 = 59.05; spacing at most half of the shallowest beam: 250 mm so 100 passes and 300 fails; distribution height = deepest beam 600', [near(jnt({}).avMin, 33.3333, 1e-3), jnt({}).hasMin, jnt({av: 30}).hasMin, near(jnt({fc: 100}).avMin, 59.0476, 1e-3), jnt({}).sMax, jnt({}).okS, jnt({s: 300}).okS, jnt({}).zone], [true, true, false, true, 250, true, false, 600]);
+  check('exemption (15.4.1): a joint restrained on four sides that is not part of the seismic system need not satisfy 15.4.2; closed ties are required when bars are spliced or terminated in an unrestrained joint (15.4.3)', [jnt({rest: 1, sfrs: 0}).exempt, jnt({rest: 1, sfrs: 1}).exempt, jnt({rest: 0, sfrs: 0}).exempt, jnt({splice: 1, rest: 0}).close, jnt({splice: 1, rest: 1}).close, jnt({splice: 0, rest: 0}).close], [true, false, false, true, false, false]);
+  check('column to foundation (16.3.4.1): As >= 0.005 Ag = 800 mm2 for a 400 x 400 column; 1257 passes (0.786 %) and 700 fails; dowels not larger than 36 mm (No. 11): 25 passes, 40 fails', [bas({}).asMin, bas({}).ok, near(bas({}).ratio, 0.0078562, 1e-6), bas({as: 700}).ok, bas({}).dowelOk, bas({dd: 36}).dowelOk, bas({dd: 40}).dowelOk], [800, true, true, false, true, true, false]);
+}
+let tt;
+w.renderCalc('acicomp'); w.calcResult('acicomp');
+tt = txt(w, 'xav_results');
+check('the default composite page shows Av,min 75.0 mm2, 2.24 MPa, Vnh 302.3 kN, phi Vnh 226.8 kN and the 🔴 note without failures', [tt.includes('75.0 mm²'), tt.includes('2.24 MPa'), tt.includes('302.3 kN'), tt.includes('226.8 kN'), tt.includes('🔴'), !tt.includes('✘'), doc.getElementById('xav_g0').style.display === '', doc.getElementById('xav_g1').style.display === 'none'], [true, true, true, true, true, true, true, true]);
+set('xav_fy', '500'); w.calcResult('acicomp'); tt = txt(w, 'xav_results');
+check('fyt 500 is shown as the adopted 420 MPa and the results do not change', [tt.includes('إجهاد الخضوع المعتمد 420 MPa'), tt.includes('75.0 mm²'), tt.includes('302.3 kN')], [true, true, true]);
+set('xav_fy', '420');
+set('xav_su', '1'); set('xav_av', '50'); w.calcResult('acicomp'); tt = txt(w, 'xav_results');
+check('a smooth surface with ties below the minimum shows "غير متاح" with a failure mark and no Vnh', [tt.includes('غير متاح'), tt.includes('✘'), !tt.includes('Vnh') || !tt.includes('226.8 kN')], [true, true, true]);
+set('xav_su', '0'); set('xav_av', '157'); set('xav_vu', '400'); w.calcResult('acicomp'); tt = txt(w, 'xav_results');
+check('Vu 400 kN above phi 3.5 bv d = 354.4 kN shows the table limit and shear friction without a failure mark', [tt.includes('354.4 kN'), tt.includes('22.9'), !tt.includes('226.8 kN')], [true, true, true]);
+set('xav_vu', '200');
+set('xav_m', '1'); w.calcResult('acicomp'); tt = txt(w, 'xav_results');
+check('the joint page shows ratio 1.67, 33.3 mm2, 250 mm and the 600 mm zone', [tt.includes('1.67'), tt.includes('33.3 mm²'), tt.includes('250 mm'), tt.includes('600 mm'), doc.getElementById('xav_g1').style.display === '', doc.getElementById('xav_g0').style.display === 'none'], [true, true, true, true, true, true]);
+set('xav_m', '2'); w.calcResult('acicomp'); tt = txt(w, 'xav_results');
+check('the base page shows 800 mm2 and the 0.79 % ratio', [tt.includes('800 mm²'), tt.includes('0.79 %'), doc.getElementById('xav_g2').style.display === ''], [true, true, true]);
+check('other reference codes open acicomp too', others('acicomp', 'xav_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
