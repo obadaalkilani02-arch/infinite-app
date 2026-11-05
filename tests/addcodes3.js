@@ -1033,6 +1033,36 @@ set('xax_m', '3'); w.calcResult('aciplain'); tt = txt(w, 'xax_results');
 check('the bearing page shows Bn 1428.0 kN and phi Bn 856.8 kN', [tt.includes('1428.0 kN'), tt.includes('856.8 kN'), doc.getElementById('xax_g3').style.display === ''], [true, true, true]);
 check('other reference codes open aciplain too', others('aciplain', 'xax_results'), [true, true, true]);
 }
+// ---------- part 307: ACI 318-14 diaphragms (`acidiaph`: in-plane shear 12.5.3 (12.5.3.3) (12.5.3.4) with the topping and grouted-joint rules 12.5.3.5 / 12.5.3.6, chord reinforcement 12.5.2 with the h / 4 location and the 420 MPa strand limit 12.5.1.5, collectors 12.5.4 and maximum spacing 12.7.2.2) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const shr = o => J('xayShear(' + JSON.stringify(Object.assign({type: 0, t: 150, d: 20000, void: 0, fc: 30, fcp: 40, lam: 1, rho: 0.25, fyt: 420, vu: 1500}, o)) + ')');
+const chd = o => J('xayChord(' + JSON.stringify(Object.assign({mu: 8000, z: 18, nu: 0, fy: 420, kind: 0, h: 20000, edge: 2000, fc: 400, tt: 150, s: 300}, o)) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('Acv = 150 x 20 000 = 3 000 000 mm2 and minus voids 500 000 gives 2 500 000; sqrt(30) = 5.4772 below the 8.3 MPa cap', [shr({}).acv, shr({void: 500000}).acv, near(shr({}).sqUse, 5.477226, 1e-6), shr({}).capped, shr({void: 9e9}).acv], [3000000, 2500000, true, false, 0]);
+  check('Vn = Acv (0.17 lambda sqrt(fc) + rho_t fyt) = 3e6 x (0.931128 + 0.0025 x 420 = 1.05) / 1000 = 5943.38 kN (12.5.3.3); phi Vn = 0.75 x 5943.38 = 4457.53; upper limit phi 0.66 Acv sqrt(fc) = 8133.7 kN (12.5.3.4); 1500 passes both', [near(shr({}).vn, 5943.384, 1e-2), near(shr({}).phiVn, 4457.538, 1e-2), near(shr({}).vmax, 8133.68, 1e-1), shr({}).okVn, shr({}).okMax, shr({}).ok, near(shr({}).ratio, 1500 / 4457.538, 1e-4)], [true, true, true, true, true, true, true]);
+  check('failures: Vu 5000 exceeds phi Vn 4457.5 but not the limit; Vu 9000 exceeds both; lambda 0.85 lowers the concrete term to 0.17 x 0.85 x 5.4772 = 0.79149', [shr({vu: 5000}).okVn, shr({vu: 5000}).okMax, shr({vu: 9000}).okMax, shr({vu: 9000}).ok, near(shr({lam: 0.85}).vn, 3e6 * (0.17 * 0.85 * Math.sqrt(30) + 1.05) / 1000, 1e-6)], [false, true, false, false, true]);
+  check('the root of fc is capped at 8.3 MPa (100 psi): fc 100 gives sqrt 10 -> 8.3 and Vn = 3e6 x (0.17 x 8.3 + 1.05) / 1000 = 7.4130e3 kN', [shr({fc: 100}).capped, shr({fc: 100}).sqUse, near(shr({fc: 100}).vn, 3e6 * (0.17 * 8.3 + 1.05) / 1000, 1e-6), near(shr({fc: 69}).sq, Math.sqrt(69), 1e-9), shr({fc: 69}).capped], [true, 8.3, true, true, true]);
+  check('composite topping (12.5.3.5(a)): the concrete strength is the lesser of precast 25 and topping 30 so sqrt = 5; the cast-in-place and non-composite types use fc directly', [shr({type: 1, fcp: 25}).fcUse, near(shr({type: 1, fcp: 25}).sq, 5, 1e-12), shr({type: 1, fcp: 40}).fcUse, shr({type: 0, fcp: 25}).fcUse, shr({type: 2, fcp: 25}).fcUse], [25, true, 30, 30, 30]);
+  check('untopped precast with grouted joints (12.5.3.6(a)): Vn = 0.55 x 3 000 000 / 1000 = 1650 kN, phi Vn = 1237.5 passes 1000 and fails 1500', [near(shr({type: 3}).vnJoint, 1650, 1e-9), near(shr({type: 3}).phiVn, 1237.5, 1e-9), shr({type: 3, vu: 1000}).ok, shr({type: 3, vu: 1500}).ok, near(shr({type: 3, vu: 1000}).ratio, 1000 / 1237.5, 1e-9)], [true, true, true, false, true]);
+  check('chord tension T = Mu / z = 8000 / 18 = 444.44 kN; As = 444 444 / (0.9 x 420) = 1175.8 mm2; with Nu = 200 kN tension T = 544.44 and As = 1440.4', [near(chd({}).t, 444.4444, 1e-3), near(chd({}).as, 1175.8, 1e-1), near(chd({nu: 200}).t, 544.4444, 1e-3), near(chd({nu: 200}).as, 544444.44 / (0.9 * 420), 1e-2), near(chd({nu: -200}).t, 344.4444, 1e-3)], [true, true, true, true, true]);
+  check('bonded prestressing steel is limited to 420 MPa (12.5.1.5): fy 1600 gives fs = 420 and the same area as bars; deformed bars use fy 500: As = 444 444 / 450 = 987.7', [chd({kind: 1, fy: 1600}).fs, chd({kind: 1, fy: 1600}).capped, near(chd({kind: 1, fy: 1600}).as, 1175.8, 1e-1), chd({kind: 0, fy: 500}).fs, chd({kind: 0, fy: 500}).capped, near(chd({kind: 0, fy: 500}).as, 987.65, 1e-1), chd({kind: 1, fy: 400}).fs], [420, true, true, 500, false, true, 400]);
+  check('h / 4 location (12.5.2.3): h = 20 000 gives 5000 mm so 2000 passes and 6000 fails', [chd({}).hq, chd({}).okLoc, chd({edge: 6000}).okLoc, chd({edge: 5000}).okLoc], [5000, true, false, true]);
+  check('collector tension Fc = 400 kN needs 400 000 / (0.9 x 420) = 1058.2 mm2; maximum spacing min(5 x 150 = 750, 450) = 450 so 300 passes and 500 fails; a 80 mm slab gives 400', [near(chd({}).fcAs, 1058.2, 1e-1), chd({}).sMax, chd({}).okS, chd({s: 500}).okS, chd({tt: 80}).sMax, chd({tt: 80, s: 450}).okS], [true, 450, true, false, 400, false]);
+}
+let tt;
+w.renderCalc('acidiaph'); w.calcResult('acidiaph');
+tt = txt(w, 'xay_results');
+check('the default shear page shows Acv 3000000 mm2, Vn 5943.4 kN, phi Vn 4457.5 kN, the limit 8133.7 kN and the 🔴 note', [tt.includes('3000000 mm²'), tt.includes('5943.4 kN'), tt.includes('4457.5 kN'), tt.includes('8133.7 kN'), tt.includes('🔴'), !tt.includes('✘'), doc.getElementById('xay_g0').style.display === '', doc.getElementById('xay_g1').style.display === 'none'], [true, true, true, true, true, true, true, true]);
+set('xay_ty', '3'); w.calcResult('acidiaph'); tt = txt(w, 'xay_results');
+check('the grouted-joint page shows 1650.0 kN and 1237.5 kN', [tt.includes('1650.0 kN'), tt.includes('1237.5 kN')], [true, true]);
+set('xay_m', '1'); w.calcResult('acidiaph'); tt = txt(w, 'xay_results');
+check('the chord page shows T 444.4 kN, 1176 mm2, h / 4 = 5000 mm and 450 mm spacing', [tt.includes('444.4 kN'), tt.includes('1176 mm²'), tt.includes('5000 mm'), tt.includes('450 mm'), doc.getElementById('xay_g1').style.display === '', doc.getElementById('xay_g0').style.display === 'none'], [true, true, true, true, true, true]);
+check('other reference codes open acidiaph too', others('acidiaph', 'xay_results'), [true, true, true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
