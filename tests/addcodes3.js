@@ -1400,6 +1400,82 @@ check('work on energized ac conductors including voltage testing needs arc flash
 set('xu_m', '3'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
 check('the dc category mode still works after the new mode', [tt.includes('130.7(C)(15)(B)'), doc.getElementById('xu_g3').style.display === ''], [true, true]);
 }
+// ---------- part 318: ASHRAE 90.1-2016 Table 9.6.1 space-by-space method (`a90lsp`, read from the page images 2026-11-09) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+{
+  check('Table 9.6.1 has 102 space types: 62 common and 40 building-specific', [J('XLQ_T.length'), J('XLQ_T.filter(t => t[0] === 0).length')], [102, 62]);
+  check('printed values on page 152: auditorium 0.63 / RCR 6, performing arts theater seating 2.03 / 8, penitentiary seating 0.28 with no bilevel control', [J('XLQ_T[3].slice(4, 8)'), J('XLQ_T[8].slice(5, 7)'), J('XLQ_T[7][7]')], [['Auditorium', 0.63, 6, 'R11RRR.22'], [2.03, 8], 'R11.RR.22']);
+  check('page 153: hospital corridor 0.92 with ADD2 partial OFF; page 155: stairwell 0.58 / 10 with no local control; page 158: warehouse hand-carried 0.69 / 6', [J('XLQ_T[19].slice(5, 8)'), J('XLQ_T[56].slice(5, 8)'), J('XLQ_T[101].slice(5, 8)')], [[0.92, -8, 'R...RR222'], [0.58, 10, '...RRRR22'], [0.69, 6, 'R11RRRR22']]);
+  check('atrium: 0.03 W/ft² per ft up to 40 ft, 0.40 + 0.02 W/ft² per ft above', [J('+xlqLpd(XLQ_T[1], 30).toFixed(4)'), J('+xlqLpd(XLQ_T[2], 50).toFixed(4)'), J('xlqAtrOk(XLQ_T[1], 30)'), J('xlqAtrOk(XLQ_T[0], 30)')], [0.9, 1.4, true, false]);
+  const r = J(`xlqCalc({sp: [{t: 49, a: 500, h: 2, p: 100, w: 0}, {t: 21, a: 60, h: 0, p: 0, w: 1.8}, {t: 53, a: 30, h: 2.2, p: 22, w: 0}, {t: 15, a: 40, h: 2.4, p: 26, w: 0}], fn7: false, deco: 0, ret: [0, 0, 0, 0], inst: {gen: 5000, deco: 0, ret: 0}})`);
+  // open plan 0.81 × 10.7639 × 500 = 4359.38 (RCR 1.0 ≤ 4); corridor 1.8 m < 8 ft: 0.66 × 10.7639 × 60 × 1.2 = 511.50; restroom RCR 4.03 ≤ 8: 274.48; conference RCR 2.5 × 2.4 × 26 / 40 = 3.9 ≤ 6: 1.07 × 10.7639 × 40 = 460.70; total 5606.05
+  check('space-by-space sum with the 20 % corridor adjustment', [+r.sp[0].w.toFixed(2), +r.sp[1].w.toFixed(2), r.sp[1].adj, +r.sp[2].rcr.toFixed(3), r.sp[2].adj, +r.gen.toFixed(2), r.genOk], [4359.38, 511.5, true, 4.033, false, 5606.05, true]);
+  const q = J(`xlqCalc({sp: [{t: 47, a: 20, h: 2.0, p: 18, w: 0}, {t: 30, a: 50, h: 3, p: 30, w: 0}], fn7: true, deco: 100, ret: [200, 0, 50, 10], inst: {gen: 0, deco: 900, ret: 0}})`);
+  // enclosed office RCR 2.5 × 2 × 18 / 20 = 4.5 ≤ 8; electrical room fn7: 0.52 × 10.7639 × 50 = 279.86; deco 0.75 × 10.7639 × 100 = 807.29; retail 1000 + 10.7639 × (90 + 52.5 + 18.8) = 2736.22
+  check('additional allowances: footnote 7, decorative 0.75 W/ft² and the retail display formula', [+q.sp[0].rcr.toFixed(2), q.sp[0].adj, +q.f7.toFixed(2), +q.deco.toFixed(2), +q.ret.toFixed(2), q.decoOk], [4.5, false, 279.86, 807.29, 2736.22, false]);
+}
+let tt;
+w.renderCalc('a90lsp'); w.calcResult('a90lsp'); tt = txt(w, 'xlq_results');
+check('the default case shows the open office, the corridor adjustment and the control requirements', [tt.includes('Open plan'), tt.includes('أقل من 8 ft'), tt.includes('مطلوب (REQ)'), tt.includes('5145')], [true, true, true, true]);
+set('xlq_t1', '2'); set('xlq_h1', '10'); w.calcResult('a90lsp'); tt = txt(w, 'xlq_results');
+check('an atrium of 10 m (32.8 ft) with the >40 ft row is flagged', [tt.includes('لا يوافق صف الأتريوم'), tt.includes('0.40 + 0.02 × 32.81 ft')], [true, true]);
+}
+// ---------- part 319: ASHRAE 90.1-2016 Tables 6.8.1-1 to 6.8.1-7 minimum equipment efficiencies (`a90eq`, read from the page images 2026-11-09) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+{
+  check('83 equipment types over Tables 6.8.1-1 to 6.8.1-7; every row has one value per metric (four for the chiller paths)', [J('XEQ_G.length'), J('XEQ_G.every(g => g.length === 9 && g[5].every(r => r.length === 3 + (g[7] === "ch" || g[7] === "cf" ? 4 : g[4].length)))')], [83, true]);
+  check('page 110: air-cooled AC with electric resistance heat, 240,000 to 760,000 Btu/h: 10.0 EER / 11.6 IEER; water cooled >= 760,000 all other: 12.0 / 13.3', [J('XEQ_G[5][5][2].slice(3)'), J('XEQ_G[8][5][4].slice(3)')], [[10.0, 11.6], [12.0, 13.3]]);
+  check('page 113: air-cooled heat pump heating >= 135,000 Btu/h: 3.2 COPH at 47°F and 2.05 at 17°F; page 117: steam boiler, gas, natural draft, Et 79 % (as of 3/2/2020)', [J('XEQ_G[32][5][1].slice(3)'), J('XEQ_G[72][5][1][4]')], [[3.2, 2.05], 79]);
+  const c = J('xeqCalc({g: 41, cap: 2110.2, v: [0.548, 0.49], le: (42 - 32) / 1.8, lc: (91.16 - 32) / 1.8})');
+  // the worked example of Section 6.4.1.2.1: 600-ton centrifugal, LvgCond 91.16°F, LvgEvap 42°F: A = 1.02331, B = 0.99700, Kadj = 1.02024, FLadj = 0.5489, PLVadj = 0.4901 kW/ton
+  check('Section 6.4.1.2.1 worked example: Kadj 1.02024, FLadj 0.5489, PLVadj 0.4901', [+c.A.toFixed(5), +c.B.toFixed(5), +c.K.toFixed(5), +c.pa[0].toFixed(4), +c.pa[1].toFixed(4), c.okA, c.ok], [1.02331, 0.997, 1.02024, 0.5489, 0.4901, true, true]);
+  const s = J('xeqCalc({g: 41, cap: 1500, v: [0.58, 0.39], le: 6.67, lc: 34.61})');
+  // 1500 kW = 426.5 ton: row 400 - 600 tons; 6.67 / 34.61 °C = 44.01 / 94.30 °F count as the standard conditions (K = 1); path A fails FL 0.560, path B (0.585 / 0.380) fails IPLV 0.39
+  check('centrifugal 426 tons: path A 0.560 / 0.500, path B 0.585 / 0.380', [J('XEQ_G[41][5][3].slice(3)'), s.okA, s.okB], [[0.56, 0.5, 0.585, 0.38], false, false]);
+  const p = J('xeqCalc({g: 46, cap: 3.5, v: [10.5, 0]})');
+  check('PTAC standard size: 14.0 - 0.300 x Cap/1000 with Cap = 11,942 Btu/h; Cap is held to 7,000 - 15,000', [+p.req[0].q.toFixed(3), p.ok, J('+xeqCalc({g: 46, cap: 1, v: [12, 0]}).req[0].q.toFixed(3)'), J('+xeqCalc({g: 46, cap: 6, v: [12, 0]}).req[0].q.toFixed(3)')], [10.417, true, 11.9, 9.5]);
+  const b = J('xeqCalc({g: 69, cap: 500, v: [81, 0]})');
+  check('gas hot-water boiler 1.7 million Btu/h: 80 % Et (300,000 to 2,500,000 inclusive)', [b.req.map(x => x.m + ' ' + x.q).join(','), b.ok, J('xeqCalc({g: 69, cap: 2500000 / 3412.142, v: [80, 0]}).req[0].m'), J('xeqCalc({g: 69, cap: 2600000 / 3412.142, v: [80, 0]}).req[0].m')], ['Et % 80', true, 'Et %', 'Ec %']);
+  const f = J('xeqCalc({g: 64, cap: 30, v: [0, 81]})');
+  check('gas furnace < 225,000 Btu/h complies with 78 % AFUE or 80 % Et', [f.req.map(x => x.q).join(','), f.ok], ['78,80', true]);
+  check('through-the-wall <= 30,000 Btu/h includes 30,000; a 9 kW unit is outside', [J('xeqCalc({g: 2, cap: 30000 / 3412.142, v: [12, 0]}).ok'), J('xeqCalc({g: 2, cap: 9, v: [12, 0]}).row')], [true, null]);
+}
+let tt;
+w.renderCalc('a90eq'); w.calcResult('a90eq'); tt = txt(w, 'xeq_results');
+check('the default case: air-cooled AC 100 kW in the 240,000 - 760,000 Btu/h row, 10.0 EER / 11.6 IEER, complies', [tt.includes('760,000'), tt.includes('≥ 10'), tt.includes('≥ 11.6'), tt.includes('يحقق'), doc.getElementById('xeq_gc').style.display], [true, true, true, true, 'none']);
+set('xeq_g', '41'); set('xeq_cap', '2110.2'); set('xeq_v1', '0.548'); set('xeq_v2', '0.49'); set('xeq_le', String((42 - 32) / 1.8)); set('xeq_lc', String((91.16 - 32) / 1.8)); w.calcResult('a90eq'); tt = txt(w, 'xeq_results');
+check('the centrifugal group shows the design temperatures and Kadj = 1.02024', [doc.getElementById('xeq_gc').style.display, tt.includes('1.02024'), tt.includes('0.5489'), tt.includes('المسار A')], ['', true, true, true]);
+}
+// ---------- part 320: IECC 2021 Section C406 additional energy efficiency credits, Tables C406.1(1) - (5) (`iecc406`, read from the page images 2026-11-10) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+{
+  check('five tables x 15 measures x 17 climate zones', [J('XCW_T.length'), J('XCW_T.every(t => t.length === 15 && t.every(r => r.length === 17))')], [5, true]);
+  check('page C4-77, Group B: 10 % cooling 11 12 10 9 ...; reduced infiltration in 6A = 15; FDD wraps to 2 2 2 2 1 ...', [J('XCW_T[0][3].slice(0, 4)'), J('XCW_T[0][12][13]'), J('XCW_T[0][14].slice(0, 5)')], [[11, 12, 10, 9], 15, [2, 2, 2, 2, 1]]);
+  check('page C4-80, Group M: reduced lighting 13 13 15 14 16 14 17 ...; the 10 % cooling cell for 4C is printed blank', [J('XCW_T[3][4].slice(0, 7)'), J('XCW_T[3][3][9]'), J('XCW_T[3][3][12]')], [[13, 13, 15, 14, 16, 14, 17], -1, null]);
+  check('pages C4-78 / C4-81: recovered or renewable water heating 10 9 11 10 13 in Groups R and I and in Other; NA in Group B', [J('XCW_T[1][8].slice(0, 5)'), J('XCW_T[4][8].slice(0, 5)'), J('XCW_T[0][8][0]')], [[10, 9, 11, 10, 13], [10, 9, 11, 10, 13], null]);
+  const base = '{z: 1, A: [5000, 0, 0, 0, 0], swq: [false, true, false, false, false], hi: 0, ci: 10, lpa: 0, lpd: 0, ldc: false, rr: 0, doas: false, sw: 0, half73: false, env: false, inf: false, mon: false, fdd: false, ak: 0, tenant: false}';
+  // Group B, 0B & 1B: 10 % cooling = 12 credits; at 12 % Equation 4-12: 12 x (1 + 0.2) = 14.4 -> 14
+  check('10 % cooling = 12 credits; 12 % by Equation 4-12 = 14', [J('xcwCalc(' + base + ').total'), J('xcwCalc(Object.assign(' + base + ', {ci: 12})).total'), J('xcwCalc(Object.assign(' + base + ', {ci: 20})).total')], [12, 14, 18]);
+  // B 3000 + R/I 2000 m²: lighting 80 %: B 8 x 10 x 0.2 = 16, R/I 2 x 2 = 4 -> 11.2; renewable 5.4 W/m² = 2 x RR1: 18 / 16 -> 17.2; recovered water heating: B NA, R/I 9 -> 3.6; monitoring 4 / 1 -> 2.8; total 34.8
+  const r = J('xcwCalc(Object.assign(' + base + ', {ci: 0, A: [3000, 2000, 0, 0, 0], lpa: 40000, lpd: 32000, rr: 5.4, sw: 1, mon: true}))');
+  check('floor-area weighting with Equations 4-13 and 4-14 and the water-heating eligibility', [r.items.map(i => +i.w.toFixed(2)), +r.total.toFixed(2), r.ok], [[11.2, 17.2, 3.6, 2.8], 34.8, true]);
+  check('kitchen credits 20 x 250 / 5000 = 1; tenant spaces need 5 and ignore C406.5', [J('xcwCalc(Object.assign(' + base + ', {ak: 250})).kc'), J('xcwCalc(Object.assign(' + base + ', {ci: 0, rr: 2.7, tenant: true})).total'), J('xcwCalc(Object.assign(' + base + ', {ci: 0, rr: 2.7, tenant: true})).req')], [1, 0, 5]);
+}
+let tt;
+w.renderCalc('iecc406'); w.calcResult('iecc406'); tt = txt(w, 'xcw_results');
+check('the default case: Group B 5000 m², climate zone 0B/1B, 10 % cooling = 12 credits, meets 10', [tt.includes('C406.2.4'), tt.includes('12.00'), tt.includes('المطلوب 10')], [true, true, true]);
+set('xcw_z', '9'); set('xcw_a0', '0'); set('xcw_a3', '1000'); w.calcResult('iecc406'); tt = txt(w, 'xcw_results');
+check('Group M in 4C shows the blank printed cell', [tt.includes('خانة فارغة')], [true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);

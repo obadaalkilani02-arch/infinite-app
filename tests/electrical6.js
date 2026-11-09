@@ -65,8 +65,8 @@ check('the largest phase current goes to the cable-sizing calculator (IEC, 400 V
 
 // screens
 w.showCategory('electrical');
-check('electrical screen lists the calculator; 53 cards and the home page says 53', [doc.getElementById('electrical-category').textContent.includes('توزيع الأحمال على الأطوار'),
-  doc.querySelectorAll('#electrical-category .calc-card').length, doc.body.textContent.includes('53 حاسبة متاحة')], [true, 53, true]);
+check('electrical screen lists the calculator; 54 cards and the home page says 54', [doc.getElementById('electrical-category').textContent.includes('توزيع الأحمال على الأطوار'),
+  doc.querySelectorAll('#electrical-category .calc-card').length, doc.body.textContent.includes('54 حاسبة متاحة')], [true, 54, true]);
 
 check('no script errors', errors, []);
 console.log(fail ? '\n' + fail + ' FAILED' : '\nAll phase-balance checks passed');
