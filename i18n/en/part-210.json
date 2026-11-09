@@ -1,0 +1,21 @@
+{
+ "قيمة يدخلها المصمم": "Designer input",
+ "لعام": "of",
+ "يطلب حساب فقد مواسير التغذية والراجع أولًا ولا يعطي معدلًا جاهزًا": "requires the heat loss of the supply and return piping to be calculated first and gives no ready-made rate",
+ "النحاس غير المعزول عند": "uninsulated copper tube at",
+ "يفقد": "loses",
+ "، والمعزول أقل من ذلك بكثير": ", and insulated tube loses much less",
+ "قيمة يختارها المصمم": "Designer's choice",
+ "التصرف من موازنة الحرارة": "Flow from the heat balance",
+ "معدل فقد الحرارة مدخل من المصمم حسب الخطوة الأولى من طريقة": "The heat loss rate is a designer input, per the first step of the method in",
+ "وللمقارنة، طريقة": "For comparison, the",
+ "التقريبية في الصفحة نفسها": "approximate method on the same page",
+ "لكل صاعد صغير": "per small riser",
+ "لكل صاعد متوسط": "per medium riser",
+ "لكل صاعد كبير": "per large riser",
+ "لكل مجموعة من": "per group of",
+ "جهازًا تغذيها المياه الساخنة": "fixtures supplied with hot water",
+ "يطبع الحد الثاني للمباعدة": "prints the second spacing limit as",
+ "، والصحيح": ", the correct value being",
+ "كما في صفوف الحديد مسبق الإجهاد من الجدول نفسه وفي": "as in the prestressed-reinforcement rows of the same table and in"
+}

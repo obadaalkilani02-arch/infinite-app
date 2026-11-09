@@ -512,7 +512,7 @@ const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
 let tt;
 w.renderCalc('nfpa13hg'); w.calcResult('nfpa13hg');
 tt = txt(w, 'xhg_results');
-check('the default page shows 4.6 m, 10 mm, 7.6 kg/m, 2.42 kN, 1500 mm and the 🔴 note', [tt.includes('4.6 m'), tt.includes('10 mm'), tt.includes('7.6 kg/m'), tt.includes('2.42 kN'), tt.includes('1500 mm'), tt.includes('🔴')], [true, true, true, true, true, true]);
+check('the default page shows 4.6 m, 10 mm, 7.6 kg/m, 2.42 kN, 1500 mm and the note checked against the printed page', [tt.includes('4.6 m'), tt.includes('10 mm'), tt.includes('7.6 kg/m'), tt.includes('2.42 kN'), tt.includes('1500 mm'), tt.includes('على صورة الصفحة المطبوعة')], [true, true, true, true, true, true]);
 check('other reference codes open nfpa13hg too', others('nfpa13hg', 'xhg_results'), [true, true, true]);
 }
 // ---------- part 294: NFPA 70 (NEC 2008) Articles 500 and 501: temperature class, wiring methods and conduit seals of Class I locations (`necha`) ----------
@@ -540,7 +540,7 @@ const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
 let tt;
 w.renderCalc('necha'); w.calcResult('necha');
 tt = txt(w, 'xnh_results');
-check('the temperature page shows 280 C, T2A, T2A or colder list and 224 C and the 🔴 note', [tt.includes('280 °C'), tt.includes('T2A (280 °C)'), tt.includes('224.0 °C'), tt.includes('🔴')], [true, true, true, true]);
+check('the temperature page shows 280 C, T2A, T2A or colder list and 224 C and the NFPA 497 / 499 source note', [tt.includes('280 °C'), tt.includes('T2A (280 °C)'), tt.includes('224.0 °C'), tt.includes('NFPA 497')], [true, true, true, true]);
 set('xnh_m', '1'); w.calcResult('necha'); tt = txt(w, 'xnh_results');
 check('the wiring page shows the Division 1 methods and hides the temperature group', [tt.includes('501.10(A)(1)'), tt.includes('MI'), doc.getElementById('xnh_g0').style.display === 'none', doc.getElementById('xnh_g1').style.display === ''], [true, true, true, true]);
 set('xnh_d', '1'); w.calcResult('necha'); tt = txt(w, 'xnh_results');
@@ -616,7 +616,7 @@ const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
 let tt;
 w.renderCalc('nfpa13sw'); w.calcResult('nfpa13sw');
 tt = txt(w, 'xzb_results');
-check('the default page shows Cp 0.510, Wp 251.2 kg, Fpw 128.1 kg, the 154.7 kg limit and the 🔴 note', [tt.includes('0.510'), tt.includes('251.2 kg'), tt.includes('128.1 kg'), tt.includes('154.7 kg'), tt.includes('🔴')], [true, true, true, true, true]);
+check('the default page shows Cp 0.510, Wp 251.2 kg, Fpw 128.1 kg, the 154.7 kg limit and the note checked against the printed page', [tt.includes('0.510'), tt.includes('251.2 kg'), tt.includes('128.1 kg'), tt.includes('154.7 kg'), tt.includes('على صورة الصفحة المطبوعة')], [true, true, true, true, true]);
 set('xzb_m', '1'); w.calcResult('nfpa13sw'); tt = txt(w, 'xzb_results');
 check('the brace page shows the lightest brace and hides the zone group', [tt.includes('Schedule 40'), tt.includes('24.27 kN'), doc.getElementById('xzb_g0').style.display === 'none', doc.getElementById('xzb_g1').style.display === ''], [true, true, true, true]);
 set('xzb_m', '2'); w.calcResult('nfpa13sw'); tt = txt(w, 'xzb_results');
@@ -1313,6 +1313,92 @@ check('the high input page shows 800.0 kW, 92.5 %, the required 90 % and no fail
 set('xtw_m', '2'); w.calcResult('ieccswh'); tt = txt(w, 'xtw_results');
 check('the controls page shows 38.0 C, 5.0 min and 50.0 kPa within the limits', [tt.includes('38.0 °C'), tt.includes('5.0 min'), tt.includes('50.0 kPa'), !tt.includes('✘')], [true, true, true, true]);
 check('other reference codes open ieccswh too', others('ieccswh', 'xtw_results'), [true, true, true]);
+}
+// ---------- part 314: ASHRAE 90.1-2016 building envelope (`a90env`: Tables 5.5-0 to 5.5-8, clauses 5.5.3 and 5.5.4.2 - 5.5.4.6, climate zone list of Annex 1 Table Annex1-3) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const op = o => J('xcjOpaque(' + JSON.stringify(Object.assign({z: 0, cat: 0, el: 0, u: 0.2}, o)) + ')');
+const fen = o => J('xcjFen(' + JSON.stringify(Object.assign({z: 0, cat: 0, fr: 0, u: 1.8, shgc: 0.22, vt: 0.3, dl: 0, wa: 1000, fa: 300, ra: 500, sa: 10, aw: 60, ae: 60}, o)) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('Table 5.5-0 (zone 0) nonresidential roof with insulation entirely above deck: U-0.039 = 0.2215 W/m2K, R-25 c.i.; 0.2 passes and 0.23 fails', [op({}).ip, near(op({}).si, 0.22145, 1e-4), op({}).rv, op({}).ok, op({u: 0.23}).ok], [0.039, true, 'R-25 c.i.', true, false]);
+  check('Table 5.5-1 (zone 1): nonresidential roof above deck U-0.048 R-20 c.i.; residential mass wall U-0.151 with footnote b and R-5.7 c.i.; semiheated swinging door U-0.700', [op({z: 1}).ip, op({z: 1}).rv, op({z: 1, cat: 1, el: 3}).ip, op({z: 1, cat: 1, el: 3}).fn, op({z: 1, cat: 1, el: 3}).rv, op({z: 1, cat: 2, el: 13}).ip], [0.048, 'R-20 c.i.', 0.151, 'b', 'R-5.7 c.i.', 0.7]);
+  check('Table 5.5-3 (zone 3): residential wood-framed wall U-0.064 with R-13 + R-3.8 c.i. or R-20; below-grade wall C-1.140 = 6.473 W/m2K; residential unheated slab F-0.540 = 0.9346 W/mK', [op({z: 3, cat: 1, el: 6}).ip, op({z: 3, cat: 1, el: 6}).rv, op({z: 3, el: 7}).t, near(op({z: 3, el: 7}).si, 6.4732, 1e-3), op({z: 3, cat: 1, el: 11}).t, near(op({z: 3, cat: 1, el: 11}).si, 0.93460, 1e-4), op({z: 3, cat: 1, el: 11}).unit], [0.064, 'R-13 + R-3.8 c.i. or R-20', 'C', true, 'F', true, 'W/m·K']);
+  check('two-line R-values and print slips: zone 4 metal building roof R-19 + R-11 Ls or R-25 + R-8 Ls; zone 7 metal building wall printed R.22.1 shown as R-22.1; zone 8 residential heated slab R-20 full slab', [op({z: 4, el: 1}).rv, op({z: 7, el: 4}).rv, op({z: 8, cat: 1, el: 12}).rv], ['R-19 + R-11 Ls or R-25 + R-8 Ls', 'R-0 + R-22.1 c.i.', 'R-20 full slab']);
+  check('fenestration zone 0 nonresidential nonmetal: U-0.32 = 1.817 W/m2K, SHGC 0.22, VT/SHGC 1.10; 1.8 passes, 1.85 fails; metal fixed / operable / entrance door U-0.50 / 0.65 / 0.83', [fen({}).uIP, near(fen({}).uSI, 1.81704, 1e-4), fen({}).shgc, fen({}).vtr, fen({}).okU, fen({u: 1.85}).okU, fen({fr: 1}).uIP, fen({fr: 2}).uIP, fen({fr: 3}).uIP], [0.32, true, 0.22, 1.1, true, false, 0.5, 0.65, 0.83]);
+  check('zone 2: residential metal entrance door U-0.77; semiheated skylight printed U-1.80 read as 1.80 with SHGC NR; zone 7 nonresidential skylight SHGC NR', [fen({z: 2, cat: 1, fr: 3}).uIP, fen({z: 2, cat: 2, fr: 4}).uIP, fen({z: 2, cat: 2, fr: 4}).shgc, fen({z: 7, fr: 4}).shgc, fen({z: 7, fr: 4}).okS], [0.77, 1.8, null, null, true]);
+  check('SHGC 0.25 fails zone 0 (0.22); VT/SHGC applies only with daylighting controls: VT 0.2 / SHGC 0.22 = 0.91 passes without them and fails with them', [fen({shgc: 0.25}).okS, fen({vt: 0.2}).vtApplies, fen({vt: 0.2}).okV, fen({vt: 0.2, dl: 1}).vtApplies, fen({vt: 0.2, dl: 1}).okV, near(fen({vt: 0.2, dl: 1}).ratio, 0.90909, 1e-4)], [false, false, true, true, false, true]);
+  check('areas: 300 / 1000 = 30 % passes, 410 / 1000 fails 40 %; skylights 10 / 500 = 2 % pass, 20 / 500 = 4 % only within the 6 % exception, 35 / 500 = 7 % fails; west 80 m2 above 300 / 4 = 75 fails', [fen({}).wwr, fen({}).okW, fen({fa: 410}).okW, fen({}).srr, fen({sa: 20}).okR, fen({sa: 20}).okR6, fen({sa: 35}).okR6, fen({}).okO, fen({aw: 80}).okO, fen({}).q], [30, true, false, 2, false, true, false, true, false, 75]);
+  check('climate zone list (Annex1-3 = ASHRAE 169 Table A-6): Riyadh, Jeddah, Dubai and Doha 0B, Kuwait 1B, Cairo 2B, Damascus and Amman 3B', ['RIYADH OBS. (O.A.P.)', 'JEDDAH (KING ABDUL AZIZ INTL)', 'DUBAI INTERNATIONAL', 'DOHA INTERNATIONAL', 'KUWAIT INTERNATIONA', 'CAIRO AIRPORT', 'DAMASCUS INT. AIRPO', 'AMMAN AIRPORT'].map(n => J('XCJ_ST.find(s => s[1] === ' + JSON.stringify(n) + ')[2]')), ['0B', '0B', '0B', '0B', '1B', '2B', '3B', '3B']);
+}
+let tt;
+w.renderCalc('a90env'); w.calcResult('a90env');
+tt = txt(w, 'xcj_results');
+check('the default page (zone 0, nonresidential roof above deck, 0.2 W/m2K) shows U-0.039, 0.221, R-25 c.i. and no failure', [tt.includes('U-0.039'), tt.includes('0.221'), tt.includes('R-25 c.i.'), !tt.includes('✘'), doc.getElementById('xcj_g0').style.display === '', doc.getElementById('xcj_g1').style.display === 'none'], [true, true, true, true, true, true]);
+set('xcj_u', '0.3'); w.calcResult('a90env'); tt = txt(w, 'xcj_results');
+check('0.3 W/m2K exceeds 0.221 and fails', [tt.includes('✘')], [true]);
+const ci = J('XCJ_ST.findIndex(s => s[1] === "DAMASCUS INT. AIRPO")') + 1;
+set('xcj_c', String(ci)); w.calcResult('a90env'); tt = txt(w, 'xcj_results');
+check('choosing Damascus sets climate zone 3 (Table 5.5-3)', [doc.getElementById('xcj_z').value, tt.includes('5.5-3'), tt.includes('DAMASCUS')], ['3', true, true]);
+set('xcj_m', '1'); set('xcj_fu', '2.5'); w.calcResult('a90env'); tt = txt(w, 'xcj_results');
+check('fenestration page in zone 3: nonmetal U-0.33 = 1.874 W/m2K and 2.5 fails; 30.0 % and 2.0 % shown', [tt.includes('U-0.33'), tt.includes('1.874'), tt.includes('✘'), tt.includes('30.0 %'), tt.includes('2.0 %'), doc.getElementById('xcj_g1').style.display === ''], [true, true, true, true, true, true]);
+check('other reference codes open a90env too', others('a90env', 'xcj_results'), [true, true, true]);
+}
+// ---------- part 315: ASHRAE 90.1-2016 interior lighting power, building area method (`a90lpd`: Table 9.5.1, clause 9.5.1) ----------
+{
+w = boot('ae'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+const calc = (rows, inst) => J('xtkCalc(' + JSON.stringify({rows: rows.map(x => ({t: x[0], a: x[1]})), inst}) + ')');
+const near = (a, b, e) => Math.abs(a - b) <= (e || 0.001);
+{
+  check('Table 9.5.1 has 32 building area types: office 0.79, parking garage 0.15, hospital 1.05, retail 1.06, warehouse 0.48, performing arts theater 1.18 W/ft2', [J('XTK_T.length'), J('XTK_T[18]')[2], J('XTK_T[19]')[2], J('XTK_T[11]')[2], J('XTK_T[25]')[2], J('XTK_T[30]')[2], J('XTK_T[21]')[2]], [32, 0.79, 0.15, 1.05, 1.06, 0.48, 1.18]);
+  check('office 1000 m2: 0.79 x 10.7639 = 8.5035 W/m2, allowance 8503.5 W; 8000 W passes and 8600 W fails', [near(calc([[18, 1000]], 8000).rows[0].si, 8.50348, 1e-4), near(calc([[18, 1000]], 8000).allow, 8503.48, 0.01), calc([[18, 1000]], 8000).ok, calc([[18, 1000]], 8600).ok], [true, true, true, false]);
+  check('office 1000 m2 + parking garage 2000 m2: 8503.5 + 0.15 x 10.7639 x 2000 = 11732.7 W over 3000 m2 (3.911 W/m2 average); trade-off allowed: 11000 W passes; zero-area rows are ignored', [near(calc([[18, 1000], [19, 2000], [11, 0]], 11000).allow, 11732.65, 0.02), near(calc([[18, 1000], [19, 2000]], 11000).avg, 3.91088, 1e-4), calc([[18, 1000], [19, 2000]], 11000).ok, calc([[18, 1000], [19, 2000], [11, 0]], 11000).rows.length], [true, true, true, 2]);
+}
+let tt;
+w.renderCalc('a90lpd'); w.calcResult('a90lpd');
+tt = txt(w, 'xtk_results');
+check('the default page (office 1000 m2, 8000 W) shows 8503 W, 8.50 W/m2 and no failure', [tt.includes('8503 W'), tt.includes('8.50 W/m²'), !tt.includes('✘')], [true, true, true]);
+set('xtk_w', '9000'); w.calcResult('a90lpd'); tt = txt(w, 'xtk_results');
+check('9000 W exceeds 8503 W and fails', [tt.includes('✘')], [true]);
+check('other reference codes open a90lpd too', others('a90lpd', 'xtk_results'), [true, true, true]);
+}
+// ---------- part 316: NFPA 211 Table 9.5.1.1 Type L vent connector rows (`nfpa211`) and the NFPA 497 / 499 material list of `necha`, both read from the page images (2026-11-09) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+{
+  check('NFPA 211 Table 9.5.1.1 Type L vent piping connectors: 9 in. for gas appliances without draft hoods, incinerators, oil and solid fuel; 6 in. for unlisted gas with draft hoods and boilers / furnaces with listed gas burners', J('XCH_C.slice(14).map(c => c[1])'), [9, 9, 9, 6, 6]);
+  check('NFPA 497 Table 4.4.2 / NFPA 499 Table 5.2.2 list: acetaldehyde 175 C group C, acetic acid 426 C; more than 200 dusts; doubtful prints (allyl glycidyl ether 57 C, hydrazine 23 C) left out', [J('XNH_M.find(m => m[1] === "Acetaldehyde")[3]'), J('XNH_M.find(m => m[1] === "Acetaldehyde")[2]'), J('XNH_M.find(m => m[1] === "Acetic Acid")[3]'), J('XNH_M.filter(m => m[0] === 1).length > 200'), J('XNH_M.some(m => m[1] === "Hydrazine" || m[1] === "Allyl Glycidyl Ether")')], [175, 'C', 426, true, false]);
+}
+let tt;
+w.renderCalc('necha'); w.calcResult('necha');
+const k = J('XNH_M.findIndex(m => m[1] === "Acetaldehyde")') + 1;
+set('xnh_mt', String(k)); w.calcResult('necha'); tt = txt(w, 'xnh_results');
+check('choosing acetaldehyde in necha sets 175 C and shows the material, Table 4.4.2 and class T4', [doc.getElementById('xnh_ait').value, tt.includes('Acetaldehyde'), tt.includes('4.4.2'), tt.includes('T4')], ['175', true, true, true]);
+w.renderCalc('nfpa211'); set('xch_m', '1'); set('xch_c', '14'); w.calcResult('nfpa211'); tt = txt(w, 'xch_results');
+check('nfpa211 connector page with a Type L connector (gas appliance without draft hood) shows 9 in. and 229 mm', [tt.includes('Type L'), tt.includes('9 in.'), tt.includes('229 mm')], [true, true, true]);
+}
+// ---------- part 317: NFPA 70E-2015 Table 130.7(C)(15)(A)(a) arc flash hazard identification by task (fifth mode of `nfpa70e`, read from the page images 2026-11-09) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+{
+  check('Table 130.7(C)(15)(A)(a) has 34 rows; the first eleven answers are No, No, Yes, Yes, Yes, No, Yes, Yes, No, Yes, Yes as printed on page 5052', [J('XU_TASK.length'), J('XU_TASK.slice(0, 11).map(t => t[2])').join(',')], [34, 'No,No,Yes,Yes,Yes,No,Yes,Yes,No,Yes,Yes']);
+  check('reading a panel meter (any condition) needs no arc flash PPE; normal operation of a breaker with a door open needs it', [J('XU_TASK[0][0]'), J('XU_TASK[0][1]'), J('XU_TASK[0][2]'), J('XU_TASK[2][1].startsWith("One or more of the following")'), J('XU_TASK[2][2]')], ['Reading a panel meter while operating a meter switch', 'Any', 'No', true, 'Yes']);
+}
+let tt;
+w.renderCalc('nfpa70e'); set('xu_m', '4'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
+check('the task mode shows the first task, Any and لا, and only its group is visible', [tt.includes('Reading a panel meter'), tt.includes('Any'), tt.includes('لا'), doc.getElementById('xu_g4').style.display === '', doc.getElementById('xu_g0').style.display === 'none'], [true, true, true, true, true]);
+set('xu_tk', '3'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
+check('work on energized ac conductors including voltage testing needs arc flash PPE', [tt.includes('For ac systems'), tt.includes('نعم')], [true, true]);
+set('xu_m', '3'); w.calcResult('nfpa70e'); tt = txt(w, 'xu_results');
+check('the dc category mode still works after the new mode', [tt.includes('130.7(C)(15)(B)'), doc.getElementById('xu_g3').style.display === ''], [true, true]);
 }
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }

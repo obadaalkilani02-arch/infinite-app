@@ -438,7 +438,7 @@ check('beam minimum steel max(0.25 sqrt(f\'c)/fy, 1.4/fy) bw d = 0.003333 x 300 
 check('shear: phi Vc = 0.75 x 0.17 x sqrt(28) x 1000 x 164 = 110.6 kN per metre; 40 kN passes, 120 fails', [+r.phiVc.toFixed(1), sl({}).shearOk, sl({Vu: 120}).shearOk], [110.6, true, false], 0.1);
 w.renderCalc('acislab1'); w.calcResult('acislab1');
 let tt = txt(w, 'acs_results');
-check('the page opens with 143 mm, 497 mm2, 360, 300 mm and the 🔴 note', [tt.includes('143 mm'), tt.includes('497 mm²'), tt.includes('360'), tt.includes('300 mm'), tt.includes('🔴')], [true, true, true, true, true]);
+check('the page opens with 143 mm, 497 mm2, 360, 300 mm and the note checked against the printed page', [tt.includes('143 mm'), tt.includes('497 mm²'), tt.includes('360'), tt.includes('300 mm'), tt.includes('والصحيح 300(280/fs)')], [true, true, true, true, true]);
 check('other reference codes open it too', others('acislab1', 'acs_results'), [true, true, true]);
 }
 // ---------- part 112: SBC 304 two-way slab (`acislab2`: Tables 8.3.1.1, 8.3.1.2, 22.6.5.2, 8.6.1.1) ----------

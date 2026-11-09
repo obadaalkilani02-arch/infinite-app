@@ -1,0 +1,14 @@
+{
+ "تحديد خطر وميض القوس حسب المهمة": "Arc flash hazard identification by task",
+ "كما هي مطبوعة في الجدول": "as printed in the table",
+ "حالة المعدة": "Equipment condition",
+ "هل تلزم معدات الوقاية من وميض القوس؟": "Is arc flash PPE required?",
+ "تحدد الفئة من الجدول": "The category is taken from Table",
+ "أو من تحليل طاقة القوس": "or from an incident energy analysis",
+ "لا يحتمل حدوث وميض قوس في هذه الحالة": "an arc flash is not likely to occur in this condition",
+ "، ونص المهام والحالات بالإنجليزية كما هو مطبوع، وروجع الجدول على صورة الصفحة المطبوعة": ", with the task and condition texts in English as printed, and the table was checked against the image of the printed page",
+ "تحديد الخطر جزء من تقييم المخاطر، ولا يغطي الجدول كل حالة ممكنة؛ وحين يقول إن معدات الوقاية غير لازمة فوميض القوس غير محتمل": "Hazard identification is one component of risk assessment, and the table does not cover every possible condition; where it says that arc flash PPE is not required, an arc flash is not likely to occur",
+ "التركيب الصحيح وفق الكودات والمعايير الصناعية المطبقة وتوصيات الصانع، والصيانة الصحيحة وفق توصيات الصانع والكودات والمعايير المطبقة، ودليل العطل الوشيك وجود قوس أو سخونة زائدة أو أجزاء مفكوكة أو عالقة أو تلف ظاهر": "Properly installed means per the applicable industry codes and standards and the manufacturer recommendations, properly maintained means per the manufacturer recommendations and the applicable codes and standards, and evidence of impending failure means arcing, overheating, loose or bound parts or visible damage",
+ "هل تلزم معدات الوقاية حسب المهمة": "Is PPE required for the task",
+ "المهمة وحالة المعدة": "Task and equipment condition"
+}
