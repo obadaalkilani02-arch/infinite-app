@@ -76,4 +76,6 @@ self.addEventListener('fetch', e => {
 for (const f of ['icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png', 'favicon-64.png']) {
   fs.copyFileSync(path.join(ROOT, 'platform', 'icons', f), path.join(OUT, 'icons', f));
 }
+// privacy policy page: the stores link to <site>/privacy.html
+fs.copyFileSync(path.join(ROOT, 'platform', 'web', 'privacy.html'), path.join(OUT, 'privacy.html'));
 console.log('web bundle', VERSION, '->', OUT, '(' + Math.round(html.length / 1024) + ' KB html)');
