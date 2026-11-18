@@ -1476,6 +1476,31 @@ check('the default case: Group B 5000 m², climate zone 0B/1B, 10 % cooling = 12
 set('xcw_z', '9'); set('xcw_a0', '0'); set('xcw_a3', '1000'); w.calcResult('iecc406'); tt = txt(w, 'xcw_results');
 check('Group M in 4C shows the blank printed cell', [tt.includes('خانة فارغة')], [true]);
 }
+// ---------- part 321: IECC 2021 Tables C403.3.2(1) - (7) minimum equipment efficiencies (`iecceq`, transcribed from the page images 2026-11-10, flagged cells re-read 2026-11-17) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+{
+  check('74 equipment types over Tables C403.3.2(1) - (7); every row has one value per metric (four for the chiller paths)', [J('XEQI_G.length'), J('XEQI_G.every(g => g.length === 9 && g[5].every(r => r.length === 3 + (g[7] === "ch" || g[7] === "cf" ? 4 : g[4].length)))')], [74, true]);
+  check('p. C4-16 / C4-17: air-cooled AC with electric resistance heat, IEER after 1/1/2023 = 14.8 / 14.2 / 13.2 / 12.5 (the EER is printed with the pre-2023 IEER only)', [J('XEQI_G[5][4].map(m => m[0])'), J('XEQI_G[5][5].map(r => r[3])')], [['IEER'], [14.8, 14.2, 13.2, 12.5]]);
+  check('p. C4-19: heat pump cooling split 14.3 SEER2 and single package 13.4 SEER2; the size printed "< 66,000" is taken as < 65,000 (footnote b and the next row)', [J('XEQI_G[14][5][0]'), J('XEQI_G[15][5][0][3]')], [[0, 65000, '', 14.3], 13.4]);
+  check('heat pump heating >= 65,000 Btu/h: COPH 3.40 / 3.30 / 3.20 at 47 °F and 2.25 / 2.05 / 2.05 at 17 °F', [J('XEQI_G[26][5].map(r => r.slice(3))')], [[[3.4, 2.25], [3.3, 2.05], [3.2, 2.05]]]);
+  check('Table C403.3.2(7): dry coolers 4.5 gpm/hp; evaporative condensers with R-448A 160,000 / 137,000 Btu/h·hp', [J('XEQI_G[68][5][0][3]'), J('XEQI_G[69][5][0][3]'), J('XEQI_G[71][5][0][3]')], [4.5, 160000, 137000]);
+  check('a 65,000 Btu/h heat pump falls in the >= 65,000 row, not in the < 65,000 row', [J('xeiCalc({g: 14, cap: 65000 / 3412.142, v: [15, 0]}).row'), J('xeiCalc({g: 19, cap: 65000 / 3412.142, v: [15, 0]}).row')], [null, [65000, 135000, '', 14.1]]);
+  const c = J('xeiCalc({g: 29, cap: 2110.2, v: [0.548, 0.49], le: (42 - 32) / 1.8, lc: (91.16 - 32) / 1.8})');
+  // C403.3.2.1 uses the same constants as ASHRAE 90.1 6.4.1.2.1: LIFT 49.16 °F, LvgEvap 42 °F -> A 1.02331, B 0.997, Kadj 1.02024; 600 tons path A 0.560 / 0.500 -> 0.5489 / 0.4901
+  check('centrifugal adjustment C403.3.2.1: Kadj 1.02024, FLadj 0.5489, PLVadj 0.4901', [+c.K.toFixed(5), +c.pa[0].toFixed(4), +c.pa[1].toFixed(4), c.ok], [1.02024, 0.5489, 0.4901, true]);
+  // PTAC standard 3 kW = 10,236 Btu/h: 14.0 - 0.300 x 10.236 = 10.929; below 7,000 Btu/h the table gives 11.9, above 15,000 Btu/h 9.5
+  check('PTAC standard size: 10.929 EER at 10,236 Btu/h; fixed 11.9 below 7,000 and 9.5 above 15,000 Btu/h', [J('+xeiCalc({g: 34, cap: 3, v: [11, 0]}).req[0].q.toFixed(3)'), J('xeiCalc({g: 34, cap: 1.5, v: [11, 0]}).req[0].q'), J('xeiCalc({g: 34, cap: 5, v: [11, 0]}).req[0].q')], [10.929, 11.9, 9.5]);
+  check('gas furnace (US) < 225,000 Btu/h: 81 % Et; outside the US, nonweatherized: 80 % AFUE or 80 % Et', [J('xeiCalc({g: 51, cap: 30, v: [81, 0]}).ok'), J('xeiCalc({g: 51, cap: 30, v: [80, 0]}).ok'), J('xeiCalc({g: 49, cap: 30, v: [0, 80]}).ok')], [true, false, true]);
+}
+let tt;
+w.renderCalc('iecceq'); w.calcResult('iecceq'); tt = txt(w, 'xei_results');
+check('the default case: air-cooled AC 100 kW in the 240,000 - 760,000 Btu/h row, IEER 13.2, rated 14 complies', [tt.includes('760,000'), tt.includes('≥ 13.2'), tt.includes('يحقق'), doc.getElementById('xei_gc').style.display], [true, true, true, 'none']);
+set('xei_g', '29'); w.calcResult('iecceq'); tt = txt(w, 'xei_results');
+check('the centrifugal group shows the design temperatures', [doc.getElementById('xei_gc').style.display, tt.includes('Kadj')], ['', true]);
+}
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
 process.exit(fail ? 1 : 0);
