@@ -1482,7 +1482,7 @@ w = boot('sa'); doc = w.document;
 const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
 const set = (id, val) => { w.document.getElementById(id).value = val; };
 {
-  check('74 equipment types over Tables C403.3.2(1) - (7); every row has one value per metric (four for the chiller paths)', [J('XEQI_G.length'), J('XEQI_G.every(g => g.length === 9 && g[5].every(r => r.length === 3 + (g[7] === "ch" || g[7] === "cf" ? 4 : g[4].length)))')], [74, true]);
+  check('183 equipment types over Tables C403.3.2(1) - (16); every row has one value per metric (four for the chiller paths)', [J('XEQI_G.length'), J('XEQI_G.every(g => g.length === 9 && g[5].every(r => r.length === 3 + (g[7] === "ch" || g[7] === "cf" ? 4 : g[4].length)))')], [183, true]);
   check('p. C4-16 / C4-17: air-cooled AC with electric resistance heat, IEER after 1/1/2023 = 14.8 / 14.2 / 13.2 / 12.5 (the EER is printed with the pre-2023 IEER only)', [J('XEQI_G[5][4].map(m => m[0])'), J('XEQI_G[5][5].map(r => r[3])')], [['IEER'], [14.8, 14.2, 13.2, 12.5]]);
   check('p. C4-19: heat pump cooling split 14.3 SEER2 and single package 13.4 SEER2; the size printed "< 66,000" is taken as < 65,000 (footnote b and the next row)', [J('XEQI_G[14][5][0]'), J('XEQI_G[15][5][0][3]')], [[0, 65000, '', 14.3], 13.4]);
   check('heat pump heating >= 65,000 Btu/h: COPH 3.40 / 3.30 / 3.20 at 47 °F and 2.25 / 2.05 / 2.05 at 17 °F', [J('XEQI_G[26][5].map(r => r.slice(3))')], [[[3.4, 2.25], [3.3, 2.05], [3.2, 2.05]]]);
@@ -2145,6 +2145,24 @@ set('xnm_m', '3'); w.calcResult('nfpa750'); tt = txt(w, 'xnm_results');
 check('water supply mode: ordinary hazard 90 min, 946 L/min hose stream, pump 12.5.2.2, filter 12.5.1.6', [tt.includes('90 min'), tt.includes('946'), tt.includes('12.5.2.2'), tt.includes('12.5.1.6'), doc.getElementById('xnm_g3').style.display === ''], [true, true, true, true, true]);
 set('xnm_m', '4'); w.calcResult('nfpa750'); tt = txt(w, 'xnm_results');
 check('nozzle mode: 50 C gives Intermediate / White / Yellow or green, Table 8.3.4.2 and 6.6.7.3', [tt.includes('Intermediate'), tt.includes('White'), tt.includes('Yellow or green'), tt.includes('8.3.4.2'), tt.includes('6.6.7.3'), doc.getElementById('xnm_g4').style.display === ''], [true, true, true, true, true, true]);
+}
+// ---------- part 322: IECC 2021 Tables C403.3.2(8) - (16) added to `iecceq` (transcribed from the page images and independently re-checked 2026-11-19) ----------
+{
+w = boot('sa'); doc = w.document;
+const J = x => JSON.parse(w.eval('JSON.stringify(' + x + ')'));
+const set = (id, val) => { w.document.getElementById(id).value = val; };
+{
+  check('183 groups in tables (1) - (16), sorted by table; every row well formed; every note resolves', [J('XEQI_G.length'), J('Object.keys(XEQI_TB).length'), J('XEQI_G.every((g, i, a) => i === 0 || parseInt(a[i - 1][0].slice(9)) <= parseInt(g[0].slice(9)))'), J('XEQI_G.every(g => !g[8] || XEQI_N[g[8]])')], [183, 16, true, true]);
+  check('p. C4-30: computer-room downflow air cooled net sensible COP 2.70 / 2.58 / 2.36 by < 80,000 / < 295,000 / larger', [J('XEQI_G[90][5].map(r => r[3])'), J('XEQI_G[90][5][1].slice(0, 2)')], [[2.7, 2.58, 2.36], [80000, 295000]]);
+  check('p. C4-32: DX-DOAS ISMRE 4.0 without and 5.2 with energy recovery (air cooled)', [J('XEQI_G[118][5][0][3]'), J('XEQI_G[125][5][0][3]')], [4, 5.2]);
+  check('p. C4-34: air-source heat-pump chiller cooling-only path A 9.595 FL / 13.02 IPLV.IP, path B 9.215 / 15.01', [J('XEQI_G[144][5][0].slice(3)')], [[9.595, 13.02, 9.215, 15.01]]);
+  // a 10 kW (34,121 Btu/h) water-loop water-to-air heat pump: row >= 17,000 and < 65,000, 13.0 EER; rated 13.2 passes
+  check('water-source heat pump 34,121 Btu/h: 13.0 EER row', [J('xeiCalc({g: 132, cap: 10, v: [13.2, 0]}).req[0].q'), J('xeiCalc({g: 132, cap: 10, v: [13.2, 0]}).ok')], [13, true]);
+  check('heat-pump chiller cooling-only: meets path A with 9.6 / 13.1 EER, fails both paths with 9.3 / 13.0', [J('xeiCalc({g: 144, cap: 300, v: [9.6, 13.1]}).okA'), J('xeiCalc({g: 144, cap: 300, v: [9.3, 13.0]}).ok')], [true, false]);
+}
+let tt;
+w.renderCalc('iecceq'); set('xei_g', '90'); set('xei_cap', '20'); set('xei_v1', '2.8'); w.calcResult('iecceq'); tt = txt(w, 'xei_results');
+check('a computer-room unit renders with its table and passes at 2.8', [tt.includes('C403.3.2(10)'), tt.includes('≥ 2.7'), tt.includes('يحقق')], [true, true, true]);
 }
 console.log(fail ? `\n${fail} FAIL` : '\nall ok');
 if (errors.length) { console.log('jsdom errors:', errors.slice(0, 5)); fail++; }
