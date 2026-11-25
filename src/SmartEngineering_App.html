@@ -362,32 +362,6 @@ input.num-slider::-moz-range-track { background: var(--border); height: 4px; bor
 .result-item .val   { font-size: 1.25rem; font-weight: 800; color: var(--orange); }
 .result-item .val-unit { font-size: .72rem; color: var(--subtext); margin-top: 1px; }
 
-/* Pit diagram */
-.pit-diagram {
-  width: 100%; max-width: 340px;
-  margin: 0 auto 16px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px; position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: 0;
-}
-.pit-outer {
-  border: 3px solid var(--gray2);
-  border-top: none; width: 200px;
-  position: relative; background: transparent;
-}
-.pit-level {
-  position: absolute; width: 100%; height: 2px;
-  display: flex; align-items: center;
-}
-.pit-level span {
-  font-size: .6rem; color: var(--subtext);
-  white-space: nowrap; padding-right: 6px;
-  direction: ltr; position: absolute; right: calc(100% + 4px);
-}
-.pit-water { background: rgba(30,150,245,.25); position: absolute; bottom: 0; width: 100%; }
-.pit-labels { font-size: .65rem; color: var(--subtext); text-align: center; margin-top: 6px; }
 
 /* Recommend box */
 .recommend-box {
@@ -6867,12 +6841,10 @@ function calcSump() {
 
   const qout    = qin;
   const workSec = 300;
-  const runsHr  = 6;
   const effVol  = (workSec * qout) / 1000;          // m³ — L23*L20/1000
   const effH    = Math.ceil(effVol / area * 100) / 100; // ROUNDUP 2dp
   const areaSuggestEl = document.getElementById('s_area_suggest');
   if (areaSuggestEl) areaSuggestEl.textContent = fmt(effVol/1.5, 2);
-  const pitH    = il + suction + 0.1 + 0.1 + effH + 0.1 + suction + bot; // simplified cumulative
   // More accurate pit height from cumulative levels formula:
   // Pipe Invert = il, HighAlarm = il+0.1, 2ndStart = il+0.2, 1stStart = il+0.3
   // Stop = 1stStart + effH, Low = Stop+0.1, Suction = Low+suction, Bottom = Suction+bot
@@ -6953,7 +6925,6 @@ function calcSewage() {
   const suctionLvl  = lowLevel + suction;
   const bottomLvl   = suctionLvl + bot;
 
-  const fittLen = len * 0.3;
   // sewage => 6% friction
   const totalH  = staticH + len * 0.06 * 1.3 + 2 + valves;
   const kW      = (1000 * 9.81 * totalH * (qout / 1000)) / eff / 1000;
@@ -7379,7 +7350,6 @@ function calcRecirc() {
   const len    = +v('rc_len');
   const fitPct = +v('rc_fitPct');
   const floss  = +v('rc_floss');
-  const nWP    = +v('rc_wpumps');
   const eff    = +v('rc_eff');
 
   const flowM3hr  = vol / time;
@@ -8154,22 +8124,6 @@ function calcPool() {
 }
 
 /* ══ FIXTURE UNITS · WSFU (IPC E103.3) & DFU (IPC 709.1) ═══ */
-const WSFU_FIXTURES = [
-  {name:'مرحاض بصمام سيفون (WC Flush Valve)', priv:6,   pub:10},
-  {name:'مرحاض بخزان (WC Flush Tank)',         priv:2.2, pub:5},
-  {name:'بيديه (Bidet)',                        priv:1.5, pub:2},
-  {name:'خرطوم/صنبور حديقة (Hose Bibb)',       priv:2.5, pub:3},
-  {name:'مغسلة (Lavatory)',                     priv:0.7, pub:2},
-  {name:'حوض مطبخ (Kitchen Sink)',              priv:1.4, pub:4},
-  {name:'حوض خدمة (Service Sink)',              priv:1.4, pub:3},
-  {name:'دُش (Shower)',                          priv:1.4, pub:4},
-  {name:'بانيو (Bathtub)',                       priv:1.4, pub:4},
-  {name:'غسالة صحون (Dishwasher)',              priv:1.4, pub:4},
-  {name:'غسالة ملابس (Laundry)',                priv:1.4, pub:3},
-  {name:'مبولة بصمام (Urinal Flush Valve)',     priv:0,   pub:10},
-  {name:'مبولة بخزان (Urinal Flush Tank)',      priv:0,   pub:3},
-  {name:'نافورة شرب (Drinking Fountain)',        priv:0.25,pub:0.25},
-];
 const DFU_FIXTURES = [ // IPC 2021 Table 709.1 values
   {name:'غسالة ملابس تجارية (Auto. Clothes Washer, Commercial)', dfu:3, kind:'waste'},
   {name:'غسالة ملابس منزلية (Auto. Clothes Washer, Residential)', dfu:2, kind:'waste'},
@@ -8475,7 +8429,7 @@ function frRowHTML() {
     <td style="padding:4px 3px;font-size:.72rem;color:var(--subtext);text-align:center;">${idx+1}</td>
     <td style="padding:4px 3px;"><select class="fr-mat" onchange="frMatChange(this)" style="width:110px;padding:5px 4px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;">${matOptions}</select></td>
     <td style="padding:4px 3px;"><select class="fr-size" onchange="frSizeChange(this)" style="width:75px;padding:5px 4px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;"></select></td>
-    <td style="padding:4px 3px;"><select class="fr-sch" onchange="frSchChange(this)" style="width:95px;padding:5px 4px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;"></select></td>
+    <td style="padding:4px 3px;"><select class="fr-sch" onchange="frSizeChange(this)" style="width:95px;padding:5px 4px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;"></select></td>
     <td style="padding:4px 3px;"><input type="number" class="fr-k" value="0.005" step="0.001" style="width:60px;padding:5px 4px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;"></td>
     <td style="padding:4px 3px;"><input type="number" class="fr-id" value="50" min="1" step="0.1" style="width:65px;padding:5px 4px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;" title="يُحدَّث تلقائيًا من النوع/المقاس/الفئة المختارة — يبقى قابلاً للتعديل اليدوي إذا توفرت بيانات مصنّع مختلفة"></td>
     <td style="padding:4px 3px;"><input type="number" class="fr-len" value="10" min="0" step="1" style="width:60px;padding:5px 4px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;"></td>
@@ -8529,7 +8483,6 @@ function frMatChange(sel) {
   calcResult('friction');
 }
 function frSizeChange(sel) { const tr = sel.closest('tr'); frUpdateID(tr); calcResult('friction'); }
-function frSchChange(sel)  { const tr = sel.closest('tr'); frUpdateID(tr); calcResult('friction'); }
 function addFrRow() {
   document.getElementById('fr-tbody').insertAdjacentHTML('beforeend', frRowHTML());
   const tr = document.getElementById('fr-tbody').lastElementChild;
@@ -9222,7 +9175,6 @@ function calcExpansionTank() {
   const Ec = (v2/v1) - 1;
 
   const atmBar = 1.01325;
-  const Pa = atmBar;
   const P1 = p1bar + atmBar; // absolute
   const P2 = p2bar + atmBar; // absolute
 
@@ -10544,7 +10496,6 @@ function calcDuctSizing() {
 
   // Pressure loss for 100m duct
   const hf_per_m = hf_actual * (1/30.48);  // in.wg/ft → per meter
-  const Pa_per_m = hf_per_m * 30.48 * 12 * 249.08 / (12*100); // rough conversion
 
   // Acoustic check per official Table 12 (round duct uses V_std, rect uses V_rect if entered)
   const acousticVround = V_std;
@@ -10731,7 +10682,6 @@ function chwTableLookup(gpm) {
 function calcChwFlow() {
   const TR   = +v('chw_tr')  || 100;
   const dT_F = +v('chw_dt')  || 10;
-  const Ts   = +v('chw_ts')  || 44;
   const vel  = +v('chw_vel') || 4;    // ft/s
   const hxEff = +v('chw_hxeff') || 1.0;
 
@@ -10838,8 +10788,7 @@ function calcCoolingTower() {
   const GPM_evap = 0.001 * GPM_ct * range_F;         // approx 0.85-1.0% per 10°F
 
   // Drift (typical modern CTI-certified drift eliminator: ~0.001% of circulation;
-  // older/non-certified towers can reach 0.02%). Previous constant here (0.0001 = 0.01%)
-  // contradicted this comment by 5-10× — corrected to match the stated 0.001% figure.
+  // older/non-certified towers can reach 0.02%).
   const GPM_drift = 0.00001 * GPM_ct;
 
   // Blowdown
@@ -10935,9 +10884,6 @@ function calcFcuSelection() {
   let std_cap = STD_FCU[STD_FCU.length-1];
   for (const c of STD_FCU) { if (c >= TR_design) { std_cap = c; break; } }
 
-  // Coil entering conditions
-  const EWT  = 44;   // °F — CHW entering
-  const EAT  = 76;   // °F DB / 63°F WB typical office
 
   const kW   = Q_coil / 3412;
 
@@ -12159,8 +12105,6 @@ const DF_TYPES = {
   'eyeball':      {label:'كروي قابل للتوجيه (Eyeball)',               Kc3:4.0,  Cd:0.88, official:false, aoBasis:'Free', src:'لا يوجد صف رسمي — تقريب هندسي (أقرب سلوكيًا لـ High sidewall 0° deflection)'},
 };
 
-// Terminal velocities for throw calculation
-const DF_TV = {t50:0.25, t100:0.50, t150:0.75}; // m/s at 50/100/150 fpm terminal
 
 function dfTypeOpts() {
   return Object.entries(DF_TYPES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
@@ -12357,7 +12301,6 @@ function calcDuctHangerInsulation() {
 
   const insThk = +document.getElementById('dw_ins_thk')?.value || 25; // mm
   const insCladding = document.getElementById('dw_ins_cladding')?.value === '1';
-  const claddingThk = +document.getElementById('dw_cladding_thk')?.value || 0.5; // mm metal sheet
   let totalHangers = 0, totalInsArea = 0, totalCladdingArea = 0;
 
   const hangerGroups = {};
@@ -16054,7 +15997,6 @@ function necGec(svcSize, svcMetal, gecMetal) {
   for (let i = 0; i < 6; i++) if (idx <= necSizeIdx(lim[i])) { row = i; break; }
   return (gecMetal === 'al' ? NEC_T25066.gecAl : NEC_T25066.gecCu)[row];
 }
-function necSmallerSize(a, b) { return necSizeIdx(a) <= necSizeIdx(b) ? a : b; }
 function necSizeForCmil(cm) { for (const s of NEC_SIZE_ORDER) { if (necSizeIdx(s) < necSizeIdx('14')) continue; if (necCmil(s) >= cm - 1e-9) return s; } return null; }
 // Annex A.54: k = sqrt( Qc(β+20)/ρ20 · ln(1 + (θf − θi)/(β + θi)) )
 const IEC_K_MAT = {cu: {beta: 234.5, qc: 3.45e-3, rho: 17.241e-6}, al: {beta: 228, qc: 2.5e-3, rho: 28.264e-6}, steel: {beta: 202, qc: 3.8e-3, rho: 138e-6}};
@@ -19101,7 +19043,6 @@ function calcSiteSafety() {
 function siteSafetyResultsHTML(r) {
   const s = x => String(+(+x).toFixed(2));
   const item = (label, val, unit) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.3rem" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
-  const mark = ok => ok ? '<span style="color:#2EA043">✔ يحقق</span>' : '<span style="color:#D9534F">⚠ لا يحقق</span>';
   const noiseRows = r.noise.map(x => `<tr style="border-bottom:1px solid var(--border);"><td dir="ltr">${s(x.L)} dB</td><td dir="ltr">${s(x.T)} h</td><td dir="ltr">${x.lim === Infinity ? '—' : x.lim === 0 ? '0' : s(x.lim) + ' h'}</td><td dir="ltr">${x.r === Infinity ? '—' : s(x.r)}</td></tr>`).join('');
   return `
   <div class="results-box">
@@ -19562,7 +19503,7 @@ function renderWaterJo() {
 }
 function calcWaterJo() {
   const N = id => Math.max(0, fpNum(id, 0)), curveSel = v('wj_curve');
-  let U = 0, wcValve = 0, flows = [];
+  let U = 0, wcValve = 0;
   const pub = v('wj_use') === 'public';
   const rows = JO_WS4.map(r => { const n = Math.round(N('wj_n_' + r[0])), u = pub ? r[3] : r[2]; U += n * u; if (r[0] === 'wcvalve') wcValve = n; return {id: r[0], name: r[1], n, u, tot: n * u}; }).filter(r => r.n > 0);
   const other = JO_WS5.map(r => { const n = Math.round(N('wj_o' + r[0])), u = pub ? r[2] : r[1]; U += n * u; return {size: r[0], n, u, tot: n * u}; }).filter(r => r.n > 0);
@@ -20955,17 +20896,12 @@ const JO_AP = [
   ['pk5', 'park', 'عرض المسافة المشتركة بين الموقفين المتجاورين', c => ['ge', 0.9], 'm', 'ويفضل 1.2 m'],
   ['wp1', 'wcp', 'عمق حجيرة المرحاض الخاص بالمعوقين في المرافق العامة', c => ['ge', 2], 'm', ''],
   ['wp2', 'wcp', 'عرض حجيرة المرحاض الخاص بالمعوقين في المرافق العامة', c => ['ge', 1.5], 'm', '']];
-function joApReq(rule, unit) {
-  const f = x => String(+(+x).toFixed(3)), u = unit ? ' ' + unit : '';
-  return rule[0] === 'ge' ? '≥ ' + f(rule[1]) + u : rule[0] === 'le' ? '≤ ' + f(rule[1]) + u : rule[0] === 'range' ? f(rule[1]) + ' – ' + f(rule[2]) + u : '≈ ' + f(rule[1]) + ' ± ' + f(rule[2]) + u;
-}
-function joApOk(rule, x) { return rule[0] === 'ge' ? x >= rule[1] - 1e-9 : rule[0] === 'le' ? x <= rule[1] + 1e-9 : rule[0] === 'range' ? x >= rule[1] - 1e-9 && x <= rule[2] + 1e-9 : Math.abs(x - rule[1]) <= rule[2] + 1e-9; }
 function joApCheck(vals, ctx) {                                                        // vals: {rowId: number}; returns the checked rows with the verdict
   const out = {checked: 0, fail: 0, rows: []};
   JO_AP.forEach(r => {
     const rule = r[3](ctx), x = vals[r[0]], has = x != null && isFinite(x);
-    out.rows.push({id: r[0], req: joApReq(rule, r[4]), ok: has ? joApOk(rule, +x) : null});
-    if (has) { out.checked++; if (!joApOk(rule, +x)) out.fail++; }
+    out.rows.push({id: r[0], req: joAcReq(rule, r[4]), ok: has ? joAcOk(rule, +x) : null});
+    if (has) { out.checked++; if (!joAcOk(rule, +x)) out.fail++; }
   });
   return out;
 }
@@ -21464,7 +21400,7 @@ function joLlUpdate() {
   const box = document.getElementById('lv_results'); if (!box) return;
   const g = (id, d) => { const e = document.getElementById(id); return e && e.value !== '' && isFinite(+e.value) ? +e.value : d; };
   const o = {use: v('lv_use'), floors: Math.max(1, Math.round(g('lv_n', 1))), area: g('lv_a', 0), slope: g('lv_sl', 0), access: v('lv_acc') === '1', alt: g('lv_h', 800), t8: +v('lv_t8'), reg: v('lv_reg'), L: g('lv_L', 0), dT: g('lv_dT', 0)};
-  const r = joLlCalc(o), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2), f3 = x => fmt(x, 3);
+  const r = joLlCalc(o), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
   const item = (label, val, unit) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.3rem" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
   box.innerHTML = `
   <div class="results-box">
@@ -26333,7 +26269,7 @@ const MG_SUP = [['DN8 (NPS 1/4)', 1.52, 5], ['DN10 (NPS 3/8)', 1.83, 6], ['DN15 
 function mgCalc(o) {
   const g = MG_GAS[o.gas] || MG_GAS.o2, T = {};
   if (g.pos) {
-    const P = o.p, kPa = x => x, tc = (p1, t1, t2) => (p1 + 101.4) * (t2 + 273.15) / (t1 + 273.15) - 101.4;
+    const P = o.p, tc = (p1, t1, t2) => (p1 + 101.4) * (t2 + 273.15) / (t1 + 273.15) - 101.4;
     T.pos = true; T.std = g.p; T.alarmLo = 0.8 * P; T.alarmHi = 1.2 * P;
     T.initial = Math.max(1.5 * P, 1035); T.standing = 1.2 * P; T.verify = P; T.cross = 345; T.alt = g.tp;
     T.gaugeMin = P / 0.75; T.gaugeMax = P / 0.25; T.digital = 2 * P;
@@ -26610,7 +26546,6 @@ function vmRun(o) {
   const conns = apps.map(a => {
     const f0 = Math.max(0, 1 - 0.05 * a.n45 - 0.10 * a.n90), res = {name: a.name, type: a.type, kbtu: a.kbtu, pick: null, d: null, rows: [], warn: []};
     if (e && a.type === 'fan') res.warn.push('fan');
-    let Rused = a.R, capped = false;
     ds.forEach(d => {
       const v = vmConn(tb, d, o.H, a.R), maxL = VM_MAXLEN[d] || 18 * d, mult = Math.max(0, Math.ceil(a.len / maxL - 1e-9) - 1), fl = Math.max(0, 1 - 0.1 * mult);
       const s = {d, min: null, max: null, ok: false, why: '', mult};
@@ -26667,7 +26602,6 @@ function vmUpdate() {
   const box = document.getElementById('vm_results'); if (!box) return;
   const o = vmRead(); if (!(o.H > 0) || o.apps.filter(a => a.kbtu > 0).length < 1) { box.innerHTML = ''; return; }
   const r = vmRun(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1);
-  const why = {out: 'خارج الجدول', na: 'غير مسموح (NA)', big: 'أكبر من الحد الأعلى', small: 'أقل من الحد الأدنى'};
   const th = 'padding:4px 5px;font-size:.62rem;color:var(--subtext);white-space:nowrap;', td = 'padding:4px 5px;font-size:.72rem;text-align:center;white-space:nowrap;';
   const msgs = [];
   const conRows = r.apps.map(a => `<tr style="border-top:1px solid var(--border);${a.d == null ? 'background:rgba(217,83,79,.10);' : ''}"><td style="${td}text-align:start;">${a.name}</td><td style="${td}">${a.type.toUpperCase()}</td><td style="${td}" dir="ltr">${f0(a.kbtu / 3.412142)} kW<br><span style="color:var(--subtext);font-size:.62rem;">${f0(a.kbtu)} kBtu/h</span></td>
@@ -26946,7 +26880,6 @@ function lhUpdate() {
   const r = lhCalc({gal, insul: v('lh_i') === 'yes', barrier: v('lh_b') === 'yes'}), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1);
   const th = 'padding:4px 5px;font-size:.62rem;color:var(--subtext);', td = 'padding:4px 5px;font-size:.72rem;text-align:center;';
   const names = ['39.7 – 3,500 gal (150 – 13,250 L)', '3,501 – 15,000 gal (13,251 – 56,781 L)', '15,001 – 75,000 gal (56,782 – 283,906 L)'];
-  const grp = ['', 'المجموعة 1', 'المجموعة 2', 'المجموعة 3'];
   const msg = r.rg < 0 ? 'السعة أقل من 39.7 gal (150 L) وهي خارج الجدول.' : r.rg > 2 ? 'السعة فوق 75,000 gal (283,906 L) وهي خارج الجدول.' : '';
   box.innerHTML = `
   <div class="results-box">
@@ -27322,7 +27255,6 @@ function ifHTML() {
 // ── means of egress ──
 const IG_LOAD = [['حجرات تخزين ملحقة وغرف معدات ميكانيكية', 300], ['مبنى زراعي', 300], ['حظائر طائرات', 500], ['مطار — استلام الأمتعة', 20], ['مطار — مناولة الأمتعة', 300], ['مطار — الردهات', 100], ['مطار — الانتظار', 15], ['تجمع — صالات ألعاب', 11], ['تجمع — معارض ومتاحف', 30], ['تجمع بلا مقاعد ثابتة — كراسٍ مكثفة', 7], ['تجمع بلا مقاعد ثابتة — وقوف', 5], ['تجمع بلا مقاعد ثابتة — طاولات وكراسٍ', 15], ['صالات بولينغ (فوق 5 أشخاص لكل مسار)', 7], ['أعمال — مكاتب', 150], ['قاعات محاكم بلا مقاعد ثابتة', 40], ['حضانة أطفال', 35], ['مساكن طلاب', 50], ['تعليمي — صفوف', 20], ['تعليمي — ورش ومهن', 50], ['صالات رياضة', 50], ['تصنيع وتصنيع دقيق H-5', 200], ['صناعي', 100], ['مؤسسات — علاج داخلي', 240], ['مؤسسات — عيادات خارجية', 100], ['مؤسسات — نوم', 120], ['مطابخ تجارية', 200], ['مكتبة — قراءة', 50], ['مكتبة — رفوف', 100], ['غرف خزائن', 50], ['تجاري — صالات بيع', 60], ['تجاري — تخزين وشحن', 300], ['مرائب سيارات', 200], ['سكني', 200], ['حلبات تزلج ومسابح — الحلبة والمسبح', 50], ['حلبات تزلج ومسابح — الأسطح', 15], ['منصات ومسارح', 15], ['مستودعات', 500], ['مقاعد ثابتة (عدد المقاعد)', 0]];
 const IG_TRAVEL = {AEMR: ['A وE وM وR', 200, 250], F1S1: ['F-1 وS-1', 200, 250], I1: ['I-1', null, 250], B: ['B', 200, 300], F2: ['F-2 وS-2 وU', 300, 400], H1: ['H-1', null, 75], H2: ['H-2', null, 100], H3: ['H-3', null, 150], H4: ['H-4', null, 175], H5: ['H-5', null, 200], I23: ['I-2 وI-3', null, 200], I4: ['I-4', 150, 200]};
-const IG_CORR = {std: ['أي منشأة أخرى', 44], mech: ['الوصول إلى أنظمة ميكانيكية أو كهربائية أو صحية', 24], u50: ['حمل إشغال أقل من 50', 36], dwell: ['داخل وحدة سكنية', 36], e100: ['مجموعة E وحمل الممر 100 أو أكثر', 72], strch: ['ممرات النقالات في عيادات الرعاية الخارجية', 72], i2: ['I-2 حيث تحتاج حركة الأسرّة', 96]};
 function igCalc(o) {
   const rows = o.rows.filter(r => r.n > 0).map(r => { const e = IG_LOAD[r.i] || IG_LOAD[0], load = e[1] === 0 ? Math.round(r.n) : Math.ceil(r.n * (o.unit === 'm' ? 10.7639 : 1) / e[1] - 1e-9); return {name: e[0], f: e[1], n: r.n, load}; });
   const load = rows.reduce((s, r) => s + r.load, 0), exits = load <= 500 ? 2 : load <= 1000 ? 3 : 4;
@@ -29947,7 +29879,6 @@ function renderSbcDead() { return sdlHTML(); }
 
 
 /* ── Saudi Building Code SBC 301-CR-18 chapter 8: rain loads — Equation 8-1 (R = 0.0098 (ds + dh)), Equation 8-2 (Q = 0.278 x 10^-6 A i), Table 8-1 (flow of drainage systems against the hydraulic head), 8.4 ponding ───────────────────────────────────────────────────────────── */
-const SRN_H = [25, 50, 65, 75, 90, 100, 115, 125, 175, 200];
 // Table 8-1 rows: [label, {head: Q m3/s}]
 const SRN_SYS = [
   ['مصرف قطره 100 mm', {25: .0051, 50: .0107, 65: .0114}],
@@ -30026,8 +29957,6 @@ function renderSbcRain() { return srnHTML(); }
 /* ── NFPA 24-2019 (Installation of Private Fire Service Mains and Their Appurtenances): thrust at fittings and thrust blocks (10.6.1, A.10.6.1: Table A.10.6.1(a), (b), (c), equations A.10.6.1a - d), restraint rods (Table 10.6.2.1.2.2), flushing flow (Table 10.10.2.1.3), hydrostatic test pressure and allowance (10.10.2.2: equations in gph and L/h, Table 10.10.2.2.6) ───────────────────────────────────────────────────────────── */
 // nominal size (in), DN (mm), outside diameter of ductile iron pipe (in, from the dead-end thrust of Table A.10.6.1(a) = P A at 100 psi; 3 in from Table A.10.6.1(b))
 const UG_SZ = [[3, 80, 3.96], [4, 100, 4.80], [6, 150, 6.90], [8, 200, 9.05], [10, 250, 11.10], [12, 300, 13.20], [14, 350, 15.30], [16, 400, 17.40], [18, 450, 19.50], [20, 500, 21.60], [24, 600, 25.80], [30, 750, 32.00], [36, 900, 38.30], [42, 1050, 44.50], [48, 1200, 50.80]];
-// Table A.10.6.1(a): thrust at 100 psi (lbf): dead end, 90, 45, 22.5, 11.25, 5.625 degrees
-const UG_T100 = {4: [1810, 2559, 1385, 706, 355, 162], 6: [3739, 5288, 2862, 1459, 733, 334], 8: [6433, 9097, 4923, 2510, 1261, 575], 10: [9677, 13685, 7406, 3776, 1897, 865], 12: [13685, 19353, 10474, 5340, 2683, 1224], 14: [18385, 26001, 14072, 7174, 3604, 1644], 16: [23779, 33628, 18199, 9278, 4661, 2126], 18: [29865, 42235, 22858, 11653, 5855, 2670], 20: [36644, 51822, 28046, 14298, 7183, 3277], 24: [52279, 73934, 40013, 20398, 10249, 4675], 30: [80425, 113738, 61554, 31380, 15766, 7191], 36: [115209, 162931, 88177, 44952, 22585, 10302], 42: [155528, 219950, 119036, 60684, 30489, 13907], 48: [202683, 286637, 155127, 79083, 39733, 18124]};
 // Table A.10.6.1(c): horizontal bearing strength, kN/m2
 const UG_SOIL = [['طين رخو', 48], ['غرين', 72], ['غرين رملي', 145], ['رمل', 190], ['رمل طيني', 285], ['طين صلب', 430], ['وحل (لا قدرة)', 0]];
 // Table 10.6.2.1.2.2: rods of 16 / 19 / 22 / 25 mm per pipe size (null = not permitted)
@@ -32467,7 +32396,6 @@ function renderNfpa22() { return n22HTML(); }
 const N10_A = [['خطورة خفيفة', 2, 279, 1045, 22.9], ['خطورة عادية', 2, 139, 1045, 22.9], ['خطورة إضافية', 4, 92.9, 1045, 22.9]];
 // Table 6.3.1.1: [label, basic minimum rating at 30 ft (9.14 m), higher rating at 50 ft (15.25 m)]
 const N10_B = [['خطورة خفيفة', 5, 10], ['خطورة عادية', 10, 20], ['خطورة إضافية', 40, 80]];
-const N10_RATINGS = [1, 2, 3, 4, 6, 10, 20, 30, 40];
 function n10Calc(o) {
   const r = {mode: o.mode};
   if (o.mode === 0) {
@@ -32709,7 +32637,6 @@ function renderNfpa13h() { return n13HTML(); }
 
 
 /* ── NFPA 13-2019 sprinkler layout: protection areas and maximum spacing of standard pendent, upright (Tables 10.2.4.2.1(a) - (d)) and sidewall sprinklers (Table 10.3.3.2.1), the distances from walls and between sprinklers, deflector position, obstructions (Tables 10.2.7.1.2 and 10.2.7.2.2, the three-times rule), hanger spacing and rod sizes (Tables 17.4.2.1 and 17.2.1.1) ───────────────────────────────────────────────────────────── */
-const N13S_FT2 = 0.092903;
 // Table 10.2.4.2.1(a) light hazard: [description, maximum area m2 (hydraulically calculated), maximum area m2 (pipe schedule), maximum spacing m]
 const N13S_LH = [['إنشاء غير قابل للاشتعال بلا عوائق', 20, 18, 4.6], ['إنشاء غير قابل للاشتعال بعوائق', 20, 18, 4.6], ['قابل للاشتعال بلا عوائق وبلا عناصر ظاهرة', 20, 18, 4.6], ['قابل للاشتعال بلا عوائق وعناصر ظاهرة بتباعد 0.91 m فأكثر', 20, 18, 4.6], ['قابل للاشتعال بلا عوائق وعناصر بتباعد دون 0.91 m', 12, 12, 4.6], ['قابل للاشتعال بعوائق وعناصر بتباعد 0.91 m فأكثر', 16, 16, 4.6], ['قابل للاشتعال بعوائق وعناصر بتباعد دون 0.91 m', 12, 12, 4.6], ['فراغات مخفية قابلة للاشتعال (10.2.6.1.4)', 11, 11, 4.6]];
 // Table 10.2.4.2.1(b) - (d): ordinary hazard 12 m2 and 4.6 m; extra hazard and high-piled storage by system and density
@@ -33103,7 +33030,7 @@ function uwUpdate() {
   if (mode === 6) { o.aisle = +v('uw_ai6') || 1.2; o.cls = +v('uw_c6') || 1; o.ps = g('uw_s6', 6); o.dens = g('uw_d6', 0.3); }
   const r = uwCalc(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2), f3 = x => fmt(x, 3);
   const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.2rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
-  const ok = x => x ? ' ✔' : ' ✘', col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;';
+  const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;';
   const dn = d => f2(d) + ' gpm/ft² (' + f1(d * UW_MM) + ' mm/min)', Qg = x => f0(x * UW_GPM) + ' L/min (' + f0(x) + ' gpm)', Ar = a => f0(a) + ' ft² (' + f0(a * UW_FT2) + ' m²)';
   const none = 'خارج مدى الجداول';
   let h = '', title = 'رشاشات التخزين — كود الإمارات (الفصل 9، 13 و14)', note = '';
@@ -34026,7 +33953,7 @@ function renderUaeCons() { return uoHTML(); }
 
 
 /* ── NFPA 15 (2022) Standard for Water Spray Fixed Systems for Fire Protection: design objectives and application rates (chapter 7), vessel / rack / transformer / conveyor exposure protection (7.2 - 7.4), nozzle discharge and hydraulics (chapter 8), water supply demand (chapter 9) ───────────────────────────────────────────────────────────── */
-const N15_GPM = 3.78541, N15_MM = 40.746, N15_FT2 = 0.092903, N15_HOSE = 946, N15_PSI = 0.0689476;
+const N15_GPM = 3.78541, N15_MM = 40.746, N15_FT2 = 0.092903, N15_HOSE = 946;
 // application rates [hazard, gpm/ft2, clause]
 const N15_RATE = [
   ['إطفاء مواد صلبة أو سوائل عادية (حد أدنى للمدى 0.15 – 0.50)', 0.15, '7.2.1.3'],
@@ -38054,7 +37981,6 @@ const SN_CITY = [
 // saturation vapour pressure Pa (ISO 13788) and its inverse (dew point)
 const snPs = t => t >= 0 ? 610.5 * Math.exp(17.269 * t / (237.3 + t)) : 610.5 * Math.exp(21.875 * t / (265.5 + t));
 const snDew = p => { const l = Math.log(p / 610.5); return p >= 610.5 ? 237.3 * l / (17.269 - l) : 265.5 * l / (21.875 - l); };
-const snUw = (tab, ug, uf) => tab[ug][uf];
 function snCalc(o) {
   const r = {mode: o.mode}, E = 1e-9;
   if (o.mode === 0) {
@@ -42155,7 +42081,7 @@ function dqUpdate() {
   const mode = +v('dq_m') || 0;
   for (let k = 0; k < 2; k++) { const e = document.getElementById('dq_g' + k); if (e) e.style.display = k === mode ? '' : 'none'; }
   const o = {mode, site: Math.min(5, +v('dq_s') || 0), risk4: +v('dq_r') === 3, T: g('dq_t', 1), zeta: g('dq_z', 5), z: g('dq_d', 6), sv: g('dq_sv', 110), svp: Math.max(1, g('dq_sp', 70)), crr: g('dq_crr', 0.2), ks: Math.max(0.1, g('dq_ks', 1))};
-  const r = dqCalc(o), f2 = x => fmt(x, 2), f3 = x => fmt(x, 3), f4 = x => fmt(x, 4);
+  const r = dqCalc(o), f2 = x => fmt(x, 2), f3 = x => fmt(x, 3);
   const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.2rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
   const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;', ok = x => x ? ' ✔' : ' ✘';
   let h = '', title = '', note = '';
@@ -42346,7 +42272,6 @@ const FZ_DS = [['C12/15 · C16/20 · C20/25 (نظافة)', 280, 101, 0, 0.55], [
 const FZ_FC = [['خرسانة إنشائية', 35, 28], ['خرسانة مسبقة الإجهاد في البلاطات والجسور', 40, 32], ['خرسانة نظافة ومونة تسوية', 20, null]];
 // F.6.2.3 f: minimum recommended clear cover (mm)
 const FZ_COV = [['منشآت فوق الأرض', 30], ['خرسانة مصبوبة على خرسانة نظافة', 50], ['خرسانة مصبوبة مباشرة على التربة', 75]];
-const FZ_SH = [['كل الأنواع', 5], ['كل الأنواع عدا الركائز مع التخشيب (soldier piles with lagging)', 9]];
 function fzCalc(o) {
   const r = {mode: o.mode};
   if (o.mode === 0) {
@@ -43069,7 +42994,6 @@ const EY_C3 = [
   [3, 0, 4000, 3000, 6000, 18, 3500, 6500]
 ];
 const EY_C3K = ['مصاعد الركاب', 'المصاعد في المباني', 'مصاعد الأسرة', 'مصاعد نقل السيارات'];
-const eyLim = (x, lim) => x <= lim + 1e-9;
 function eyAreaMax(q) {
   if (q > 2500) return 5.0 + 0.16 * (q - 2500) / 100;
   let a = null;
@@ -43277,7 +43201,6 @@ function eyUpdate() {
   } else if (mode === 4) {
     r = eyCalc(o);
     title = 'الجر والحبال وطارة الجر (الباب 9 والملحق د)';
-    const cases = ['حالة تحميل الصاعدة (125 % من الحمل المقنن)', 'حالة التوقف الاضطراري', 'حالة توقف مفاجئ لثقل الموازنة وتحرك الماكينة صعودًا'];
     const mu = ['μ = 0.1', 'μ = 0.1 ÷ (1 + 0.1 v)', 'μ = 0.2'];
     h += item('معامل الاحتكاك للتحميل f', f3(r.f[0]), mu[0] + ' = ' + f3(r.mu[0]) + ' · e^(fα) = ' + f2(r.e[0]));
     h += item('معامل الاحتكاك للتوقف الاضطراري f', f3(r.f[1]), mu[1] + ' = ' + f3(r.mu[1]) + ' · e^(fα) = ' + f2(r.e[1]));
@@ -43759,7 +43682,6 @@ const EN_V = [[5, 1.521], [10, 1.31], [15, 1.148], [20, 1.007], [25, 0.897], [30
 // Table 2-3 Hazen-Williams C: [pipe, low, high]
 const EN_H = [['أسبستوس إسمنتي', 140, 140], ['بلاستيك', 150, 155], ['بولستر مسلح بألياف الزجاج', 150, 155], ['خرسانة سابقة الإجهاد', 140, 145], ['خرسانة عادية', 130, 140], ['خرسانة مسلحة', 130, 140], ['زهر مرن', 140, 145], ['فولاذ', 140, 145]];
 const EN_D = [100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200, 1500, 1800, 2000];
-const enC = x => Math.ceil(x - 1e-9);
 function enPop(m, P1, par, n) {
   if (m === 0) return P1 + par[0] * n;
   if (m === 1) return P1 * Math.exp(par[1] * n);
@@ -45752,8 +45674,6 @@ const XA_T3 = [
   [0.75, 1, [1000, 1250, 1500], true, 500, 1], [1, 1, [2400, 3000, 3600], true, 500, 1], [1, 2, [1200, 1500, 1800], true, 500, 1],
   [1, 1, [4000, 5000, 6000], false, 500, 2], [1, 2, [2000, 2500, 3000], false, 500, 2], [2, 999, null, false, 500, 2]
 ];
-// clause 6-1-2-11 finishes: [place, wall/ceiling class]; floors have no requirement
-const XA_F = [['المخارج', 'A'], ['مسارات الوصول إلى المخارج', 'B'], ['باقي الأماكن', 'B']];
 function xaAny(T, o) {
   const pick = relax => {
     for (const row of T) {
@@ -47010,7 +46930,7 @@ function xpUpdate() {
   const r = xpCalc(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
   const hh = x => x === 0.75 ? '3/4 h' : x === 1.5 ? '1.5 h' : fmt(x, 0) + ' h';
   const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.2rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
-  const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;', ok = x => x ? ' ✔' : ' ✘', yn = x => x ? 'مطلوب' : 'غير مطلوب';
+  const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;', ok = x => x ? ' ✔' : ' ✘';
   let h = '', title = '', note = '';
   if (mode === 0) {
     title = 'مقاومة حوائط المخارج وأبوابها (البند 4-3-1)';
@@ -47713,7 +47633,7 @@ function xuUpdate() {
   else if (mode === 3) { o.dv = b('xu_dv'); o.ik = g('xu_ik2', 5); o.dur = g('xu_du', 2); o.wd = g('xu_wd2', 455); }
   const r = mode === 4 ? {} : xuCalc(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
   const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.2rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
-  const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;', ok = x => x ? ' ✔' : ' ✘';
+  const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;';
   let h = '', title = '', note = '';
   if (mode === 4) {
     const t = XU_TASK[Math.min(XU_TASK.length - 1, b('xu_tk'))], yes = t[2] === 'Yes';
@@ -48278,7 +48198,7 @@ function xafCalc(o) {
   const g = o.grp, A = o.area;
   r.group = g;
   const lowRate = o.foam === 0 ? 4.1 : 6.5;
-  let sys = o.sys, name = '', Q = 0, dur = 0, rate = 0, fdur = 10, extra = '';
+  let sys = o.sys, name = '', Q = 0, dur = 0, rate = 0, fdur = 10;
   r.sprQ = 0; r.sprDur = 0; r.foamQ = 0; r.foamDur = 0; r.foamRate = 0;
   if (g === 1) {
     if (sys === 0) {
@@ -48495,7 +48415,7 @@ function xtnUpdate() {
   else { o.f = b('xtn_f'); o.q = g('xtn_q', 20); o.h = Math.max(0.5, g('xtn_h', 5)); o.a = Math.max(1, g('xtn_a', 60)); o.t = +(document.getElementById('xtn_t') || {}).value; if (!isFinite(o.t)) o.t = 20; o.kg = Math.max(0.1, g('xtn_kg', 1)); }
   const r = xtnCalc(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
   const item = (label, val, unit, st) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.2rem;${st || ''}" dir="ltr">${val}</div><div class="val-unit">${unit}</div></div>`;
-  const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;', ok = x => x ? ' ✔' : ' ✘';
+  const col = x => x ? 'color:#3a9d5d;' : 'color:#D9534F;';
   let h = '', title = '', note = '';
   if (mode === 0) {
     title = 'فئة النفق الطرقي والتجهيزات المطلوبة (NFPA 502، الفصلان 7 و 10)';
@@ -52614,7 +52534,6 @@ function xfgUpdate() {
   const r = xfgCalc(o), f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
   const grn = 'color:#3a9d5d;', red = 'color:#D9534F;';
   const item = (label, val, unit, bad) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.2rem;${bad === undefined ? '' : (bad ? red : grn)}" dir="ltr">${val}${bad === undefined ? '' : (bad ? ' ✘' : ' ✔')}</div><div class="val-unit">${unit}</div></div>`;
-  const kinds = ['أساس منفرد أو قاعدة عمود', 'أساس شريطي', 'حصيرة', 'غطاء أوتاد'];
   let h = '', title;
   if (mode === 0) {
     title = 'الاشتراطات البعدية للأساسات والقواعد والشيناجات (الكود العربي السوري للخرسانة المسلحة، البند 7-10-2)';
@@ -55062,13 +54981,12 @@ function renderEc2col() { return xecHTML(); }
 
 /* ── EN 1998-1:2004: تفاصيل الجوائز والأعمدة في المباني الخرسانية — الصنفان DCM وDCH (5.4.3 و5.5.3) والعمود القوي (4.4.2.3) بالقيم الموصى بها ───────────────────────────── */
 function xe8Mu(q0, t1, tc) { return t1 >= tc ? 2 * q0 - 1 : 1 + 2 * (q0 - 1) * tc / t1; }
-function xe8Fctm(fck) { return fck <= 50 ? 0.30 * Math.pow(fck, 2 / 3) : 2.12 * Math.log(1 + (fck + 8) / 10); }
 function xe8Beam(o) {
   const r = {};
   r.fcd = o.fck / o.gc; r.fyd = o.fyk / o.gs; r.fywd = o.fywk / o.gs;
   r.eps = r.fyd / 200000;
   r.mu = xe8Mu(o.q0, o.t1, o.tc);
-  r.fctm = xe8Fctm(o.fck);
+  r.fctm = e3Fctm(o.fck);
   r.rho = o.as / (o.b * o.d); r.rhoC = o.asc / (o.b * o.d);
   r.rhoMax = r.rhoC + 0.0018 / (r.mu * r.eps) * r.fcd / r.fyd;
   r.rhoMin = 0.5 * r.fctm / o.fyk;
@@ -55241,7 +55159,6 @@ function xhgCalc(o) {
   r.hasW = mi <= 1;
   r.load = 5 * r.W + 114 * 9.81 / 1000;
   const cu = mi === 2;
-  const big = r.mm >= 40;
   r.endMax = mi <= 1 ? (r.mm <= 25 ? 900 : (r.mm <= 32 ? 1200 : 1500)) : (cu ? (r.mm <= 25 ? 450 : (r.mm <= 32 ? 600 : 750)) : 0);
   r.endMaxP = mi <= 1 ? 300 : (cu ? 150 : 0);
   r.endLim = o.hp === 1 && o.pend === 1 ? r.endMaxP : r.endMax;
@@ -56025,7 +55942,6 @@ function renderEc8cap() { return xcdHTML(); }
 
 
 /* ── EN 1998-1:2004: الجدران الخرسانية المطيلة — المنطقة الحرجة والعناصر الطرفية المحصورة (5.4.3.4.2 و5.5.3.4.5 والمعادلات 5.19 و5.20 و5.21)، مقاومة قص الجدار DCH (5.5.3.4.2 و5.5.3.4.3 والمعادلتان 5.38 و5.39)، القص الانزلاقي (5.5.3.4.4 والمعادلات 5.40 إلى 5.44)، وحدود التسليح الأدنى ───────────────────────────── */
-function xewMu(q0, t1, tc) { return t1 >= tc ? 2 * q0 - 1 : 1 + 2 * (q0 - 1) * tc / t1; }
 function xewDetail(o) {
   const r = {};
   const dch = o.dc === 1;
@@ -56033,7 +55949,7 @@ function xewDetail(o) {
   r.eps = o.fyd / 200000;
   r.hcr = Math.min(Math.max(o.lw, o.hw / 6), 2 * o.lw, o.ns <= 6 ? o.hs : 2 * o.hs);
   r.q0 = o.q0 * o.mr;
-  r.mu = xewMu(r.q0, o.t1, o.tc);
+  r.mu = xe8Mu(r.q0, o.t1, o.tc);
   r.nuMax = dch ? 0.35 : 0.4;
   r.nu = o.N * 1000 / (o.hc * o.bc * r.fcd);
   r.okNu = r.nu <= r.nuMax + 1e-9;
@@ -56424,7 +56340,6 @@ function xdnUpdate() {
   const o = {sch: sch, L: Math.max(0.1, g('xdn_l', 6)), q: g('xdn_q', 15), b: bb, h: hh, bf: Math.max(bb, g('xdn_bf', 300)), hf: g('xdn_hf', 0), d: Math.min(hh, Math.max(10, g('xdn_d', 450))), d2: g('xdn_d2', 50), as: Math.max(0, g('xdn_as', 1256)), as2: g('xdn_as2', 0), fck: Math.max(12, g('xdn_fk', 30)), es: Math.max(1, g('xdn_es', 200000)), phi: g('xdn_ph', 2.5), ecs: g('xdn_cs', 0.4)};
   if (o.as <= 0) { box.innerHTML = '<div class="results-box"><div class="note">أدخل مساحة حديد الشد.</div></div>'; return; }
   const r = xdnCalc(o);
-  const unitQ = sch < 2 ? 'kN/m' : 'kN';
   const sc = ['حر الاستناد بحمل موزع', 'كابولي بحمل موزع', 'حر الاستناد بحمل مركز في المنتصف', 'كابولي بحمل مركز في الطرف'][sch];
   let h = '';
   const title = 'الهبوط بالحساب: ' + sc + ' (EN 1992-1-1 البند 7.4.3)';
@@ -57546,7 +57461,7 @@ function xgbUpdate() {
   const box = document.getElementById('xgb_results'); if (!box) return;
   const g = (id, d) => { const e = document.getElementById(id); return e && e.value !== '' && isFinite(+e.value) ? Math.max(0, +e.value) : d; };
   const b = id => +v(id) || 0;
-  const f0 = x => fmt(x, 0), f1 = x => fmt(x, 1), f2 = x => fmt(x, 2), f3 = x => fmt(x, 3);
+  const f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
   const item = (label, val, unit, bad) => `<div class="result-item"><div class="label">${label}</div><div class="val" style="font-size:1.2rem;${bad === undefined ? '' : (bad ? 'color:#D9534F;' : 'color:#3a9d5d;')}" dir="ltr">${val}${bad === undefined ? '' : (bad ? ' ✘' : ' ✔')}</div><div class="val-unit">${unit}</div></div>`;
   const T = xgbTables();
   const segs = [1, 2, 3, 4].map(i => ({size: b('xgb_s' + i) - 1, mat: b('xgb_m' + i), len: g('xgb_l' + i, 0)}));
@@ -58732,7 +58647,6 @@ function renderA90eq() { return xeqHTML(); }
 /* ── IECC 2021 البند C406: متطلبات الكفاءة الإضافية — الجداول C406.1(1) إلى C406.1(5) (نقاط الكفاءة بحسب مجموعة الإشغال والمنطقة المناخية؛ null = NA، و −1 = خانة فارغة في الجدول المطبوع) والمعادلات 4-12 إلى 4-15 ───────────── */
 const XCW_T = [[[null,null,null,null,null,null,null,null,null,null,1,null,null,1,1,null,1],[6,6,5,5,4,4,3,3,3,2,2,2,1,2,2,2,1],[null,null,null,null,null,null,null,null,null,null,2,1,1,2,2,null,1],[11,12,10,9,7,7,6,5,6,4,4,5,3,4,3,3,3],[9,8,9,9,9,9,10,8,9,9,7,8,8,6,7,7,6],[2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,1,1],[9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9],[4,4,4,4,4,3,2,5,3,2,5,3,2,7,4,5,3],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[1,4,2,4,4,3,null,7,4,5,10,7,6,11,10,14,16],[2,1,1,2,4,1,null,8,2,3,11,4,1,15,8,11,6],[4,4,4,4,3,3,3,3,3,3,2,3,2,2,2,2,2],[2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1]],[[null,null,null,null,1,null,null,1,null,1,1,1,1,2,1,2,2],[3,3,2,2,1,1,1,1,1,null,1,1,null,1,1,1,null],[null,null,null,null,1,null,null,1,1,1,2,2,1,3,2,3,4],[5,5,4,3,2,3,1,2,2,1,1,1,1,1,1,1,1],[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[8,8,8,8,7,8,8,7,7,7,7,7,7,7,7,7,7],[3,4,3,3,4,2,null,6,3,4,8,5,5,10,7,11,12],[10,9,11,10,13,12,15,14,14,15,14,14,16,14,15,15,15],[5,5,6,6,8,7,8,8,8,9,9,9,10,10,9,10,11],[6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],[3,6,3,5,4,4,1,4,3,3,4,5,3,5,4,6,6],[6,5,3,11,6,4,null,7,3,3,9,5,1,13,6,8,3],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,null,1,1,null,1,1,null,1,1,1,1]],[[null,null,null,null,1,1,1,1,1,2,1,2,1,2,2,3,4],[4,4,3,3,2,2,2,2,1,1,1,1,null,1,1,1,null],[null,null,null,1,1,1,1,2,3,4,3,4,3,4,3,5,7],[7,8,7,6,5,4,3,4,3,1,2,2,1,2,2,2,1],[8,8,8,9,8,9,9,8,9,9,8,9,8,7,8,7,7],[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],[6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,5,5],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[null,1,1,1,1,1,1,2,2,3,2,3,2,3,3,3,5],[null,null,null,null,null,null,null,1,null,null,1,1,null,1,1,1,1],[3,7,3,4,2,4,1,1,3,1,2,3,null,4,3,6,9],[1,1,1,2,null,null,null,null,null,null,1,null,null,4,1,4,3],[3,3,3,3,3,3,3,3,3,2,2,3,2,2,2,2,2],[1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2]],[[null,null,null,null,1,1,null,1,1,2,2,2,2,3,2,3,4],[5,6,4,4,3,3,1,2,2,1,1,2,null,1,1,1,null],[null,null,null,1,1,1,1,2,2,4,3,4,5,5,3,6,8],[9,12,9,8,6,6,3,4,4,-1,2,3,null,2,2,2,1],[13,13,15,14,16,14,17,15,15,14,12,14,14,16,16,14,12],[3,3,4,3,4,3,4,4,4,3,3,3,3,4,4,3,3],[8,8,8,8,8,8,8,8,8,7,7,7,7,7,7,7,6],[3,4,3,3,3,3,1,3,2,2,2,3,2,4,3,4,4],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[4,6,3,4,3,3,1,6,4,4,4,5,4,6,5,8,9],[1,1,1,2,1,1,null,3,1,1,3,2,1,7,3,6,3],[4,5,5,5,5,4,4,4,4,3,3,4,3,4,4,4,3],[2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,2,2]],[[null,null,null,null,1,1,1,1,1,2,1,2,1,2,2,3,3],[5,5,4,4,3,3,2,2,2,1,1,2,1,1,1,1,1],[null,null,null,1,1,1,1,2,2,3,3,3,3,4,3,5,5],[8,9,8,7,5,5,3,4,4,2,2,3,2,2,2,2,2],[8,8,9,9,9,9,10,8,9,9,7,8,8,8,8,8,7],[2,2,2,2,2,2,2,2,2,2,2,3,2,2,2,2,1],[8,8,8,8,8,8,8,8,8,7,7,7,7,7,7,7,7],[3,4,3,3,4,3,2,5,3,3,5,4,3,7,5,7,6],[10,9,11,10,13,12,15,14,14,15,14,14,16,14,15,15,15],[5,5,6,6,8,7,8,8,8,9,9,9,10,10,9,10,11],[6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],[3,6,3,4,3,4,1,5,4,3,5,5,4,7,6,9,10],[3,2,2,4,4,2,null,6,2,2,6,4,1,10,5,7,4],[3,3,3,3,3,3,3,3,3,3,2,3,2,2,2,3,2],[2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1]]];
 const XCW_Z = ['0A و 1A', '0B و 1B', '2A', '2B', '3A', '3B', '3C', '4A', '4B', '4C', '5A', '5B', '5C', '6A', '6B', '7', '8'];
-const XCW_G = ['المجموعة B (الأعمال)', 'المجموعتان R و I (السكنية والمؤسسية)', 'المجموعة E (التعليمية)', 'المجموعة M (التجارية)', 'المجموعات الأخرى (عدا B و E و I و M و R)'];
 const XCW_GT = ['C406.1(1)', 'C406.1(2)', 'C406.1(3)', 'C406.1(4)', 'C406.1(5)'];
 const XCW_M = [
   'C406.2.1: تحسين كفاءة التدفئة 5 %', 'C406.2.2: تحسين كفاءة التبريد 5 %', 'C406.2.3: تحسين كفاءة التدفئة 10 %', 'C406.2.4: تحسين كفاءة التبريد 10 %',
@@ -58864,12 +58778,6 @@ function xeiSize(g, x) {
   const hi = x[1] !== null ? (x[2].includes('h') ? '≤ ' : '< ') + n(x[1]) : '';
   return lo && hi ? lo + ' و ' + hi : lo || hi;
 }
-function xeiIn(g, x, c) {
-  if (!g[3]) return true;
-  const okLo = x[0] <= 0 || (x[2].includes('l') ? c > x[0] : c >= x[0]);
-  const okHi = x[1] === null || (x[2].includes('h') ? c <= x[1] : c < x[1]);
-  return okLo && okHi;
-}
 function xeiConv(m) {
   if (/^(S|I|C)?EER|^HSPF/.test(m)) return [1 / 3.41214, 'W/W'];
   if (/kW\/ton/.test(m)) return [null, 'COP'];
@@ -58881,7 +58789,7 @@ function xeiCalc(o) {
   const g = XEQI_G[o.g], r = {g, kind: g[7]};
   r.capBtu = Math.round(o.cap * XEI_BTU * 1000) / 1000; r.capTon = Math.round(o.cap / XEI_TON * 1e6) / 1e6;
   const c = g[3] === 'b' ? r.capBtu : g[3] === 't' ? r.capTon : 0;
-  r.row = g[5].find(x => xeiIn(g, x, c)) || null;
+  r.row = g[5].find(x => xeqIn(g, x, c)) || null;
   if (!r.row) return r;
   const meets = (val, req, dir) => val > 0 && (dir > 0 ? val >= req - 1e-9 : val <= req + 1e-9);
   if (r.kind === 'ch' || r.kind === 'cf') {
@@ -58973,7 +58881,7 @@ function renderIecceq() { return xeiHTML(); }
 
 /* ── NFPA 37-2015: تركيب المحركات الثابتة والتوربينات الغازية — مواقع المحرك والمسافات، خزانات الوقود السائل داخل المباني، خط الوقود الغازي، خلوصات العادم، والحماية من الحريق وأجهزة الإيقاف ── */
 // NFPA 37 (2015) 1.6.2: the first stated value (metric) is the requirement; the US value in brackets is approximate. Values read from the page images (mandatory chapters on PDF pages 2868-2879 of the NFPA 2016 compendium; printed page 37-5 is absent, PDF 2868 = 37-6 opens with the title and Chapter 1, nothing mandatory is missing).
-const XNB_M_FT = 0.3048, XNB_MM_IN = 25.4, XNB_L_GAL = 3.785412, XNB_KPA_PSI = 6.894757, XNB_KW_HP = 0.745699872, XNB_W_BTUH = 0.29307107;
+const XNB_L_GAL = 3.785412, XNB_KPA_PSI = 6.894757, XNB_KW_HP = 0.745699872, XNB_W_BTUH = 0.29307107;
 // 3.3.1 Class I fuel: flash point below 37.8 °C (100 °F) (PDF 2869)
 const XNB_C1 = {c: 37.8, f: 100};
 // 4.3 engines in hazardous locations that neither compress a flammable gas nor pump a flammable liquid: the three criteria (PDF 2871)
@@ -62500,7 +62408,6 @@ function pbSend() {
 }
 function phaseBalResultsHTML(r) {
   const ok = r.unb <= r.target + 1e-9, names = ['L1', 'L2', 'L3'];
-  const lbl = k => r.asg[k] === '3p' ? 'L1+L2+L3' : names[r.asg[k]];
   const list = p => r.rows.map((x, k) => ({x, k})).filter(o => o.x.I > 0 && (r.asg[o.k] === p || r.asg[o.k] === '3p')).map(o => `${hlAttr(o.x.name)} (${fmt(o.x.I, 1)})`).join('، ') || '—';
   return `
   <div class="results-box">
